@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-26
+
 ### Added
 - PostgreSQL multi-versi (13+ yang masih didukung): `devlock install postgresql 16`, instance `postgresql@16` (port `5400 + major`, data dir `data\postgresql\16`), `initdb` otomatis, berhenti rapi lewat `pg_ctl stop -m fast`. Binary resmi dari EnterpriseDB; pgAdmin, StackBuilder, dokumentasi, dan header dilewati saat ekstrak (~150 MB, bukan ~900 MB).
 - Shim `psql`, `pg_dump`, `pg_restore`, `createdb`, `dropdb` otomatis terhubung ke instance PostgreSQL milik project (`PGHOST`/`PGPORT`/`PGUSER`).
@@ -46,7 +48,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/romyrudiansah/devlock/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/romyrudiansah/devlock/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/romyrudiansah/devlock/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/romyrudiansah/devlock/compare/v0.1.0...v0.2.0
