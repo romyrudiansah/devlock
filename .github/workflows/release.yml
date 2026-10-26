@@ -44,6 +44,7 @@ jobs:
           $rest = $lines[$start..($lines.Count - 1)]
           $end = ($rest | Select-String -Pattern '^## \[' | Select-Object -First 1).LineNumber
           if ($end) { $rest = $rest[0..($end - 2)] }
+          $rest = $rest | Where-Object { $_ -notmatch '^\[.+\]: ' }
           $rest -join "`n" | Out-File -Encoding utf8 notes.md
 
       - uses: softprops/action-gh-release@v2
