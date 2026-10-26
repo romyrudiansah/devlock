@@ -23,7 +23,10 @@ pub fn init() -> Result<()> {
     }
     println!("Folder www   : {}", config.www_dir(&paths).display());
     match versions::install_shims(&paths) {
-        Ok(count) => println!("Shim         : {count} dibuat di {}", paths.shims().display()),
+        Ok(count) => println!(
+            "Shim         : {count} dibuat di {}",
+            paths.shims().display()
+        ),
         Err(err) => println!("Shim         : dilewati ({err:#})"),
     }
     println!("\nLangkah berikut: `devlock path add` agar shim masuk PATH, lalu `devlock install php 8.3`.");
@@ -38,7 +41,10 @@ pub fn path(action: &str) -> Result<()> {
         _ => user_path::remove(&shims)?,
     };
     match (action, changed) {
-        ("add", true) => println!("{} ditambahkan di depan PATH user. Buka terminal baru.", shims.display()),
+        ("add", true) => println!(
+            "{} ditambahkan di depan PATH user. Buka terminal baru.",
+            shims.display()
+        ),
         ("add", false) => println!("{} sudah di urutan pertama PATH user.", shims.display()),
         (_, true) => println!("{} dihapus dari PATH user.", shims.display()),
         (_, false) => println!("{} tidak ada di PATH user.", shims.display()),
@@ -89,7 +95,9 @@ pub fn doctor() -> Result<()> {
     for tool in ["php", "node", "composer", "mysql"] {
         if let Some(found) = first_in_path(tool) {
             check(
-                found.parent().is_some_and(|dir| same_path(dir, &paths.shims())),
+                found
+                    .parent()
+                    .is_some_and(|dir| same_path(dir, &paths.shims())),
                 &format!("`{tool}` di PATH mengarah ke shim DevLock"),
                 &format!(
                     "{} lebih dulu ditemukan; pindahkan shims ke awal PATH (`devlock path add`)",

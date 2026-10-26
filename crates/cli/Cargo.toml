@@ -11,7 +11,7 @@ name = "devlock"
 path = "src/main.rs"
 
 [dependencies]
-devlock-core.workspace = true
+devlock-core = { workspace = true, features = ["net"] }
 anyhow.workspace = true
 clap.workspace = true
 indicatif = "0.17"

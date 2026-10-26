@@ -94,7 +94,10 @@ fn spec_in_dir(kind: Kind, dir: &Path) -> Option<(String, Source)> {
             for name in [".nvmrc", ".node-version"] {
                 let file = dir.join(name);
                 if let Ok(text) = std::fs::read_to_string(&file) {
-                    let line = text.lines().map(str::trim).find(|l| !l.is_empty() && !l.starts_with('#'));
+                    let line = text
+                        .lines()
+                        .map(str::trim)
+                        .find(|l| !l.is_empty() && !l.starts_with('#'));
                     if let Some(line) = line {
                         return Some((normalize_node_spec(line), Source::File(file)));
                     }
@@ -146,7 +149,8 @@ fn pick_installed(paths: &Paths, kind: Kind, spec: &str) -> Result<Option<String
 }
 
 pub fn resolve(paths: &Paths, config: &Config, kind: Kind, cwd: &Path) -> Result<Resolved> {
-    let (spec, source) = find_spec(config, kind, cwd).unwrap_or(("latest".into(), Source::Fallback));
+    let (spec, source) =
+        find_spec(config, kind, cwd).unwrap_or(("latest".into(), Source::Fallback));
     let Some(version) = pick_installed(paths, kind, &spec)? else {
         if source == Source::Fallback {
             bail!("belum ada {kind} terinstall; jalankan `devlock install {kind} <versi>`");
@@ -180,7 +184,10 @@ impl DbInstance {
         let Some(v) = Version::parse(spec).filter(|v| v.parts().len() >= 2) else {
             bail!("versi database harus major.minor, mis. `{engine}@8.4`");
         };
-        Ok(Self { kind, line: v.major_minor() })
+        Ok(Self {
+            kind,
+            line: v.major_minor(),
+        })
     }
 
     pub fn name(&self) -> String {
@@ -229,7 +236,13 @@ mod tests {
     fn setup() -> (tempfile::TempDir, Paths) {
         let tmp = tempfile::tempdir().unwrap();
         let paths = Paths::new(tmp.path().join("root"));
-        for (kind, v) in [("php", "8.2.24"), ("php", "8.3.12"), ("node", "20.18.0"), ("node", "22.11.0"), ("node", "23.1.0")] {
+        for (kind, v) in [
+            ("php", "8.2.24"),
+            ("php", "8.3.12"),
+            ("node", "20.18.0"),
+            ("node", "22.11.0"),
+            ("node", "23.1.0"),
+        ] {
             std::fs::create_dir_all(paths.runtime_dir(kind, v)).unwrap();
         }
         (tmp, paths)
@@ -258,11 +271,21 @@ mod tests {
         let app = tmp.path().join("app");
         std::fs::create_dir_all(&app).unwrap();
         std::fs::write(app.join(".nvmrc"), "lts/*\n").unwrap();
-        std::fs::write(app.join("composer.json"), r#"{"config":{"platform":{"php":"8.2.0"}}}"#).unwrap();
+        std::fs::write(
+            app.join("composer.json"),
+            r#"{"config":{"platform":{"php":"8.2.0"}}}"#,
+        )
+        .unwrap();
 
         let config = Config::default();
-        assert_eq!(resolve(&paths, &config, Kind::Node, &app).unwrap().version, "22.11.0");
-        assert_eq!(resolve(&paths, &config, Kind::Php, &app).unwrap().version, "8.2.24");
+        assert_eq!(
+            resolve(&paths, &config, Kind::Node, &app).unwrap().version,
+            "22.11.0"
+        );
+        assert_eq!(
+            resolve(&paths, &config, Kind::Php, &app).unwrap().version,
+            "8.2.24"
+        );
     }
 
     #[test]
@@ -285,10 +308,19 @@ mod tests {
     fn database_instances() {
         let mut config = Config::default();
         let mysql = DbInstance::parse("mysql@8.4.3").unwrap();
-        assert_eq!((mysql.name(), mysql.port(&config)), ("mysql@8.4".to_string(), 3384));
+        assert_eq!(
+            (mysql.name(), mysql.port(&config)),
+            ("mysql@8.4".to_string(), 3384)
+        );
         assert_eq!(DbInstance::parse("mysql@5.7").unwrap().port(&config), 3357);
-        assert_eq!(DbInstance::parse("mariadb@11.4").unwrap().port(&config), 3424);
-        assert_eq!(DbInstance::parse("mariadb@10.11").unwrap().port(&config), 3411);
+        assert_eq!(
+            DbInstance::parse("mariadb@11.4").unwrap().port(&config),
+            3424
+        );
+        assert_eq!(
+            DbInstance::parse("mariadb@10.11").unwrap().port(&config),
+            3411
+        );
         config.ports.insert("mysql@8.4".into(), 3306);
         assert_eq!(mysql.port(&config), 3306);
         assert!(DbInstance::parse("mysql").is_err());

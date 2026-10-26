@@ -86,7 +86,11 @@ fn main() {
         } => runtimes::list(kind, available, all),
         Command::Install { kind, version } => runtimes::install(kind, &version),
         Command::Uninstall { kind, version } => runtimes::uninstall(kind, &version),
-        Command::Use { target, version, global } => versions::use_version(&target, &version, global),
+        Command::Use {
+            target,
+            version,
+            global,
+        } => versions::use_version(&target, &version, global),
         Command::Which { tool } => versions::which(&tool),
         Command::Current => versions::current(),
         Command::Shims => versions::shims(),

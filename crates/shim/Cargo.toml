@@ -11,7 +11,7 @@ name = "devlock-shim"
 path = "src/main.rs"
 
 [dependencies]
-devlock-core = { workspace = true, default-features = false }
+devlock-core.workspace = true
 anyhow.workspace = true
 
 [target.'cfg(windows)'.dependencies]

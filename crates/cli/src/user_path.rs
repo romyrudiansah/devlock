@@ -68,7 +68,11 @@ fn read() -> Result<(Vec<String>, winreg::enums::RegType)> {
         .take_while(|&c| c != 0)
         .collect();
     let text = String::from_utf16_lossy(&wide);
-    let entries = text.split(';').filter(|e| !e.trim().is_empty()).map(str::to_string).collect();
+    let entries = text
+        .split(';')
+        .filter(|e| !e.trim().is_empty())
+        .map(str::to_string)
+        .collect();
     Ok((entries, raw.vtype))
 }
 
@@ -96,7 +100,10 @@ fn broadcast_change() {
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         SendMessageTimeoutW, HWND_BROADCAST, SMTO_ABORTIFHUNG, WM_SETTINGCHANGE,
     };
-    let name: Vec<u16> = "Environment".encode_utf16().chain(std::iter::once(0)).collect();
+    let name: Vec<u16> = "Environment"
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
     // SAFETY: `name` hidup selama panggilan; hasil diabaikan (best effort).
     unsafe {
         SendMessageTimeoutW(

@@ -10,27 +10,38 @@ pub fn use_version(target: &str, spec: &str, global: bool) -> Result<()> {
     let paths = Paths::discover()?;
     let cwd = std::env::current_dir()?;
 
-    let (key, value) = if target.eq_ignore_ascii_case("database") || target.eq_ignore_ascii_case("db") {
-        let instance = DbInstance::parse(spec)?;
-        if runtime::resolve_installed(&paths, instance.kind, &instance.line)?.is_none() {
-            println!("peringatan: {} belum terinstall (`devlock install {} {}`)", instance.name(), instance.kind, instance.line);
-        }
-        ("database", instance.name())
-    } else {
-        let kind: Kind = target.parse()?;
-        if !matches!(kind, Kind::Php | Kind::Node | Kind::Composer) {
-            bail!("`use` untuk php, node, composer, atau database");
-        }
-        match runtime::resolve_installed(&paths, kind, spec)? {
-            Some(version) => println!("{kind} {spec} → {version}"),
-            None => println!("peringatan: {kind} {spec} belum terinstall (`devlock install {kind} {spec}`)"),
-        }
-        (kind.as_str(), spec.to_string())
-    };
+    let (key, value) =
+        if target.eq_ignore_ascii_case("database") || target.eq_ignore_ascii_case("db") {
+            let instance = DbInstance::parse(spec)?;
+            if runtime::resolve_installed(&paths, instance.kind, &instance.line)?.is_none() {
+                println!(
+                    "peringatan: {} belum terinstall (`devlock install {} {}`)",
+                    instance.name(),
+                    instance.kind,
+                    instance.line
+                );
+            }
+            ("database", instance.name())
+        } else {
+            let kind: Kind = target.parse()?;
+            if !matches!(kind, Kind::Php | Kind::Node | Kind::Composer) {
+                bail!("`use` untuk php, node, composer, atau database");
+            }
+            match runtime::resolve_installed(&paths, kind, spec)? {
+                Some(version) => println!("{kind} {spec} → {version}"),
+                None => println!(
+                    "peringatan: {kind} {spec} belum terinstall (`devlock install {kind} {spec}`)"
+                ),
+            }
+            (kind.as_str(), spec.to_string())
+        };
 
     if global {
         Config::set_default(&paths, key, &value)?;
-        println!("Default global {key} = {value} ({})", paths.config_file().display());
+        println!(
+            "Default global {key} = {value} ({})",
+            paths.config_file().display()
+        );
     } else {
         // Pakai .devlock.toml terdekat bila sudah ada, selain itu buat di folder kerja.
         let dir = find_project_file(&cwd)
@@ -92,7 +103,10 @@ pub fn current() -> Result<()> {
 pub fn install_shims(paths: &Paths) -> Result<usize> {
     let source = std::env::current_exe()?.with_file_name("devlock-shim.exe");
     if !source.is_file() {
-        bail!("{} tidak ditemukan (harus satu folder dengan devlock.exe)", source.display());
+        bail!(
+            "{} tidak ditemukan (harus satu folder dengan devlock.exe)",
+            source.display()
+        );
     }
     std::fs::create_dir_all(paths.shims())?;
     let mut count = 0;
@@ -102,10 +116,12 @@ pub fn install_shims(paths: &Paths) -> Result<usize> {
         if dest.exists() {
             let old = dest.with_extension("exe.old");
             let _ = std::fs::remove_file(&old);
-            std::fs::rename(&dest, &old).with_context(|| format!("gagal mengganti {}", dest.display()))?;
+            std::fs::rename(&dest, &old)
+                .with_context(|| format!("gagal mengganti {}", dest.display()))?;
             let _ = std::fs::remove_file(&old);
         }
-        std::fs::copy(&source, &dest).with_context(|| format!("gagal membuat {}", dest.display()))?;
+        std::fs::copy(&source, &dest)
+            .with_context(|| format!("gagal membuat {}", dest.display()))?;
         count += 1;
     }
     Ok(count)
