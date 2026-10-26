@@ -10,6 +10,12 @@ repository.workspace = true
 name = "devlock-gui"
 path = "src/main.rs"
 
+[features]
+# Muat UI dari aset yang disisipkan ke exe, bukan dari dev server `build.devUrl`.
+# `tauri build` mengaktifkannya otomatis; build dengan `cargo` langsung harus menyalakannya
+# sendiri (lihat workflow rilis), jika tidak exe akan mencari http://localhost:1420.
+custom-protocol = ["tauri/custom-protocol"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

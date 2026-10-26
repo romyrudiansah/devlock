@@ -32,7 +32,7 @@ jobs:
           $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches.Groups[1].Value
           if ($tag -ne $version) { throw "Tag v$tag tidak sama dengan versi workspace $version" }
 
-      - run: cargo build --release --workspace
+      - run: cargo build --release --workspace --features devlock-desktop/custom-protocol
 
       - name: Paket zip
         shell: pwsh
