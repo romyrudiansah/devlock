@@ -63,7 +63,7 @@ cargo build --release
 
 Binary ada di `target\release\`: `devlock.exe`, `devlock-shim.exe`, dan `devlock-gui.exe`.
 
-Mode development GUI (hot reload): `cd apps\desktop` lalu `npx tauri dev`.
+Mode development GUI (hot reload): `cd apps\desktop` lalu `npx tauri dev`. Untuk mengutak-atik tampilan saja, `npm run dev` lalu buka `http://localhost:1420` di browser: tanpa backend Tauri, UI memakai data contoh (`src/devMock.ts`).
 
 ## Kontribusi
 
