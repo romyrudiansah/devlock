@@ -1,0 +1,18 @@
+[package]
+name = "devlock-shim"
+description = "Shim yang meneruskan php/node/composer/mysql ke versi milik project"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "devlock-shim"
+path = "src/main.rs"
+
+[dependencies]
+devlock-core.workspace = true
+anyhow.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Console"] }

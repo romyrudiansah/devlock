@@ -9,7 +9,7 @@ rust-version = "1.80"
 repository = "https://github.com/romyrudiansah/devlock"
 
 [workspace.dependencies]
-devlock-core = { path = "crates/core" }
+devlock-core = { path = "crates/core", default-features = false }
 anyhow = "1"
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }

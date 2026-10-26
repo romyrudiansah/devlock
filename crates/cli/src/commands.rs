@@ -3,6 +3,8 @@ use std::net::TcpListener;
 use anyhow::Result;
 use devlock_core::{Config, Paths};
 
+use crate::{user_path, versions};
+
 pub fn init() -> Result<()> {
     let paths = Paths::discover()?;
     paths.ensure_layout()?;
@@ -20,6 +22,33 @@ pub fn init() -> Result<()> {
         );
     }
     println!("Folder www   : {}", config.www_dir(&paths).display());
+    match versions::install_shims(&paths) {
+        Ok(count) => println!(
+            "Shim         : {count} dibuat di {}",
+            paths.shims().display()
+        ),
+        Err(err) => println!("Shim         : dilewati ({err:#})"),
+    }
+    println!("\nLangkah berikut: `devlock path add` agar shim masuk PATH, lalu `devlock install php 8.3`.");
+    Ok(())
+}
+
+pub fn path(action: &str) -> Result<()> {
+    let paths = Paths::discover()?;
+    let shims = paths.shims();
+    let changed = match action {
+        "add" => user_path::add(&shims)?,
+        _ => user_path::remove(&shims)?,
+    };
+    match (action, changed) {
+        ("add", true) => println!(
+            "{} ditambahkan di depan PATH user. Buka terminal baru.",
+            shims.display()
+        ),
+        ("add", false) => println!("{} sudah di urutan pertama PATH user.", shims.display()),
+        (_, true) => println!("{} dihapus dari PATH user.", shims.display()),
+        (_, false) => println!("{} tidak ada di PATH user.", shims.display()),
+    }
     Ok(())
 }
 
@@ -63,6 +92,20 @@ pub fn doctor() -> Result<()> {
         "Visual C++ Redistributable (vcruntime140.dll)",
         "install dari https://aka.ms/vs/17/release/vc_redist.x64.exe (dibutuhkan PHP, Apache, MySQL)",
     );
+    for tool in ["php", "node", "composer", "mysql"] {
+        if let Some(found) = first_in_path(tool) {
+            check(
+                found
+                    .parent()
+                    .is_some_and(|dir| same_path(dir, &paths.shims())),
+                &format!("`{tool}` di PATH mengarah ke shim DevLock"),
+                &format!(
+                    "{} lebih dulu ditemukan; pindahkan shims ke awal PATH (`devlock path add`)",
+                    found.display()
+                ),
+            );
+        }
+    }
     let http = format!("{}:{}", config.http.listen, config.http.port);
     check(
         port_free(&http),
@@ -82,6 +125,16 @@ fn path_contains(dir: &std::path::Path) -> bool {
     std::env::var_os("PATH")
         .map(|path| std::env::split_paths(&path).any(|p| same_path(&p, dir)))
         .unwrap_or(false)
+}
+
+fn first_in_path(tool: &str) -> Option<std::path::PathBuf> {
+    let path = std::env::var_os("PATH")?;
+    std::env::split_paths(&path).find_map(|dir| {
+        ["exe", "cmd", "bat"]
+            .iter()
+            .map(|ext| dir.join(format!("{tool}.{ext}")))
+            .find(|p| p.is_file())
+    })
 }
 
 fn same_path(a: &std::path::Path, b: &std::path::Path) -> bool {
