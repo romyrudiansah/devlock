@@ -51,7 +51,10 @@ pub fn configure_ini(template: &str, ext_dir: &str) -> String {
         let trimmed = line.trim();
         let uncommented = trimmed.trim_start_matches(';').trim();
 
-        if !ext_dir_set && uncommented.starts_with("extension_dir") && uncommented.contains("\"ext\"") {
+        if !ext_dir_set
+            && uncommented.starts_with("extension_dir")
+            && uncommented.contains("\"ext\"")
+        {
             out.push_str(&format!("extension_dir = \"{ext_dir}\"\n"));
             ext_dir_set = true;
             continue;
@@ -79,7 +82,12 @@ pub fn configure_ini(template: &str, ext_dir: &str) -> String {
 
 /// `extension=php_curl.dll` / `extension=curl` → `curl`
 fn extension_name(line: &str) -> &str {
-    let value = line.trim_start_matches("extension=").trim();
+    let value = line.trim_start_matches("extension=");
+    // Buang komentar di baris yang sama: `extension=exif  ; Must be after mbstring`.
+    let value = value
+        .split(|c: char| c == ';' || c.is_whitespace())
+        .next()
+        .unwrap_or_default();
     let value = value.strip_prefix("php_").unwrap_or(value);
     value.strip_suffix(".dll").unwrap_or(value)
 }
@@ -100,6 +108,7 @@ memory_limit = 128M
 ;extension_dir = \"ext\"
 ;extension=bz2
 ;extension=curl
+;extension=exif      ; Must be after mbstring as it depends on it
 ;extension=php_mbstring.dll
 ;extension=pdo_mysql
 ";

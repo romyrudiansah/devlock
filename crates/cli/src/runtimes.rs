@@ -18,18 +18,26 @@ pub fn list(kind: Kind, available: bool, all: bool) -> Result<()> {
             return Ok(());
         }
         let default = Config::load(&paths)?.defaults.get(kind.as_str()).cloned();
-        let default_version = default
-            .as_deref()
-            .and_then(|spec| devlock_core::version::pick(spec, installed.iter().map(String::as_str)));
+        let default_version = default.as_deref().and_then(|spec| {
+            devlock_core::version::pick(spec, installed.iter().map(String::as_str))
+        });
         for version in &installed {
-            let mark = if Some(version.as_str()) == default_version { "*" } else { " " };
+            let mark = if Some(version.as_str()) == default_version {
+                "*"
+            } else {
+                " "
+            };
             println!("{mark} {version}");
         }
         return Ok(());
     }
 
     let releases = catalog::available(kind)?;
-    let shown: Vec<&Release> = if all { releases.iter().collect() } else { latest_per_line(kind, &releases) };
+    let shown: Vec<&Release> = if all {
+        releases.iter().collect()
+    } else {
+        latest_per_line(kind, &releases)
+    };
     for release in shown {
         let mut tags = Vec::new();
         if release.lts {
@@ -38,7 +46,11 @@ pub fn list(kind: Kind, available: bool, all: bool) -> Result<()> {
         if installed.contains(&release.version) {
             tags.push("terinstall");
         }
-        let tags = if tags.is_empty() { String::new() } else { format!("  ({})", tags.join(", ")) };
+        let tags = if tags.is_empty() {
+            String::new()
+        } else {
+            format!("  ({})", tags.join(", "))
+        };
         println!("{}{tags}", release.version);
     }
     if !all {
@@ -51,7 +63,9 @@ pub fn list(kind: Kind, available: bool, all: bool) -> Result<()> {
 fn latest_per_line(kind: Kind, releases: &[Release]) -> Vec<&Release> {
     let mut lines: BTreeMap<String, &Release> = BTreeMap::new();
     for release in releases {
-        let Some(v) = Version::parse(&release.version) else { continue };
+        let Some(v) = Version::parse(&release.version) else {
+            continue;
+        };
         let key = match kind {
             Kind::Node | Kind::Composer => v.major().to_string(),
             _ => v.major_minor(),
@@ -91,17 +105,25 @@ pub fn install(kind: Kind, spec: &str) -> Result<()> {
             bar.set_position(downloaded);
         }
         Event::Verifying => bar.set_message("verifikasi"),
-        Event::Unverified => bar.println("peringatan: upstream tidak menyediakan SHA256, file tidak diverifikasi"),
+        Event::Unverified => {
+            bar.println("peringatan: upstream tidak menyediakan SHA256, file tidak diverifikasi")
+        }
         Event::Extracting => bar.set_message("ekstrak"),
         Event::Configuring(what) => bar.set_message(format!("konfigurasi {what}")),
     })?;
     bar.finish_and_clear();
 
-    println!("{kind} {} terinstall di {}", release.version, target.display());
+    println!(
+        "{kind} {} terinstall di {}",
+        release.version,
+        target.display()
+    );
     let config = Config::load(&paths)?;
     if !config.defaults.contains_key(kind.as_str()) && !kind.is_database() && kind != Kind::Nginx {
         Config::set_default(&paths, kind.as_str(), &release.version)?;
-        println!("Dijadikan versi default {kind} (ubah dengan `devlock use {kind} <versi> --global`).");
+        println!(
+            "Dijadikan versi default {kind} (ubah dengan `devlock use {kind} <versi> --global`)."
+        );
     }
     Ok(())
 }
@@ -112,13 +134,20 @@ pub fn uninstall(kind: Kind, version: &str) -> Result<()> {
     if !installed.iter().any(|v| v == version) {
         anyhow::bail!(
             "{kind} {version} tidak terinstall (terinstall: {}); tulis versi lengkap",
-            if installed.is_empty() { "-".to_string() } else { installed.join(", ") }
+            if installed.is_empty() {
+                "-".to_string()
+            } else {
+                installed.join(", ")
+            }
         );
     }
     let dir = runtime::uninstall(&paths, kind, version)?;
     println!("{kind} {version} dihapus ({})", dir.display());
     if kind.is_database() {
-        println!("Data database di {} tidak ikut dihapus.", paths.data().display());
+        println!(
+            "Data database di {} tidak ikut dihapus.",
+            paths.data().display()
+        );
     }
     Ok(())
 }

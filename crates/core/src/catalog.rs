@@ -17,10 +17,22 @@ const COMPOSER: &str = "https://getcomposer.org";
 
 /// MySQL tidak punya API daftar versi; daftar ini diperbarui tiap rilis DevLock.
 const MYSQL_RELEASES: &[(&str, &str)] = &[
-    ("9.6.0", "https://cdn.mysql.com/Downloads/MySQL-9.6/mysql-9.6.0-winx64.zip"),
-    ("8.4.11", "https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.11-winx64.zip"),
-    ("8.0.45", "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.45-winx64.zip"),
-    ("5.7.44", "https://cdn.mysql.com/archives/mysql-5.7/mysql-5.7.44-winx64.zip"),
+    (
+        "9.6.0",
+        "https://cdn.mysql.com/Downloads/MySQL-9.6/mysql-9.6.0-winx64.zip",
+    ),
+    (
+        "8.4.11",
+        "https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.11-winx64.zip",
+    ),
+    (
+        "8.0.45",
+        "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.45-winx64.zip",
+    ),
+    (
+        "5.7.44",
+        "https://cdn.mysql.com/archives/mysql-5.7/mysql-5.7.44-winx64.zip",
+    ),
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,7 +89,13 @@ pub fn find(kind: Kind, spec: &str) -> Result<Release> {
     let lts_only = spec.eq_ignore_ascii_case("lts") || spec.starts_with("lts/");
     let found = releases
         .iter()
-        .filter(|r| if lts_only { r.lts } else { version::matches(spec, &r.version) })
+        .filter(|r| {
+            if lts_only {
+                r.lts
+            } else {
+                version::matches(spec, &r.version)
+            }
+        })
         .max_by(|a, b| Version::parse(&a.version).cmp(&Version::parse(&b.version)));
     if let Some(release) = found {
         return Ok(release.clone());
@@ -279,7 +297,7 @@ struct MariadbRelease {
 struct MariadbFile {
     file_name: String,
     os: Option<String>,
-    checksum: Option<BTreeMap<String, String>>,
+    checksum: Option<BTreeMap<String, Option<String>>>,
 }
 
 /// `major = None` → semua major stable sejak 10.6.
@@ -314,8 +332,8 @@ fn mariadb_releases(major: Option<&str>) -> Result<Vec<Release>> {
                 checksum: file
                     .checksum
                     .as_ref()
-                    .and_then(|sums| sums.get("sha256sum"))
-                    .map_or(Checksum::None, |sum| Checksum::Sha256(sum.clone())),
+                    .and_then(|sums| sums.get("sha256sum").cloned().flatten())
+                    .map_or(Checksum::None, Checksum::Sha256),
                 version: release.release_id,
                 lts,
             })

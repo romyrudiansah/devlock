@@ -57,7 +57,11 @@ fn main() {
         Command::Init => commands::init(),
         Command::Config => commands::config(),
         Command::Doctor => commands::doctor(),
-        Command::List { kind, available, all } => runtimes::list(kind, available, all),
+        Command::List {
+            kind,
+            available,
+            all,
+        } => runtimes::list(kind, available, all),
         Command::Install { kind, version } => runtimes::install(kind, &version),
         Command::Uninstall { kind, version } => runtimes::uninstall(kind, &version),
     };

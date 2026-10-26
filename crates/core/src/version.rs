@@ -108,7 +108,10 @@ mod tests {
     #[test]
     fn parse_variants() {
         assert_eq!(Version::parse("v20.11.1").unwrap().parts(), &[20, 11, 1]);
-        assert_eq!(Version::parse("11.4.3-winx64").unwrap().parts(), &[11, 4, 3]);
+        assert_eq!(
+            Version::parse("11.4.3-winx64").unwrap().parts(),
+            &[11, 4, 3]
+        );
         assert_eq!(Version::parse("8.3").unwrap().major_minor(), "8.3");
         assert!(Version::parse("lts/*").is_none());
     }

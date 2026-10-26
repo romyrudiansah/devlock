@@ -131,7 +131,9 @@ mod tests {
             ["8.3.12", "8.3.9", "8.2.24"]
         );
         assert_eq!(
-            resolve_installed(&paths, Kind::Php, "8.3").unwrap().as_deref(),
+            resolve_installed(&paths, Kind::Php, "8.3")
+                .unwrap()
+                .as_deref(),
             Some("8.3.12")
         );
         assert!(require_installed(&paths, Kind::Php, "7.4").is_err());

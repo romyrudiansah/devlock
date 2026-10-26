@@ -14,7 +14,10 @@ use crate::php;
 use crate::runtime::Kind;
 
 pub enum Event<'a> {
-    Downloading { downloaded: u64, total: Option<u64> },
+    Downloading {
+        downloaded: u64,
+        total: Option<u64>,
+    },
     Verifying,
     /// Checksum tidak tersedia dari upstream; file tidak diverifikasi.
     Unverified,
@@ -22,17 +25,28 @@ pub enum Event<'a> {
     Configuring(&'a str),
 }
 
-pub fn install(paths: &Paths, release: &Release, on_event: &mut dyn FnMut(Event)) -> Result<PathBuf> {
+pub fn install(
+    paths: &Paths,
+    release: &Release,
+    on_event: &mut dyn FnMut(Event),
+) -> Result<PathBuf> {
     let target = paths.runtime_dir(release.kind.as_str(), &release.version);
     if target.exists() {
-        bail!("{} {} sudah terinstall di {}", release.kind, release.version, target.display());
+        bail!(
+            "{} {} sudah terinstall di {}",
+            release.kind,
+            release.version,
+            target.display()
+        );
     }
     std::fs::create_dir_all(paths.downloads())?;
 
     let archive = paths.downloads().join(release.file_name());
     let expected = expected_sha256(release)?;
     let cached_ok = archive.is_file()
-        && expected.as_deref().is_some_and(|sum| sha256_file(&archive).ok().as_deref() == Some(sum));
+        && expected
+            .as_deref()
+            .is_some_and(|sum| sha256_file(&archive).ok().as_deref() == Some(sum));
     if !cached_ok {
         http::download(&release.url, &archive, &mut |downloaded, total| {
             on_event(Event::Downloading { downloaded, total })
@@ -45,7 +59,10 @@ pub fn install(paths: &Paths, release: &Release, on_event: &mut dyn FnMut(Event)
             let actual = sha256_file(&archive)?;
             if !actual.eq_ignore_ascii_case(sum) {
                 let _ = std::fs::remove_file(&archive);
-                bail!("checksum {} tidak cocok (diharapkan {sum}, didapat {actual})", release.file_name());
+                bail!(
+                    "checksum {} tidak cocok (diharapkan {sum}, didapat {actual})",
+                    release.file_name()
+                );
             }
         }
         None => on_event(Event::Unverified),
@@ -94,7 +111,11 @@ fn expected_sha256(release: &Release) -> Result<Option<String>> {
 
 /// Cari hash untuk `file` di format `<sha256>  <nama file>`; file berisi satu hash juga diterima.
 fn lookup_shasum(text: &str, file: &str) -> Option<String> {
-    let all: Vec<&str> = text.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
+    let all: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .collect();
     let found = all.iter().find_map(|line| {
         let (hash, name) = line.split_once(char::is_whitespace)?;
         (name.trim().trim_start_matches('*') == file).then_some(hash)
@@ -150,9 +171,18 @@ mod tests {
 
     #[test]
     fn shasums_lookup() {
-        let text = format!("{}  node-v1-linux.tar.gz\n{HASH}  node-v1-win-x64.zip\n", "f".repeat(64));
-        assert_eq!(lookup_shasum(&text, "node-v1-win-x64.zip").as_deref(), Some(HASH));
-        assert_eq!(lookup_shasum(&format!("{HASH}  composer.phar"), "x.phar").as_deref(), Some(HASH));
+        let text = format!(
+            "{}  node-v1-linux.tar.gz\n{HASH}  node-v1-win-x64.zip\n",
+            "f".repeat(64)
+        );
+        assert_eq!(
+            lookup_shasum(&text, "node-v1-win-x64.zip").as_deref(),
+            Some(HASH)
+        );
+        assert_eq!(
+            lookup_shasum(&format!("{HASH}  composer.phar"), "x.phar").as_deref(),
+            Some(HASH)
+        );
         assert_eq!(lookup_shasum(&text, "missing.zip"), None);
     }
 
@@ -160,7 +190,10 @@ mod tests {
     fn strips_single_root_folder() {
         let tmp = tempfile::tempdir().unwrap();
         std::fs::create_dir_all(tmp.path().join("node-v1/bin")).unwrap();
-        assert_eq!(single_child_dir(tmp.path()).unwrap(), Some(tmp.path().join("node-v1")));
+        assert_eq!(
+            single_child_dir(tmp.path()).unwrap(),
+            Some(tmp.path().join("node-v1"))
+        );
         std::fs::write(tmp.path().join("php.exe"), b"").unwrap();
         assert_eq!(single_child_dir(tmp.path()).unwrap(), None);
     }
