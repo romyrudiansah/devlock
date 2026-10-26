@@ -4,7 +4,9 @@ pub mod config;
 pub mod paths;
 pub mod php;
 pub mod project;
+pub mod resolve;
 pub mod runtime;
+pub mod tools;
 pub mod version;
 
 #[cfg(feature = "net")]
