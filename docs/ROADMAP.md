@@ -188,7 +188,8 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 ### G. Database — **P0 (MySQL/MariaDB) / P1 (lainnya)**
 - [ ] MySQL & MariaDB multi-versi berjalan bersamaan, port per versi, data dir terpisah (lihat 4.5)
 - [ ] Inisialisasi data dir otomatis (`mysqld --initialize-insecure` / `mariadb-install-db`)
-- [ ] PostgreSQL (`initdb`), Redis, MongoDB (P2)
+- [x] PostgreSQL (`initdb`)
+- [ ] Redis, MongoDB (P2)
 - [ ] Quick action: buat database + user untuk project
 - [ ] Backup / restore (dump) per database, sebelum upgrade versi
 - [ ] Panel DB web bawaan (Adminer — 1 file PHP, ringan) di `adminer.test`
@@ -256,7 +257,7 @@ devlock doctor                   (cek PATH, port, VC++ redist, CA trust)
 | MySQL | `3300 + major*10 + minor` (8.4 → 3384, 5.7 → 3357) |
 | MariaDB | `3400 + (major-10)*20 + minor` (11.4 → 3424, 10.11 → 3411) |
 | Override | `[ports]` di `devlock.toml`, mis. `"mysql@8.4" = 3306` |
-| PostgreSQL | 54xx (mis. 5416 untuk 16); instance default juga di 5432 |
+| PostgreSQL | `5400 + major` (16 → 5416, 18 → 5418) |
 | Redis | 6379 |
 | Mailpit SMTP / UI | 1025 / 8025 |
 | DNS lokal | 127.0.0.1:53 |

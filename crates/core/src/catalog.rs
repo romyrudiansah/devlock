@@ -14,6 +14,9 @@ const NODE_DIST: &str = "https://nodejs.org/dist/";
 const NGINX_DOWNLOAD: &str = "https://nginx.org/download/";
 const MARIADB_API: &str = "https://downloads.mariadb.org/rest-api/mariadb/";
 const COMPOSER: &str = "https://getcomposer.org";
+const POSTGRES_VERSIONS: &str = "https://www.postgresql.org/versions.json";
+/// Binary zip resmi PostgreSQL untuk Windows (dibangun EnterpriseDB).
+const POSTGRES_DOWNLOAD: &str = "https://get.enterprisedb.com/postgresql/";
 
 /// MySQL tidak punya API daftar versi; daftar ini diperbarui tiap rilis DevLock.
 const MYSQL_RELEASES: &[(&str, &str)] = &[
@@ -68,6 +71,7 @@ pub fn available(kind: Kind) -> Result<Vec<Release>> {
         Kind::Nginx => nginx_releases()?,
         Kind::Mysql => mysql_releases(),
         Kind::Mariadb => mariadb_releases(None)?,
+        Kind::Postgresql => postgresql_releases()?,
     };
     releases.sort_by(|a, b| {
         let a = Version::parse(&a.version);
@@ -108,7 +112,8 @@ pub fn find(kind: Kind, spec: &str) -> Result<Release> {
     bail!("{kind} {spec} tidak ditemukan; lihat `devlock list {kind} --available`")
 }
 
-/// Rilis terbaru per cabang: major.minor untuk PHP/nginx/DB, major untuk Node.
+/// Rilis terbaru per cabang: major.minor untuk PHP/nginx/MySQL/MariaDB, major untuk
+/// Node/Composer/PostgreSQL.
 pub fn latest_per_line(kind: Kind, releases: &[Release]) -> Vec<&Release> {
     let mut lines: BTreeMap<String, &Release> = BTreeMap::new();
     for release in releases {
@@ -116,7 +121,7 @@ pub fn latest_per_line(kind: Kind, releases: &[Release]) -> Vec<&Release> {
             continue;
         };
         let key = match kind {
-            Kind::Node | Kind::Composer => v.major().to_string(),
+            Kind::Node | Kind::Composer | Kind::Postgresql => v.major().to_string(),
             _ => v.major_minor(),
         };
         lines
@@ -368,6 +373,49 @@ fn mariadb_releases(major: Option<&str>) -> Result<Vec<Release>> {
     Ok(releases)
 }
 
+// --- PostgreSQL --------------------------------------------------------------
+
+#[derive(Deserialize)]
+struct PostgresVersion {
+    major: String,
+    #[serde(rename = "latestMinor")]
+    latest_minor: String,
+    supported: bool,
+}
+
+/// Versi minor terbaru tiap major yang masih didukung upstream.
+fn postgresql_releases() -> Result<Vec<Release>> {
+    let versions: Vec<PostgresVersion> = http::get_json(POSTGRES_VERSIONS)?;
+    Ok(versions
+        .into_iter()
+        .filter(|v| v.supported && v.major.parse::<u32>().is_ok_and(|m| m >= 13))
+        .filter_map(|v| {
+            let version = format!("{}.{}", v.major, v.latest_minor);
+            let url = postgresql_url(&version)?;
+            Some(Release {
+                kind: Kind::Postgresql,
+                version,
+                url,
+                // EDB tidak menerbitkan checksum untuk zip binary.
+                checksum: Checksum::None,
+                lts: false,
+            })
+        })
+        .collect())
+}
+
+/// EDB kadang membangun ulang satu versi (`-1`, `-2`, ...); ambil build tertinggi yang ada.
+fn postgresql_url(version: &str) -> Option<String> {
+    (1..=4)
+        .rev()
+        .map(|build| postgresql_zip_url(version, build))
+        .find(|url| http::exists(url))
+}
+
+fn postgresql_zip_url(version: &str, build: u32) -> String {
+    format!("{POSTGRES_DOWNLOAD}postgresql-{version}-{build}-windows-x64-binaries.zip")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -381,6 +429,14 @@ mod tests {
         let r = php_archive_release("8.4.1").unwrap();
         assert!(r.url.ends_with("php-8.4.1-nts-Win32-vs17-x64.zip"));
         assert!(php_archive_release("8.2").is_none());
+    }
+
+    #[test]
+    fn postgresql_zip_name() {
+        assert_eq!(
+            postgresql_zip_url("16.15", 2),
+            "https://get.enterprisedb.com/postgresql/postgresql-16.15-2-windows-x64-binaries.zip"
+        );
     }
 
     #[test]

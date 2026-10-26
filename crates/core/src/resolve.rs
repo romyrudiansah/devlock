@@ -166,11 +166,12 @@ pub fn resolve(paths: &Paths, config: &Config, kind: Kind, cwd: &Path) -> Result
     })
 }
 
-/// Instance database seperti `mysql@8.4`.
+/// Instance database seperti `mysql@8.4` atau `postgresql@16`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DbInstance {
     pub kind: Kind,
-    /// major.minor, juga nama folder data.
+    /// Cabang versi yang kompatibel datanya, juga nama folder data:
+    /// major.minor untuk MySQL/MariaDB, major untuk PostgreSQL.
     pub line: String,
 }
 
@@ -179,7 +180,17 @@ impl DbInstance {
         let (engine, spec) = text.split_once('@').unwrap_or((text, ""));
         let kind: Kind = engine.trim().parse()?;
         if !kind.is_database() {
-            bail!("`{engine}` bukan engine database (pilihan: mysql, mariadb)");
+            bail!("`{engine}` bukan engine database (pilihan: mysql, mariadb, postgresql)");
+        }
+        // Sejak PostgreSQL 10, data kompatibel dalam satu major (16.x).
+        if kind == Kind::Postgresql {
+            let Some(v) = Version::parse(spec) else {
+                bail!("versi PostgreSQL harus major, mis. `postgresql@16`");
+            };
+            return Ok(Self {
+                kind,
+                line: v.major().to_string(),
+            });
         }
         let Some(v) = Version::parse(spec).filter(|v| v.parts().len() >= 2) else {
             bail!("versi database harus major.minor, mis. `{engine}@8.4`");
@@ -195,7 +206,8 @@ impl DbInstance {
     }
 
     /// Port default: MySQL `3300 + major*10 + minor` (8.4 → 3384),
-    /// MariaDB `3400 + (major-10)*20 + minor` (11.4 → 3424). Bisa ditimpa `[ports]`.
+    /// MariaDB `3400 + (major-10)*20 + minor` (11.4 → 3424), PostgreSQL `5400 + major`
+    /// (16 → 5416). Bisa ditimpa `[ports]`.
     pub fn port(&self, config: &Config) -> u16 {
         if let Some(port) = config.ports.get(&self.name()) {
             return *port;
@@ -204,6 +216,7 @@ impl DbInstance {
         let (major, minor) = (v.major() as u16, v.minor() as u16);
         match self.kind {
             Kind::Mariadb => 3400 + major.saturating_sub(10) * 20 + minor,
+            Kind::Postgresql => 5400 + major,
             _ => 3300 + major * 10 + minor,
         }
     }
@@ -324,6 +337,16 @@ mod tests {
         config.ports.insert("mysql@8.4".into(), 3306);
         assert_eq!(mysql.port(&config), 3306);
         assert!(DbInstance::parse("mysql").is_err());
+        let pg = DbInstance::parse("postgresql@16.4").unwrap();
+        assert_eq!(
+            (pg.name(), pg.port(&config)),
+            ("postgresql@16".to_string(), 5416)
+        );
+        assert_eq!(
+            DbInstance::parse("postgres@18").unwrap().name(),
+            "postgresql@18"
+        );
+        assert!(DbInstance::parse("postgresql").is_err());
         assert!(DbInstance::parse("php@8.3").is_err());
     }
 }

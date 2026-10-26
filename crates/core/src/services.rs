@@ -167,8 +167,8 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
         match runtime::resolve_installed(paths, instance.kind, &instance.line)? {
             Some(version) => {
                 let dir = paths.runtime_dir(instance.kind.as_str(), &version);
-                let (spec, ini) = database_service(paths, config, &instance, &dir);
-                files.push(ini);
+                let (spec, config_file) = database_service(paths, config, &instance, &dir);
+                files.extend(config_file);
                 services.push(spec);
             }
             None => warnings.push(format!(
@@ -224,12 +224,16 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
     })
 }
 
+/// Service database beserta file konfigurasi yang perlu ditulis (my.ini untuk MySQL/MariaDB).
 fn database_service(
     paths: &Paths,
     config: &Config,
     instance: &DbInstance,
     dir: &Path,
-) -> (ServiceSpec, (PathBuf, String)) {
+) -> (ServiceSpec, Option<(PathBuf, String)>) {
+    if instance.kind == Kind::Postgresql {
+        return (postgresql_service(paths, config, instance, dir), None);
+    }
     let port = instance.port(config);
     let data = instance.data_dir(paths);
     let ini_path = paths
@@ -305,7 +309,69 @@ fn database_service(
         port: Some(port),
         log: paths.logs().join(format!("{}.log", instance.name())),
     };
-    (spec, (ini_path, ini))
+    (spec, Some((ini_path, ini)))
+}
+
+/// PostgreSQL: `initdb` sekali (superuser `postgres`, auth trust, hanya 127.0.0.1),
+/// lalu `postgres.exe`; berhenti rapi lewat `pg_ctl stop -m fast`.
+fn postgresql_service(
+    paths: &Paths,
+    config: &Config,
+    instance: &DbInstance,
+    dir: &Path,
+) -> ServiceSpec {
+    let port = instance.port(config);
+    let data = instance.data_dir(paths);
+    let bin = dir.join("bin");
+    let data_arg = slash(&data);
+    let command = |exe: &str, args: Vec<String>| Command {
+        program: bin.join(exe),
+        args,
+        cwd: dir.to_path_buf(),
+        env: vec![],
+    };
+    ServiceSpec {
+        name: instance.name(),
+        group: instance.name(),
+        command: command(
+            "postgres.exe",
+            vec![
+                "-D".into(),
+                data_arg.clone(),
+                "-p".into(),
+                port.to_string(),
+                "-c".into(),
+                "listen_addresses=127.0.0.1".into(),
+            ],
+        ),
+        stop: Some(command(
+            "pg_ctl.exe",
+            vec![
+                "stop".into(),
+                "-D".into(),
+                data_arg.clone(),
+                "-m".into(),
+                "fast".into(),
+                "-w".into(),
+            ],
+        )),
+        init: Some(command(
+            "initdb.exe",
+            vec![
+                "-D".into(),
+                data_arg,
+                "-U".into(),
+                "postgres".into(),
+                "--auth=trust".into(),
+                "--encoding=UTF8".into(),
+                "--locale=C".into(),
+            ],
+        )),
+        // PG_VERSION ditulis initdb setelah data dir siap.
+        init_marker: Some(data.join("PG_VERSION")),
+        port: Some(port),
+        log: paths.logs().join(format!("{}.log", instance.name())),
+    }
 }
 
 fn slash(path: &Path) -> String {
@@ -513,5 +579,46 @@ mod tests {
         assert!(conf.contains("fastcgi_pass php_8_3;"));
         assert!(conf.contains("proxy_pass http://127.0.0.1:3000;"));
         assert!(conf.ends_with("}\n"));
+    }
+
+    #[test]
+    fn postgresql_instance_service() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("postgresql", "18.6")).unwrap();
+        let www = paths.default_www();
+        std::fs::create_dir_all(www.join("api")).unwrap();
+        std::fs::write(www.join("api/index.html"), "").unwrap();
+        std::fs::write(
+            www.join("api/.devlock.toml"),
+            "database = \"postgresql@18\"
+",
+        )
+        .unwrap();
+
+        let plan = plan(&paths, &Config::default()).unwrap();
+        let pg = plan
+            .services
+            .iter()
+            .find(|s| s.name == "postgresql@18")
+            .unwrap();
+        assert_eq!(pg.port, Some(5418));
+        assert!(pg.command.program.ends_with("bin/postgres.exe"));
+        assert!(pg
+            .command
+            .args
+            .contains(&"listen_addresses=127.0.0.1".to_string()));
+        assert!(pg
+            .init
+            .as_ref()
+            .unwrap()
+            .program
+            .ends_with("bin/initdb.exe"));
+        assert_eq!(
+            pg.init_marker.as_deref(),
+            Some(paths.data().join("postgresql/18/PG_VERSION").as_path())
+        );
+        // PostgreSQL tidak memakai my.ini.
+        assert!(!plan.files.iter().any(|(p, _)| p.ends_with("my.ini")));
     }
 }

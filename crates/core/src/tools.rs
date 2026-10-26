@@ -17,7 +17,8 @@ enum Launch {
     NodeScript(&'static [&'static str]),
     /// `composer.phar` dijalankan dengan `php.exe` milik project.
     Composer,
-    /// Client database di `bin\` instance milik project.
+    /// Client database di `bin\` instance milik project. `Kind` pada tabel menyatakan
+    /// keluarganya: `Mysql` (MySQL/MariaDB) atau `Postgresql`.
     DbClient(&'static [&'static str]),
 }
 
@@ -76,6 +77,31 @@ const TOOLS: &[(&str, Kind, Launch)] = &[
         "mysqladmin",
         Kind::Mysql,
         Launch::DbClient(&["bin/mysqladmin.exe", "bin/mariadb-admin.exe"]),
+    ),
+    (
+        "psql",
+        Kind::Postgresql,
+        Launch::DbClient(&["bin/psql.exe"]),
+    ),
+    (
+        "pg_dump",
+        Kind::Postgresql,
+        Launch::DbClient(&["bin/pg_dump.exe"]),
+    ),
+    (
+        "pg_restore",
+        Kind::Postgresql,
+        Launch::DbClient(&["bin/pg_restore.exe"]),
+    ),
+    (
+        "createdb",
+        Kind::Postgresql,
+        Launch::DbClient(&["bin/createdb.exe"]),
+    ),
+    (
+        "dropdb",
+        Kind::Postgresql,
+        Launch::DbClient(&["bin/dropdb.exe"]),
     ),
 ];
 
@@ -173,15 +199,32 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
         }
         Launch::DbClient(candidates) => {
             let Some((instance, source)) = resolve::find_database(config, cwd)? else {
-                bail!("belum ada database untuk folder ini; set `database = \"mysql@8.4\"` di .devlock.toml atau `devlock use database mysql@8.4 --global`");
+                bail!("belum ada database untuk folder ini; set `database = \"mysql@8.4\"` atau `\"postgresql@16\"` di .devlock.toml, atau `devlock use database <engine@versi> --global`");
             };
+            let wants_postgres = *kind == Kind::Postgresql;
+            if wants_postgres != (instance.kind == Kind::Postgresql) {
+                bail!(
+                    "database folder ini {} (dari {source}); `{tool}` untuk {}",
+                    instance.name(),
+                    if wants_postgres {
+                        "PostgreSQL"
+                    } else {
+                        "MySQL/MariaDB"
+                    }
+                );
+            }
             let (version, dir) = runtime::require_installed(paths, instance.kind, &instance.line)?;
             let mut plan = Plan::new(first_existing(&dir, candidates, tool)?);
-            plan.env.push(("MYSQL_HOST".into(), "127.0.0.1".into()));
-            plan.env.push((
-                "MYSQL_TCP_PORT".into(),
-                instance.port(config).to_string().into(),
-            ));
+            let port = instance.port(config).to_string();
+            if wants_postgres {
+                plan.env.push(("PGHOST".into(), "127.0.0.1".into()));
+                plan.env.push(("PGPORT".into(), port.into()));
+                plan.env.push(("PGUSER".into(), "postgres".into()));
+                plan.path_prepend.push(dir.join("bin"));
+            } else {
+                plan.env.push(("MYSQL_HOST".into(), "127.0.0.1".into()));
+                plan.env.push(("MYSQL_TCP_PORT".into(), port.into()));
+            }
             plan.resolved.push((instance.name(), version, source));
             Ok(plan)
         }
@@ -248,5 +291,26 @@ mod tests {
             "python"
         )
         .is_err());
+    }
+
+    #[test]
+    fn postgres_client_uses_instance_port() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        let dir = paths.runtime_dir("postgresql", "16.15");
+        std::fs::create_dir_all(dir.join("bin")).unwrap();
+        std::fs::write(dir.join("bin/psql.exe"), b"").unwrap();
+        let mut config = Config::default();
+        config
+            .defaults
+            .insert("database".into(), "postgresql@16".into());
+
+        let plan = plan(&paths, &config, tmp.path(), "psql").unwrap();
+        assert_eq!(plan.program, dir.join("bin/psql.exe"));
+        assert!(plan.env.contains(&("PGPORT".into(), "5416".into())));
+        assert!(plan.env.contains(&("PGUSER".into(), "postgres".into())));
+
+        let err = super::plan(&paths, &config, tmp.path(), "mysql").unwrap_err();
+        assert!(err.to_string().contains("postgresql@16"));
     }
 }
