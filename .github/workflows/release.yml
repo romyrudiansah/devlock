@@ -1,0 +1,56 @@
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Cek versi tag sama dengan Cargo.toml
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches.Groups[1].Value
+          if ($tag -ne $version) { throw "Tag v$tag tidak sama dengan versi workspace $version" }
+
+      - run: cargo build --release --workspace
+
+      - name: Paket zip
+        shell: pwsh
+        run: |
+          $name = "devlock-${{ github.ref_name }}-windows-x64"
+          New-Item -ItemType Directory -Force "$name/bin" | Out-Null
+          Get-ChildItem target/release/*.exe | Copy-Item -Destination "$name/bin"
+          Copy-Item README.md, CHANGELOG.md -Destination $name
+          Compress-Archive -Path "$name/*" -DestinationPath "$name.zip"
+          (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File -Encoding ascii "$name.zip.sha256"
+
+      - name: Catatan rilis dari CHANGELOG
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $lines = Get-Content CHANGELOG.md
+          $start = ($lines | Select-String -Pattern "^## \[$([regex]::Escape($version))\]").LineNumber
+          if (-not $start) { "Lihat CHANGELOG.md" | Out-File -Encoding utf8 notes.md; exit 0 }
+          $rest = $lines[$start..($lines.Count - 1)]
+          $end = ($rest | Select-String -Pattern '^## \[' | Select-Object -First 1).LineNumber
+          if ($end) { $rest = $rest[0..($end - 2)] }
+          $rest -join "`n" | Out-File -Encoding utf8 notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: notes.md
+          generate_release_notes: true
+          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}
+          files: |
+            devlock-${{ github.ref_name }}-windows-x64.zip
+            devlock-${{ github.ref_name }}-windows-x64.zip.sha256

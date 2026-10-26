@@ -1,0 +1,18 @@
+[package]
+name = "devlock-cli"
+description = "CLI DevLock"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "devlock"
+path = "src/main.rs"
+
+[dependencies]
+devlock-core.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
