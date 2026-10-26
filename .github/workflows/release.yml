@@ -32,7 +32,9 @@ jobs:
           Get-ChildItem target/release/*.exe | Copy-Item -Destination "$name/bin"
           Copy-Item README.md, CHANGELOG.md -Destination $name
           Compress-Archive -Path "$name/*" -DestinationPath "$name.zip"
-          (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File -Encoding ascii "$name.zip.sha256"
+          $hash = (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower()
+          # Akhiran LF agar `sha256sum -c` bisa langsung dipakai.
+          [IO.File]::WriteAllText("$PWD/$name.zip.sha256", "$hash  $name.zip`n")
 
       - name: Catatan rilis dari CHANGELOG
         shell: pwsh
