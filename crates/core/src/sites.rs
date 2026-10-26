@@ -1,0 +1,196 @@
+//! Deteksi project di folder `www\` menjadi site `<nama>.<tld>`.
+
+use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
+
+use crate::config::Config;
+use crate::paths::Paths;
+use crate::project::ProjectConfig;
+use crate::resolve::{self, DbInstance};
+use crate::runtime::Kind;
+use crate::version::Version;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum SiteKind {
+    /// Diproses php-cgi versi `line` (major.minor).
+    Php {
+        line: String,
+    },
+    /// Reverse proxy ke dev server di `127.0.0.1:<port>`.
+    Proxy {
+        port: u16,
+    },
+    Static,
+}
+
+#[derive(Debug, Clone)]
+pub struct Site {
+    pub name: String,
+    pub dir: PathBuf,
+    pub docroot: PathBuf,
+    /// Domain utama diikuti alias.
+    pub domains: Vec<String>,
+    pub kind: SiteKind,
+    pub database: Option<DbInstance>,
+    /// Perintah dev server (project Node).
+    pub dev: Option<String>,
+    /// Masalah konfigurasi yang membuat site tidak bisa dilayani sepenuhnya.
+    pub warning: Option<String>,
+}
+
+impl Site {
+    pub fn domain(&self) -> &str {
+        &self.domains[0]
+    }
+}
+
+/// Semua site di folder www, urut nama.
+pub fn discover(paths: &Paths, config: &Config) -> Result<Vec<Site>> {
+    let www = config.www_dir(paths);
+    let entries = match std::fs::read_dir(&www) {
+        Ok(entries) => entries,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(e).with_context(|| format!("gagal membaca {}", www.display())),
+    };
+    let mut sites = Vec::new();
+    for entry in entries.filter_map(|e| e.ok()) {
+        let dir = entry.path();
+        let Some(name) = entry.file_name().to_str().map(str::to_string) else {
+            continue;
+        };
+        if !dir.is_dir() || name.starts_with('.') || !is_valid_label(&name) {
+            continue;
+        }
+        sites.push(load_site(paths, config, &name, &dir)?);
+    }
+    sites.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(sites)
+}
+
+fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<Site> {
+    let project = ProjectConfig::load_dir(dir)?;
+    let docroot = match &project.docroot {
+        Some(rel) => dir.join(rel),
+        None => detect_docroot(dir),
+    };
+    let mut domains = vec![format!("{}.{}", name.to_lowercase(), config.tld)];
+    domains.extend(project.aliases.iter().cloned());
+
+    let mut warning = None;
+    let kind = if let Some(port) = project.proxy_port {
+        SiteKind::Proxy { port }
+    } else if is_php_project(dir, &docroot) {
+        match resolve::resolve(paths, config, Kind::Php, dir) {
+            Ok(r) => SiteKind::Php {
+                line: Version::parse(&r.version)
+                    .map(|v| v.major_minor())
+                    .unwrap_or(r.version),
+            },
+            Err(err) => {
+                warning = Some(format!("{err:#}"));
+                SiteKind::Static
+            }
+        }
+    } else {
+        SiteKind::Static
+    };
+
+    let database = match &project.database {
+        Some(db) => match DbInstance::parse(db) {
+            Ok(instance) => Some(instance),
+            Err(err) => {
+                warning.get_or_insert(format!("{err:#}"));
+                None
+            }
+        },
+        None => None,
+    };
+
+    Ok(Site {
+        name: name.to_string(),
+        dir: dir.to_path_buf(),
+        docroot,
+        domains,
+        kind,
+        database,
+        dev: project.dev.filter(|_| project.proxy_port.is_some()),
+        warning,
+    })
+}
+
+/// `public\` (Laravel), `web\` (Symfony/Craft), `public_html\`, atau folder project.
+pub fn detect_docroot(dir: &Path) -> PathBuf {
+    ["public", "web", "public_html"]
+        .iter()
+        .map(|sub| dir.join(sub))
+        .find(|p| p.is_dir())
+        .unwrap_or_else(|| dir.to_path_buf())
+}
+
+fn is_php_project(dir: &Path, docroot: &Path) -> bool {
+    dir.join("composer.json").is_file()
+        || docroot.join("index.php").is_file()
+        || std::fs::read_dir(docroot)
+            .map(|entries| {
+                entries
+                    .filter_map(|e| e.ok())
+                    .any(|e| e.path().extension().is_some_and(|ext| ext == "php"))
+            })
+            .unwrap_or(false)
+}
+
+/// Nama folder harus valid sebagai label DNS.
+fn is_valid_label(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 63
+        && !name.starts_with('-')
+        && !name.ends_with('-')
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn discovers_site_kinds() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("php", "8.3.12")).unwrap();
+        let www = paths.default_www();
+
+        std::fs::create_dir_all(www.join("blog/public")).unwrap();
+        std::fs::write(www.join("blog/composer.json"), "{}").unwrap();
+        std::fs::create_dir_all(www.join("landing")).unwrap();
+        std::fs::write(www.join("landing/index.html"), "").unwrap();
+        std::fs::create_dir_all(www.join("dash")).unwrap();
+        std::fs::write(
+            www.join("dash/.devlock.toml"),
+            "node = \"22\"\ndev = \"pnpm dev\"\nproxy_port = 5173\naliases = [\"admin.test\"]\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(www.join("old")).unwrap();
+        std::fs::write(
+            www.join("old/.devlock.toml"),
+            "php = \"7.4\"\ndatabase = \"mysql@5.7\"\n",
+        )
+        .unwrap();
+        std::fs::write(www.join("old/index.php"), "").unwrap();
+        std::fs::create_dir_all(www.join("bad name")).unwrap();
+
+        let sites = discover(&paths, &Config::default()).unwrap();
+        let names: Vec<_> = sites.iter().map(|s| s.name.as_str()).collect();
+        assert_eq!(names, ["blog", "dash", "landing", "old"]);
+
+        assert_eq!(sites[0].kind, SiteKind::Php { line: "8.3".into() });
+        assert_eq!(sites[0].docroot, www.join("blog/public"));
+        assert_eq!(sites[1].kind, SiteKind::Proxy { port: 5173 });
+        assert_eq!(sites[1].domains, ["dash.test", "admin.test"]);
+        assert_eq!(sites[1].dev.as_deref(), Some("pnpm dev"));
+        assert_eq!(sites[2].kind, SiteKind::Static);
+        // PHP 7.4 belum terinstall: tetap terdaftar dengan peringatan.
+        assert!(sites[3].warning.as_deref().unwrap().contains("php 7.4"));
+        assert_eq!(sites[3].database.as_ref().unwrap().name(), "mysql@5.7");
+    }
+}

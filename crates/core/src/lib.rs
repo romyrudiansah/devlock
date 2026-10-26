@@ -1,11 +1,16 @@
 //! Logika inti DevLock yang dipakai bersama oleh CLI, shim, dan (nanti) GUI.
 
 pub mod config;
+pub mod daemon;
+pub mod hosts;
 pub mod paths;
 pub mod php;
+pub mod process;
 pub mod project;
 pub mod resolve;
 pub mod runtime;
+pub mod services;
+pub mod sites;
 pub mod tools;
 pub mod version;
 
