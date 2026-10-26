@@ -29,5 +29,6 @@ jobs:
           npm ci
           npm run build
       - run: cargo fmt --all -- --check
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+      # Fitur yang sama dengan build rilis, agar konfigurasi rilis ikut dicek di setiap PR.
+      - run: cargo clippy --workspace --all-targets --features devlock-desktop/custom-protocol -- -D warnings
       - run: cargo test --workspace

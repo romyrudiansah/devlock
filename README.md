@@ -58,7 +58,7 @@ cd apps\desktop
 npm ci
 npm run build
 cd ..\..
-cargo build --release
+cargo build --release --workspace --features devlock-desktop/custom-protocol
 ```
 
 Binary ada di `target\release\`: `devlock.exe`, `devlock-shim.exe`, dan `devlock-gui.exe`.

@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- `devlock-gui.exe` di zip rilis menampilkan halaman error "localhost refused to connect" karena dibangun tanpa fitur `tauri/custom-protocol` sehingga mencari dev server. Build rilis kini menyalakan fitur `devlock-desktop/custom-protocol`.
+
 ## [0.3.0] - 2026-10-26
 
 ### Added
