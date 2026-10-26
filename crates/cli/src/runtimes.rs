@@ -1,10 +1,7 @@
-use std::collections::BTreeMap;
-
 use anyhow::Result;
 use devlock_core::catalog::{self, Release};
 use devlock_core::install::{self, Event};
 use devlock_core::runtime;
-use devlock_core::version::Version;
 use devlock_core::{Config, Kind, Paths};
 use indicatif::{ProgressBar, ProgressStyle};
 
@@ -36,7 +33,7 @@ pub fn list(kind: Kind, available: bool, all: bool) -> Result<()> {
     let shown: Vec<&Release> = if all {
         releases.iter().collect()
     } else {
-        latest_per_line(kind, &releases)
+        catalog::latest_per_line(kind, &releases)
     };
     for release in shown {
         let mut tags = Vec::new();
@@ -57,31 +54,6 @@ pub fn list(kind: Kind, available: bool, all: bool) -> Result<()> {
         println!("\nHanya versi terbaru per cabang. Pakai --all untuk semua versi.");
     }
     Ok(())
-}
-
-/// Rilis terbaru per cabang: major.minor untuk PHP/nginx/DB, major untuk Node.
-fn latest_per_line(kind: Kind, releases: &[Release]) -> Vec<&Release> {
-    let mut lines: BTreeMap<String, &Release> = BTreeMap::new();
-    for release in releases {
-        let Some(v) = Version::parse(&release.version) else {
-            continue;
-        };
-        let key = match kind {
-            Kind::Node | Kind::Composer => v.major().to_string(),
-            _ => v.major_minor(),
-        };
-        lines
-            .entry(key)
-            .and_modify(|cur| {
-                if Version::parse(&cur.version) < Some(v.clone()) {
-                    *cur = release;
-                }
-            })
-            .or_insert(release);
-    }
-    let mut out: Vec<&Release> = lines.into_values().collect();
-    out.sort_by(|a, b| Version::parse(&b.version).cmp(&Version::parse(&a.version)));
-    out
 }
 
 pub fn install(kind: Kind, spec: &str) -> Result<()> {

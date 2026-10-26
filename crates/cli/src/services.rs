@@ -1,22 +1,19 @@
-use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
-use std::process::{Command, Stdio};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use devlock_core::daemon::{self, Request, Response};
+use devlock_core::launcher::{self, HostsSync};
 use devlock_core::sites::{self, SiteKind};
-use devlock_core::{hosts, process, services, Config, Paths};
+use devlock_core::{services, Config, Paths};
 
 pub fn start(target: &str, update_hosts: bool) -> Result<()> {
     let (paths, config) = load()?;
     if update_hosts {
-        if let Err(err) = sync_hosts(&paths, &config, false) {
-            println!("peringatan: file hosts tidak diperbarui ({err:#})");
-        }
+        try_sync_hosts(&paths, &config);
     }
-    ensure_daemon(&paths, &config)?;
+    launcher::ensure_daemon(&paths, &config)?;
     let response = request(
         &config,
         Request::Start {
@@ -44,7 +41,7 @@ pub fn stop(target: Option<&str>) -> Result<()> {
 
 pub fn restart(target: &str) -> Result<()> {
     let (paths, config) = load()?;
-    ensure_daemon(&paths, &config)?;
+    launcher::ensure_daemon(&paths, &config)?;
     print_response(&request(
         &config,
         Request::Restart {
@@ -56,9 +53,7 @@ pub fn restart(target: &str) -> Result<()> {
 
 pub fn reload() -> Result<()> {
     let (paths, config) = load()?;
-    if let Err(err) = sync_hosts(&paths, &config, false) {
-        println!("peringatan: file hosts tidak diperbarui ({err:#})");
-    }
+    try_sync_hosts(&paths, &config);
     match daemon::send(&config, &Request::Reload)? {
         Some(response) => print_response(&response),
         None => println!("Daemon tidak berjalan; jalankan `devlock start`."),
@@ -167,62 +162,20 @@ pub fn site_list() -> Result<()> {
 
 pub fn hosts(elevated: bool) -> Result<()> {
     let (paths, config) = load()?;
-    sync_hosts(&paths, &config, elevated)
-}
-
-/// Samakan blok DevLock di file hosts dengan daftar site. Minta UAC bila perlu.
-fn sync_hosts(paths: &Paths, config: &Config, elevated: bool) -> Result<()> {
-    let domains: Vec<String> = sites::discover(paths, config)?
-        .into_iter()
-        .flat_map(|s| s.domains)
-        .collect();
-    let file = hosts::hosts_file();
-    let current = std::fs::read_to_string(&file)
-        .with_context(|| format!("gagal membaca {}", file.display()))?;
-    let wanted = hosts::apply(&current, &domains);
-    if wanted == current {
-        if elevated {
-            println!("File hosts sudah sesuai.");
-        }
-        return Ok(());
-    }
-    match std::fs::write(&file, &wanted) {
-        Ok(()) => {
-            println!("File hosts diperbarui ({} domain).", domains.len());
-            Ok(())
-        }
-        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied && !elevated => {
-            println!("Butuh izin administrator untuk mengubah file hosts (jendela UAC)...");
-            run_elevated_hosts(paths)?;
-            let after = std::fs::read_to_string(&file)?;
-            if after != wanted {
-                bail!("file hosts belum berubah (UAC ditolak?)");
-            }
-            println!("File hosts diperbarui ({} domain).", domains.len());
-            Ok(())
-        }
-        Err(e) => Err(e).with_context(|| format!("gagal menulis {}", file.display())),
-    }
-}
-
-fn run_elevated_hosts(paths: &Paths) -> Result<()> {
-    let exe = std::env::current_exe()?;
-    let escape = |p: &Path| p.to_string_lossy().replace('\'', "''");
-    // Proses elevated tidak selalu mewarisi environment, jadi root dikirim sebagai argumen
-    // (dibungkus kutip ganda agar path berspasi tetap satu argumen).
-    let script = format!(
-        "Start-Process -FilePath '{exe}' -ArgumentList @('hosts','--elevated','--root','\"{root}\"') -Verb RunAs -Wait -WindowStyle Hidden",
-        exe = escape(&exe),
-        root = escape(paths.root()),
-    );
-    let status = Command::new("powershell.exe")
-        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
-        .status()
-        .context("gagal menjalankan powershell")?;
-    if !status.success() {
-        bail!("elevasi dibatalkan");
+    match launcher::sync_hosts(&paths, &config, elevated)? {
+        HostsSync::Unchanged => println!("File hosts sudah sesuai."),
+        HostsSync::Updated { domains } => println!("File hosts diperbarui ({domains} domain)."),
     }
     Ok(())
+}
+
+/// Seperti `hosts`, tapi kegagalan hanya jadi peringatan (dipakai `start` / `reload`).
+fn try_sync_hosts(paths: &Paths, config: &Config) {
+    match launcher::sync_hosts(paths, config, false) {
+        Ok(HostsSync::Updated { domains }) => println!("File hosts diperbarui ({domains} domain)."),
+        Ok(HostsSync::Unchanged) => {}
+        Err(err) => println!("peringatan: file hosts tidak diperbarui ({err:#})"),
+    }
 }
 
 fn load() -> Result<(Paths, Config)> {
@@ -233,48 +186,6 @@ fn load() -> Result<(Paths, Config)> {
 
 fn request(config: &Config, request: Request) -> Result<Response> {
     daemon::send(config, &request)?.context("daemon tidak merespons")
-}
-
-/// Jalankan `devlock daemon` di latar bila belum berjalan.
-fn ensure_daemon(paths: &Paths, config: &Config) -> Result<()> {
-    if daemon::send(config, &Request::Status)?.is_some() {
-        return Ok(());
-    }
-    paths.ensure_layout()?;
-    let log = paths.logs().join("daemon.log");
-    let spawn = |flags: u32| -> std::io::Result<std::process::Child> {
-        let out = OpenOptions::new().create(true).append(true).open(&log)?;
-        let err = out.try_clone()?;
-        let mut command = Command::new(std::env::current_exe()?);
-        command
-            .arg("daemon")
-            .env("DEVLOCK_HOME", paths.root())
-            .current_dir(paths.root())
-            .stdin(Stdio::null())
-            .stdout(out)
-            .stderr(err);
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(flags);
-        }
-        command.spawn()
-    };
-    let base =
-        process::DETACHED_PROCESS | process::CREATE_NEW_PROCESS_GROUP | process::CREATE_NO_WINDOW;
-    // Keluar dari job object terminal (bila diizinkan) agar daemon tidak ikut mati saat terminal ditutup.
-    spawn(base | process::CREATE_BREAKAWAY_FROM_JOB)
-        .or_else(|_| spawn(base))
-        .context("gagal menjalankan daemon")?;
-
-    let deadline = Instant::now() + Duration::from_secs(10);
-    while Instant::now() < deadline {
-        std::thread::sleep(Duration::from_millis(200));
-        if daemon::send(config, &Request::Status)?.is_some() {
-            return Ok(());
-        }
-    }
-    bail!("daemon tidak merespons; lihat {}", log.display())
 }
 
 fn print_response(response: &Response) {

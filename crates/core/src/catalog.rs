@@ -108,6 +108,31 @@ pub fn find(kind: Kind, spec: &str) -> Result<Release> {
     bail!("{kind} {spec} tidak ditemukan; lihat `devlock list {kind} --available`")
 }
 
+/// Rilis terbaru per cabang: major.minor untuk PHP/nginx/DB, major untuk Node.
+pub fn latest_per_line(kind: Kind, releases: &[Release]) -> Vec<&Release> {
+    let mut lines: BTreeMap<String, &Release> = BTreeMap::new();
+    for release in releases {
+        let Some(v) = Version::parse(&release.version) else {
+            continue;
+        };
+        let key = match kind {
+            Kind::Node | Kind::Composer => v.major().to_string(),
+            _ => v.major_minor(),
+        };
+        lines
+            .entry(key)
+            .and_modify(|cur| {
+                if Version::parse(&cur.version) < Some(v.clone()) {
+                    *cur = release;
+                }
+            })
+            .or_insert(release);
+    }
+    let mut out: Vec<&Release> = lines.into_values().collect();
+    out.sort_by(|a, b| Version::parse(&b.version).cmp(&Version::parse(&a.version)));
+    out
+}
+
 // --- PHP ---------------------------------------------------------------------
 
 #[derive(Deserialize)]
