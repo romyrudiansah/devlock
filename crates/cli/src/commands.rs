@@ -1,6 +1,7 @@
-use std::net::TcpListener;
+use std::net::{IpAddr, Ipv4Addr, TcpListener};
 
 use anyhow::Result;
+use devlock_core::ports::{self, Summary};
 use devlock_core::{Config, Paths};
 
 use crate::{user_path, versions};
@@ -107,10 +108,31 @@ pub fn doctor() -> Result<()> {
         }
     }
     let http = format!("{}:{}", config.http.listen, config.http.port);
+    let listen: IpAddr = config
+        .http
+        .listen
+        .parse()
+        .unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
+    // Program DevLock sendiri (nginx di bawah root) tidak dihitung bentrok.
+    let ports = ports::check(config.http.port, listen, paths.root());
+    // Bila tabel port tidak terbaca sama sekali, jatuh ke uji bind biasa.
+    let visible = !ports::listeners(config.http.port).is_empty();
+    let free = ports.blocking.is_empty() && (visible || port_free(&http));
     check(
-        port_free(&http),
+        free,
         &format!("port HTTP {http} bebas"),
-        "port dipakai aplikasi lain (IIS, Laragon, XAMPP, Skype?) — hentikan atau ubah [http].port",
+        &format!(
+            "dipakai {}; hentikan program itu atau ubah [http].port",
+            Summary(&ports.blocking)
+        ),
+    );
+    check(
+        ports.shadowing.is_empty(),
+        &format!("port {} tidak dipakai program lain di alamat lain", config.http.port),
+        &format!(
+            "dipakai {} (Laragon/XAMPP/IIS?); browser yang memakai IPv6 atau akses LAN akan masuk ke program itu, bukan DevLock — hentikan program itu",
+            Summary(&ports.shadowing)
+        ),
     );
 
     if problems == 0 {
