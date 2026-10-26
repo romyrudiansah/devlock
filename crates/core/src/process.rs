@@ -2,7 +2,7 @@
 //! pohon proses (mis. master + worker nginx) bisa dihentikan bersama dan otomatis ikut
 //! mati bila daemon DevLock berhenti.
 
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::process::{Child, Command as StdCommand, Stdio};
 use std::time::Duration;
 
@@ -67,6 +67,190 @@ pub fn std_command(cmd: &Command) -> StdCommand {
         command.creation_flags(CREATE_NO_WINDOW);
     }
     command
+}
+
+/// Jalankan `command` sebagai proses latar dengan stdin `NUL` dan stdout/stderr ke `log`,
+/// lalu kembalikan PID-nya.
+///
+/// `std::process::Command` di Windows mewariskan *semua* handle inheritable milik
+/// pemanggil, termasuk pipe stdout/stderr (`devlock start | Out-String`). Proses latar
+/// yang memegang pipe itu membuat pembaca tidak pernah menerima EOF. Di sini pewarisan
+/// dibatasi lewat `PROC_THREAD_ATTRIBUTE_HANDLE_LIST` ke handle `NUL` dan `log` saja.
+#[cfg(windows)]
+pub fn spawn_detached(command: StdCommand, log: File, flags: u32) -> std::io::Result<u32> {
+    use std::os::windows::ffi::OsStrExt;
+    use std::os::windows::io::AsRawHandle;
+    use windows_sys::Win32::Foundation::{
+        CloseHandle, SetHandleInformation, HANDLE, HANDLE_FLAG_INHERIT,
+    };
+    use windows_sys::Win32::System::Threading::{
+        CreateProcessW, DeleteProcThreadAttributeList, InitializeProcThreadAttributeList,
+        UpdateProcThreadAttribute, CREATE_UNICODE_ENVIRONMENT, EXTENDED_STARTUPINFO_PRESENT,
+        PROCESS_INFORMATION, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, STARTF_USESTDHANDLES,
+        STARTUPINFOEXW,
+    };
+
+    let null = OpenOptions::new().read(true).write(true).open("NUL")?;
+    let handles: [HANDLE; 2] = [
+        null.as_raw_handle() as HANDLE,
+        log.as_raw_handle() as HANDLE,
+    ];
+    for handle in handles {
+        // SAFETY: handle milik `null`/`log` yang hidup sampai akhir fungsi.
+        if unsafe { SetHandleInformation(handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT) } == 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+    }
+
+    let mut cmdline: Vec<u16> = Vec::new();
+    cmdline.push(u16::from(b'"'));
+    cmdline.extend(command.get_program().encode_wide());
+    cmdline.push(u16::from(b'"'));
+    for arg in command.get_args() {
+        cmdline.push(u16::from(b' '));
+        push_arg(&mut cmdline, arg);
+    }
+    cmdline.push(0);
+    let env = environment_block(&command);
+    let cwd: Option<Vec<u16>> = command
+        .get_current_dir()
+        .map(|dir| dir.as_os_str().encode_wide().chain(Some(0)).collect());
+
+    let mut size = 0usize;
+    // SAFETY: panggilan pertama hanya menanyakan ukuran buffer (gagal dengan sengaja).
+    unsafe { InitializeProcThreadAttributeList(std::ptr::null_mut(), 1, 0, &mut size) };
+    let mut buffer = vec![0usize; size.div_ceil(std::mem::size_of::<usize>())];
+    let attributes = buffer.as_mut_ptr().cast();
+    // SAFETY: buffer berukuran minimal `size` byte dan sejajar untuk pointer.
+    if unsafe { InitializeProcThreadAttributeList(attributes, 1, 0, &mut size) } == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    // SAFETY: `handles`, `cmdline`, `env`, dan `cwd` hidup sampai CreateProcessW selesai.
+    let result = unsafe {
+        let ok = UpdateProcThreadAttribute(
+            attributes,
+            0,
+            PROC_THREAD_ATTRIBUTE_HANDLE_LIST as usize,
+            handles.as_ptr().cast(),
+            std::mem::size_of_val(&handles),
+            std::ptr::null_mut(),
+            std::ptr::null(),
+        );
+        if ok == 0 {
+            Err(std::io::Error::last_os_error())
+        } else {
+            let mut info: STARTUPINFOEXW = std::mem::zeroed();
+            info.StartupInfo.cb = std::mem::size_of::<STARTUPINFOEXW>() as u32;
+            info.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+            info.StartupInfo.hStdInput = handles[0];
+            info.StartupInfo.hStdOutput = handles[1];
+            info.StartupInfo.hStdError = handles[1];
+            info.lpAttributeList = attributes;
+            let mut process: PROCESS_INFORMATION = std::mem::zeroed();
+            let ok = CreateProcessW(
+                std::ptr::null(),
+                cmdline.as_mut_ptr(),
+                std::ptr::null(),
+                std::ptr::null(),
+                1,
+                flags | EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
+                env.as_ptr().cast(),
+                cwd.as_ref().map_or(std::ptr::null(), |dir| dir.as_ptr()),
+                &info.StartupInfo,
+                &mut process,
+            );
+            if ok == 0 {
+                Err(std::io::Error::last_os_error())
+            } else {
+                CloseHandle(process.hThread);
+                CloseHandle(process.hProcess);
+                Ok(process.dwProcessId)
+            }
+        }
+    };
+    // SAFETY: list sudah diinisialisasi di atas.
+    unsafe { DeleteProcThreadAttributeList(attributes) };
+    result
+}
+
+#[cfg(not(windows))]
+pub fn spawn_detached(mut command: StdCommand, log: File, _flags: u32) -> std::io::Result<u32> {
+    let err = log.try_clone()?;
+    command.stdin(Stdio::null()).stdout(log).stderr(err);
+    Ok(command.spawn()?.id())
+}
+
+/// Kutip satu argumen sesuai aturan parsing command line MSVC (`CommandLineToArgvW`).
+#[cfg(windows)]
+fn push_arg(cmdline: &mut Vec<u16>, arg: &std::ffi::OsStr) {
+    use std::os::windows::ffi::OsStrExt;
+    let (quote, backslash) = (u16::from(b'"'), u16::from(b'\\'));
+    let arg: Vec<u16> = arg.encode_wide().collect();
+    let needs_quotes = arg.is_empty()
+        || arg
+            .iter()
+            .any(|&c| c == u16::from(b' ') || c == u16::from(b'\t') || c == quote);
+    if !needs_quotes {
+        cmdline.extend(arg);
+        return;
+    }
+    cmdline.push(quote);
+    let mut backslashes = 0;
+    for c in arg {
+        if c == backslash {
+            backslashes += 1;
+        } else {
+            if c == quote {
+                cmdline.extend(std::iter::repeat(backslash).take(backslashes + 1));
+            }
+            backslashes = 0;
+        }
+        cmdline.push(c);
+    }
+    cmdline.extend(std::iter::repeat(backslash).take(backslashes));
+    cmdline.push(quote);
+}
+
+/// Environment proses ini ditambah perubahan `command.env(..)`, dalam format blok Unicode.
+#[cfg(windows)]
+fn environment_block(command: &StdCommand) -> Vec<u16> {
+    use std::os::windows::ffi::OsStrExt;
+    let mut vars: Vec<(std::ffi::OsString, std::ffi::OsString)> = std::env::vars_os().collect();
+    for (key, value) in command.get_envs() {
+        vars.retain(|(k, _)| !k.eq_ignore_ascii_case(key));
+        if let Some(value) = value {
+            vars.push((key.to_owned(), value.to_owned()));
+        }
+    }
+    vars.sort_by_key(|(key, _)| key.to_ascii_uppercase());
+    let mut block = Vec::new();
+    for (key, value) in vars {
+        block.extend(key.encode_wide());
+        block.push(u16::from(b'='));
+        block.extend(value.encode_wide());
+        block.push(0);
+    }
+    if block.is_empty() {
+        block.push(0);
+    }
+    block.push(0);
+    block
+}
+
+/// Jadikan handle stdio proses ini tidak ikut diwariskan ke proses anak. Child yang memang
+/// diberi stdio (mis. lewat `Stdio::inherit`) tetap mendapat duplikat dari `std`.
+pub fn make_stdio_private() {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::Foundation::{SetHandleInformation, HANDLE_FLAG_INHERIT};
+        use windows_sys::Win32::System::Console::{
+            GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
+        };
+        for id in [STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE] {
+            // SAFETY: handle stdio milik proses ini; kegagalan (handle kosong) diabaikan.
+            unsafe { SetHandleInformation(GetStdHandle(id), HANDLE_FLAG_INHERIT, 0) };
+        }
+    }
 }
 
 /// Jalankan perintah singkat (init, stop) dan tunggu hingga `timeout`.
@@ -164,4 +348,89 @@ impl Job {
         Ok(())
     }
     fn terminate(&self) {}
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::*;
+    use std::io::Read;
+    use std::os::windows::io::FromRawHandle;
+    use std::time::Instant;
+
+    fn quoted(arg: &str) -> String {
+        let mut cmdline = Vec::new();
+        push_arg(&mut cmdline, std::ffi::OsStr::new(arg));
+        String::from_utf16(&cmdline).unwrap()
+    }
+
+    #[test]
+    fn push_arg_follows_msvc_rules() {
+        assert_eq!(quoted("daemon"), "daemon");
+        assert_eq!(quoted(""), "\"\"");
+        assert_eq!(quoted(r"C:\Program Files\x"), r#""C:\Program Files\x""#);
+        assert_eq!(quoted("a b\\"), "\"a b\\\\\"");
+        assert_eq!(quoted("say \"hi\""), "\"say \\\"hi\\\"\"");
+    }
+
+    /// Regresi: pipe milik pemanggil (inheritable) tidak boleh ikut dipegang proses latar.
+    #[test]
+    fn spawn_detached_does_not_inherit_caller_handles() {
+        use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
+        use windows_sys::Win32::Security::SECURITY_ATTRIBUTES;
+        use windows_sys::Win32::System::Pipes::CreatePipe;
+
+        let (mut read, mut write): (HANDLE, HANDLE) = (std::ptr::null_mut(), std::ptr::null_mut());
+        let attrs = SECURITY_ATTRIBUTES {
+            nLength: std::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
+            lpSecurityDescriptor: std::ptr::null_mut(),
+            bInheritHandle: 1,
+        };
+        // SAFETY: pointer keluaran valid; kedua ujung pipe inheritable seperti stdout shell.
+        assert_ne!(unsafe { CreatePipe(&mut read, &mut write, &attrs, 0) }, 0);
+
+        let dir = tempfile::tempdir().unwrap();
+        let log_path = dir.path().join("out.log");
+        let log = File::create(&log_path).unwrap();
+        let mut command = StdCommand::new("cmd.exe");
+        // Tulis ke log lalu tetap hidup ~5 detik.
+        command
+            .args([
+                "/c",
+                "echo",
+                "%DEVLOCK_SPAWN_TEST%&",
+                "ping",
+                "-n",
+                "6",
+                "127.0.0.1",
+            ])
+            .env("DEVLOCK_SPAWN_TEST", "halo-devlock")
+            .current_dir(dir.path());
+        spawn_detached(command, log, CREATE_NO_WINDOW).unwrap();
+
+        // SAFETY: handle `write` milik test ini dan ditutup sekali.
+        unsafe { CloseHandle(write) };
+        // SAFETY: `read` dimiliki File mulai sekarang.
+        let mut reader = unsafe { File::from_raw_handle(read as _) };
+        let started = Instant::now();
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf).unwrap();
+        assert!(
+            started.elapsed() < Duration::from_secs(3),
+            "pipe baru EOF setelah {:?}; child mewarisi handle pemanggil",
+            started.elapsed()
+        );
+
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            let text = std::fs::read_to_string(&log_path).unwrap_or_default();
+            if text.contains("halo-devlock") {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "log tidak berisi output: {text:?}"
+            );
+            std::thread::sleep(Duration::from_millis(100));
+        }
+    }
 }

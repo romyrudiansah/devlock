@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- `devlock start` (juga tombol Start di GUI dan menu tray) tidak lagi menggantung bila output-nya di-pipe atau di-redirect, mis. `devlock start 2>&1 | Out-String`. Daemon latar dulu mewarisi semua handle pemanggil (termasuk pipe stdout/stderr) sehingga pipe tidak pernah EOF selama daemon hidup; kini daemon hanya mewarisi handle log-nya, dan service yang dijalankan daemon tidak lagi ikut memegang stdout/stderr daemon.
+
 ## [0.4.1] - 2026-10-26
 
 ### Fixed

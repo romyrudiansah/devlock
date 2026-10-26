@@ -418,6 +418,9 @@ impl Supervisor {
 
 /// Jalankan daemon (blocking) sampai menerima `Shutdown`.
 pub fn serve(paths: Paths) -> Result<()> {
+    // Service tidak perlu memegang stdout/stderr daemon (log daemon, atau pipe/console
+    // bila daemon dijalankan langsung dari terminal).
+    crate::process::make_stdio_private();
     let config = Config::load(&paths)?;
     let listener = TcpListener::bind(("127.0.0.1", config.daemon.port)).with_context(|| {
         format!(
