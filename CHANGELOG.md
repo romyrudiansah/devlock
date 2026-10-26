@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-26
+
 ### Added
 - GUI desktop (`devlock-gui.exe`, Tauri 2 + React): tab Service (start/stop/restart per grup, status, uptime, restart, log), tab Project (buka di browser, folder, terminal dengan shim di PATH), tab Runtime (install dengan progress, hapus, jadikan default).
 - Ikon tray: buka dashboard, start/stop semua, buka folder www, keluar (dengan atau tanpa menghentikan service). Menutup jendela menyembunyikannya ke tray; hanya satu instance yang berjalan.
@@ -34,6 +36,7 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/romyrudiansah/devlock/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/romyrudiansah/devlock/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/romyrudiansah/devlock/releases/tag/v0.1.0
