@@ -14,7 +14,10 @@ pub fn init() -> Result<()> {
     if created {
         println!("Konfigurasi  : {} (baru)", paths.config_file().display());
     } else {
-        println!("Konfigurasi  : {} (sudah ada)", paths.config_file().display());
+        println!(
+            "Konfigurasi  : {} (sudah ada)",
+            paths.config_file().display()
+        );
     }
     println!("Folder www   : {}", config.www_dir(&paths).display());
     Ok(())

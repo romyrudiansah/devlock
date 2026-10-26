@@ -155,6 +155,9 @@ mod tests {
         paths.ensure_layout().unwrap();
         assert!(paths.shims().is_dir());
         assert!(paths.run().is_dir());
-        assert_eq!(paths.runtime_dir("php", "8.3.12"), tmp.path().join("runtimes/php/8.3.12"));
+        assert_eq!(
+            paths.runtime_dir("php", "8.3.12"),
+            tmp.path().join("runtimes/php/8.3.12")
+        );
     }
 }

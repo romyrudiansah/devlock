@@ -3,7 +3,11 @@ mod commands;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "devlock", version, about = "Local development environment multi-versi untuk Windows")]
+#[command(
+    name = "devlock",
+    version,
+    about = "Local development environment multi-versi untuk Windows"
+)]
 struct Cli {
     /// Tampilkan log lebih detail (-v, -vv)
     #[arg(short, long, global = true, action = clap::ArgAction::Count)]
