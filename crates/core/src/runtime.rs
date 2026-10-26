@@ -17,16 +17,18 @@ pub enum Kind {
     Nginx,
     Mysql,
     Mariadb,
+    Postgresql,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 6] = [
+    pub const ALL: [Kind; 7] = [
         Kind::Php,
         Kind::Node,
         Kind::Composer,
         Kind::Nginx,
         Kind::Mysql,
         Kind::Mariadb,
+        Kind::Postgresql,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -37,11 +39,12 @@ impl Kind {
             Kind::Nginx => "nginx",
             Kind::Mysql => "mysql",
             Kind::Mariadb => "mariadb",
+            Kind::Postgresql => "postgresql",
         }
     }
 
     pub fn is_database(self) -> bool {
-        matches!(self, Kind::Mysql | Kind::Mariadb)
+        matches!(self, Kind::Mysql | Kind::Mariadb | Kind::Postgresql)
     }
 }
 
@@ -62,6 +65,7 @@ impl FromStr for Kind {
             "nginx" => Kind::Nginx,
             "mysql" => Kind::Mysql,
             "mariadb" => Kind::Mariadb,
+            "postgresql" | "postgres" | "pgsql" | "pg" => Kind::Postgresql,
             other => bail!(
                 "runtime `{other}` tidak dikenal (pilihan: {})",
                 Kind::ALL.map(Kind::as_str).join(", ")
@@ -143,6 +147,7 @@ mod tests {
     #[test]
     fn parses_kind() {
         assert_eq!("NodeJS".parse::<Kind>().unwrap(), Kind::Node);
+        assert_eq!("postgres".parse::<Kind>().unwrap(), Kind::Postgresql);
         assert!("python".parse::<Kind>().is_err());
     }
 }

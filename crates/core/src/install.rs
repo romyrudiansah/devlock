@@ -79,7 +79,7 @@ pub fn install(
     on_event(Event::Extracting);
     let result = (|| -> Result<()> {
         if release.file_name().ends_with(".zip") {
-            extract_zip(&archive, &staging)?;
+            extract_zip(&archive, &staging, skipped_dirs(release.kind))?;
         } else {
             std::fs::copy(&archive, staging.join(release.file_name()))?;
         }
@@ -146,12 +146,57 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn extract_zip(archive: &Path, dest: &Path) -> Result<()> {
+/// Folder di arsip yang tidak dibutuhkan untuk menjalankan server, dilewati saat ekstrak.
+/// Zip PostgreSQL dari EDB ~900 MB, ~720 MB di antaranya pgAdmin 4.
+fn skipped_dirs(kind: Kind) -> &'static [&'static str] {
+    match kind {
+        Kind::Postgresql => &["pgAdmin 4", "StackBuilder", "doc", "include", "symbols"],
+        _ => &[],
+    }
+}
+
+/// `true` bila salah satu dari dua komponen pertama path (root arsip + subfolder) ada di `skip`.
+fn is_skipped(rel: &Path, skip: &[&str]) -> bool {
+    rel.components().take(2).any(|c| {
+        c.as_os_str()
+            .to_str()
+            .is_some_and(|name| skip.contains(&name))
+    })
+}
+
+fn extract_zip(archive: &Path, dest: &Path, skip: &[&str]) -> Result<()> {
     let file = File::open(archive)?;
     let mut zip = zip::ZipArchive::new(file)
         .with_context(|| format!("{} bukan arsip zip yang valid", archive.display()))?;
-    zip.extract(dest)
-        .with_context(|| format!("gagal mengekstrak {}", archive.display()))
+    if skip.is_empty() {
+        return zip
+            .extract(dest)
+            .with_context(|| format!("gagal mengekstrak {}", archive.display()));
+    }
+    for i in 0..zip.len() {
+        let mut entry = zip.by_index(i)?;
+        // Nama yang keluar dari folder tujuan (`..`, path absolut) diabaikan.
+        let Some(rel) = entry.enclosed_name() else {
+            continue;
+        };
+        let rel = rel.to_path_buf();
+        if is_skipped(&rel, skip) {
+            continue;
+        }
+        let out = dest.join(&rel);
+        if entry.is_dir() {
+            std::fs::create_dir_all(&out)?;
+            continue;
+        }
+        if let Some(parent) = out.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let mut file =
+            File::create(&out).with_context(|| format!("gagal membuat {}", out.display()))?;
+        std::io::copy(&mut entry, &mut file)
+            .with_context(|| format!("gagal mengekstrak {}", rel.display()))?;
+    }
+    Ok(())
 }
 
 /// Bila folder hanya berisi satu subfolder (mis. `node-v22-win-x64\`), kembalikan subfolder itu.
@@ -184,6 +229,18 @@ mod tests {
             Some(HASH)
         );
         assert_eq!(lookup_shasum(&text, "missing.zip"), None);
+    }
+
+    #[test]
+    fn skips_unneeded_postgres_folders() {
+        let skip = skipped_dirs(Kind::Postgresql);
+        assert!(is_skipped(Path::new("pgsql/pgAdmin 4/python/x.dll"), skip));
+        assert!(is_skipped(Path::new("pgsql/doc/index.html"), skip));
+        assert!(!is_skipped(Path::new("pgsql/bin/postgres.exe"), skip));
+        assert!(!is_skipped(Path::new("pgsql/share/locale/x.mo"), skip));
+        // Hanya dua level teratas yang dicek.
+        assert!(!is_skipped(Path::new("pgsql/share/doc/readme"), skip));
+        assert!(skipped_dirs(Kind::Php).is_empty());
     }
 
     #[test]

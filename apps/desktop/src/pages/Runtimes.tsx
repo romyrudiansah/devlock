@@ -9,6 +9,7 @@ const LABELS: Record<string, string> = {
   nginx: "nginx",
   mysql: "MySQL",
   mariadb: "MariaDB",
+  postgresql: "PostgreSQL",
 };
 
 function formatBytes(n: number) {
@@ -114,7 +115,7 @@ function RuntimeRow(props: {
   const [loading, setLoading] = useState(false);
   const [choice, setChoice] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const isDatabase = rt.kind === "mysql" || rt.kind === "mariadb";
+  const isDatabase = ["mysql", "mariadb", "postgresql"].includes(rt.kind);
   const canDefault = !isDatabase && rt.kind !== "nginx";
 
   const loadAvailable = async () => {

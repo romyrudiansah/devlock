@@ -24,6 +24,11 @@ pub fn get_string(url: &str) -> Result<String> {
         .with_context(|| format!("gagal membaca respons {url}"))
 }
 
+/// `true` bila URL bisa diunduh (HEAD berstatus 2xx setelah redirect).
+pub fn exists(url: &str) -> bool {
+    agent().head(url).call().is_ok()
+}
+
 pub fn get_json<T: DeserializeOwned>(url: &str) -> Result<T> {
     let text = get_string(url)?;
     serde_json::from_str(&text).with_context(|| format!("respons {url} bukan JSON yang valid"))

@@ -22,6 +22,7 @@ const services = (): ServiceStatus[] => [
   ...[0, 1, 2, 3].map((i) => service(`php@8.3#${i}`, "php@8.3", 9830 + i)),
   service("nginx", "nginx", 80),
   service("mariadb@11.4", "mariadb@11.4", 3424),
+  service("postgresql@18", "postgresql@18", 5418),
   service("mysql@8.4", "mysql@8.4", 3384, "failed"),
   service("dev:dash", "dev:dash", 3999),
 ];
@@ -67,7 +68,7 @@ const sites: SiteInfo[] = [
     domains: ["shop.test"],
     kind: "static",
     detail: "Static",
-    database: "mysql@8.4",
+    database: "postgresql@18",
     dir: "D:\\DevLock\\www\\shop",
     docroot: "D:\\DevLock\\www\\shop\\public",
     warning: "php 8.2 (dari D:\\DevLock\\www\\shop\\.devlock.toml) belum terinstall; jalankan `devlock install php 8.2`",
@@ -81,6 +82,7 @@ const runtimes: RuntimeInfo[] = [
   { kind: "nginx", installed: ["1.28.3"], default_spec: null, default_version: null },
   { kind: "mysql", installed: [], default_spec: null, default_version: null },
   { kind: "mariadb", installed: ["11.4.13"], default_spec: null, default_version: null },
+  { kind: "postgresql", installed: ["18.6"], default_spec: null, default_version: null },
 ];
 
 const available: AvailableRelease[] = [

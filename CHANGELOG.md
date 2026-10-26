@@ -6,6 +6,11 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- PostgreSQL multi-versi (13+ yang masih didukung): `devlock install postgresql 16`, instance `postgresql@16` (port `5400 + major`, data dir `data\postgresql\16`), `initdb` otomatis, berhenti rapi lewat `pg_ctl stop -m fast`. Binary resmi dari EnterpriseDB; pgAdmin, StackBuilder, dokumentasi, dan header dilewati saat ekstrak (~150 MB, bukan ~900 MB).
+- Shim `psql`, `pg_dump`, `pg_restore`, `createdb`, `dropdb` otomatis terhubung ke instance PostgreSQL milik project (`PGHOST`/`PGPORT`/`PGUSER`).
+- Tab Runtime di GUI menampilkan PostgreSQL.
+
 ## [0.3.1] - 2026-10-26
 
 ### Fixed
