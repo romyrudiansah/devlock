@@ -1,7 +1,10 @@
 mod commands;
 mod runtimes;
+mod services;
 mod user_path;
 mod versions;
+
+use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use devlock_core::Kind;
@@ -69,11 +72,66 @@ enum Command {
         #[arg(value_parser = ["add", "remove"])]
         action: String,
     },
+    /// Jalankan service (default semua): all, nginx, php, php@8.3, mysql@8.4, db, dev, dev:<site>
+    Start {
+        #[arg(default_value = "all")]
+        target: String,
+        /// Jangan ubah file hosts
+        #[arg(long)]
+        no_hosts: bool,
+    },
+    /// Hentikan service; tanpa argumen menghentikan semua service dan daemon
+    Stop { target: Option<String> },
+    /// Restart service (default semua)
+    Restart {
+        #[arg(default_value = "all")]
+        target: String,
+    },
+    /// Baca ulang konfigurasi & folder www (site baru, versi berubah)
+    Reload,
+    /// Status semua service
+    Status,
+    /// Tampilkan log service (nginx, php@8.3, mysql@8.4, dev:<site>, daemon)
+    Logs {
+        service: String,
+        /// Jumlah baris terakhir
+        #[arg(short = 'n', long, default_value_t = 50)]
+        lines: usize,
+        /// Ikuti baris baru
+        #[arg(short, long)]
+        follow: bool,
+    },
+    /// Kelola site di folder www
+    Site {
+        #[command(subcommand)]
+        command: SiteCommand,
+    },
+    /// Samakan file hosts Windows dengan daftar site (minta UAC bila perlu)
+    Hosts {
+        #[arg(long, hide = true)]
+        elevated: bool,
+        #[arg(long, hide = true)]
+        root: Option<PathBuf>,
+    },
+    /// Proses latar yang mengawasi service (dijalankan otomatis oleh `start`)
+    #[command(hide = true)]
+    Daemon,
+}
+
+#[derive(Subcommand)]
+enum SiteCommand {
+    /// Daftar site beserta domain, tipe, versi PHP, dan database
+    List,
 }
 
 fn main() {
     let cli = Cli::parse();
-    init_logging(cli.verbose);
+    // Daemon menulis log ke file (stdout/stderr-nya diarahkan ke logs\daemon.log).
+    init_logging(if matches!(cli.command, Command::Daemon) {
+        cli.verbose.max(1)
+    } else {
+        cli.verbose
+    });
 
     let result = match cli.command {
         Command::Init => commands::init(),
@@ -95,6 +153,26 @@ fn main() {
         Command::Current => versions::current(),
         Command::Shims => versions::shims(),
         Command::Path { action } => commands::path(&action),
+        Command::Start { target, no_hosts } => services::start(&target, !no_hosts),
+        Command::Stop { target } => services::stop(target.as_deref()),
+        Command::Restart { target } => services::restart(&target),
+        Command::Reload => services::reload(),
+        Command::Status => services::status(),
+        Command::Logs {
+            service,
+            lines,
+            follow,
+        } => services::logs(&service, lines, follow),
+        Command::Site {
+            command: SiteCommand::List,
+        } => services::site_list(),
+        Command::Hosts { elevated, root } => {
+            if let Some(root) = root {
+                std::env::set_var(devlock_core::paths::HOME_ENV, root);
+            }
+            services::hosts(elevated)
+        }
+        Command::Daemon => services::run_daemon(),
     };
 
     if let Err(err) = result {

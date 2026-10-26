@@ -99,7 +99,7 @@ Versi parsial (`"8.2"`) di-resolve ke patch terbaru yang terinstall.
 
 ### 4.3 PHP Multi-Versi Bersamaan (fitur unggulan)
 - Tiap versi PHP yang dipakai project dijalankan sebagai **php-cgi pool** di port sendiri
-  (mis. 8.3 → `127.0.0.1:9083`, 8.2 → `:9082`, 7.4 → `:9074`)
+  (port `9000 + major*100 + minor*10 + worker`: 8.3 → `9830-9833`, 7.4 → `9740-9743`)
 - Vhost nginx/apache tiap project diarahkan ke port PHP versinya
 - Pool dijalankan *lazy* (hanya versi yang dipakai) dengan beberapa worker + auto-restart
   (php-cgi di Windows mati setelah `PHP_FCGI_MAX_REQUESTS`, jadi wajib disupervisi)
@@ -118,7 +118,7 @@ Setiap engine + versi = **instance terpisah** dengan port, data dir, config, dan
 |---|---|---|
 | `mysql@5.7` | 3357 | `data\mysql\5.7\` |
 | `mysql@8.4` | 3384 | `data\mysql\8.4\` |
-| `mariadb@11.4` | 3411 | `data\mariadb\11.4\` |
+| `mariadb@11.4` | 3424 | `data\mariadb\11.4\` |
 | `postgresql@14` | 5414 | `data\postgresql\14\` |
 | `postgresql@16` | 5416 | `data\postgresql\16\` |
 | `redis@7` | 6379 | `data\redis\7\` |
@@ -252,8 +252,10 @@ devlock doctor                   (cek PATH, port, VC++ redist, CA trust)
 | Service | Port |
 |---|---|
 | HTTP / HTTPS | 80 / 443 |
-| PHP-CGI pool | 90xx (xx = versi, mis. 9083 untuk 8.3) |
-| MySQL / MariaDB | 33xx (xx = versi, mis. 3384 untuk 8.4); instance default juga di 3306 |
+| PHP-CGI pool | `9000 + major*100 + minor*10 + worker` (8.3 → 9830-9833) |
+| MySQL | `3300 + major*10 + minor` (8.4 → 3384, 5.7 → 3357) |
+| MariaDB | `3400 + (major-10)*20 + minor` (11.4 → 3424, 10.11 → 3411) |
+| Override | `[ports]` di `devlock.toml`, mis. `"mysql@8.4" = 3306` |
 | PostgreSQL | 54xx (mis. 5416 untuk 16); instance default juga di 5432 |
 | Redis | 6379 |
 | Mailpit SMTP / UI | 1025 / 8025 |

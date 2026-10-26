@@ -22,5 +22,8 @@ ureq = { version = "2", optional = true }
 sha2 = { version = "0.10", optional = true }
 zip = { version = "2", optional = true, default-features = false, features = ["deflate"] }
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading"] }
+
 [dev-dependencies]
 tempfile.workspace = true

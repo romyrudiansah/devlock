@@ -4,7 +4,7 @@ Local development environment untuk Windows — alternatif Laragon / WAMP / XAMP
 **multi-versi runtime** (PHP, Node, MySQL/MariaDB, PostgreSQL, Redis) yang bisa berjalan
 **bersamaan** dan dipilih **per-project**.
 
-> Status: tahap awal (Fase 0–1, CLI). GUI menyusul di Fase 2. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
+> Status: Fase 1 (CLI). GUI menyusul di Fase 2. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Konsep singkat
 
@@ -28,9 +28,14 @@ devlock list php --available       lihat versi yang bisa diinstall
 devlock install php 8.3            install runtime
 devlock use php 8.2 [--global]     pilih versi (per project / global)
 devlock which php                  versi & path yang dipakai di folder ini
+devlock current                    versi php/node/composer/database di folder ini
+devlock path add                   taruh folder shims di depan PATH user
 devlock site list                  daftar project di www\ beserta domain .test
-devlock start [service]            jalankan service (nginx, php-cgi, database)
+devlock start [service]            jalankan service (all, nginx, php@8.3, mysql@8.4, dev:<site>)
+devlock stop [service]             hentikan service (tanpa argumen: semua + daemon)
 devlock status                     status service
+devlock logs <service> [-f]        log service
+devlock hosts                      samakan file hosts dengan daftar site
 devlock doctor                     diagnosa PATH, port, dependency
 ```
 

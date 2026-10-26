@@ -256,6 +256,7 @@ dependencies = [
  "toml_edit",
  "tracing",
  "ureq",
+ "windows-sys 0.59.0",
  "zip",
 ]
 
