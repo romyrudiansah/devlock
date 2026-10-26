@@ -4,7 +4,7 @@ Local development environment untuk Windows — alternatif Laragon / WAMP / XAMP
 **multi-versi runtime** (PHP, Node, MySQL/MariaDB, PostgreSQL, Redis) yang bisa berjalan
 **bersamaan** dan dipilih **per-project**.
 
-> Status: Fase 1 (CLI). GUI menyusul di Fase 2. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
+> Status: Fase 2 (CLI + GUI dasar dengan tray). Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Konsep singkat
 
@@ -39,15 +39,31 @@ devlock hosts                      samakan file hosts dengan daftar site
 devlock doctor                     diagnosa PATH, port, dependency
 ```
 
+## GUI
+
+`devlock-gui.exe` (satu folder dengan `devlock.exe`) membuka dashboard dan ikon tray:
+
+- **Service**: start/stop/restart semua atau per grup (`php@8.3`, `mysql@8.4`, `dev:<site>`), status, dan log
+- **Project**: daftar site di `www\`, buka di browser, folder, atau terminal (shim sudah di PATH)
+- **Runtime**: install versi baru dengan progress, hapus, pilih default
+
+Menutup jendela menyembunyikannya ke tray; service tetap diawasi daemon.
+
 ## Build dari source
 
-Butuh Rust stable (toolchain MSVC).
+Butuh Rust stable (toolchain MSVC) dan Node.js 20.19+.
 
 ```
+cd apps\desktop
+npm ci
+npm run build
+cd ..\..
 cargo build --release
 ```
 
-Binary ada di `target\release\`: `devlock.exe` dan `devlock-shim.exe`.
+Binary ada di `target\release\`: `devlock.exe`, `devlock-shim.exe`, dan `devlock-gui.exe`.
+
+Mode development GUI (hot reload): `cd apps\desktop` lalu `npx tauri dev`. Untuk mengutak-atik tampilan saja, `npm run dev` lalu buka `http://localhost:1420` di browser: tanpa backend Tauri, UI memakai data contoh (`src/devMock.ts`).
 
 ## Kontribusi
 

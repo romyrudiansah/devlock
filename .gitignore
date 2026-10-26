@@ -10,3 +10,6 @@
 .idea/
 Thumbs.db
 .DS_Store
+
+# Konfigurasi lokal Claude Code
+.claude/
