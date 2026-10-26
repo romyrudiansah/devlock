@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-26
+
 ### Fixed
 - File hosts hanya berisi baris `127.0.0.1` (sebelumnya juga `::1`). Browser mendahulukan IPv6, sehingga domain `.test` bisa mendarat di program lain yang memakai `[::]:80` (mis. Apache Laragon) padahal nginx DevLock hanya mendengarkan di `127.0.0.1`.
 - Deteksi bentrok port memakai tabel port Windows (IPv4 & IPv6, lengkap dengan nama proses). `devlock start` gagal dengan pesan jelas bila program lain memakai alamat yang sama, dan memberi peringatan bila program lain memakai `0.0.0.0`/`[::]` di port yang sama. `devlock doctor` tidak lagi melaporkan "port bebas" saat Laragon/XAMPP berjalan.
@@ -52,7 +54,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/romyrudiansah/devlock/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/romyrudiansah/devlock/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/romyrudiansah/devlock/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/romyrudiansah/devlock/compare/v0.2.0...v0.3.0
