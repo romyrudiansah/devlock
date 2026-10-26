@@ -1,0 +1,12 @@
+/target
+**/*.rs.bk
+*.pdb
+
+# Data runtime lokal saat development
+/dev-root/
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
