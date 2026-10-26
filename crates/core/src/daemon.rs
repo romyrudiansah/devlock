@@ -3,7 +3,8 @@
 
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{IpAddr, Ipv4Addr, TcpListener, TcpStream};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -12,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
 use crate::paths::Paths;
+use crate::ports::{self, Summary};
 use crate::process::{self, Process};
 use crate::services::{self, ServiceSpec};
 
@@ -72,12 +74,18 @@ struct Managed {
     restarts: u32,
     failures: u32,
     error: Option<String>,
+    /// Program lain ikut memakai port service ini di alamat lain (mis. Laragon di [::]:80).
+    warning: Option<String>,
+    /// Root DevLock: proses di bawahnya dianggap milik sendiri saat cek port.
+    root: PathBuf,
 }
 
 impl Managed {
-    fn new(spec: ServiceSpec) -> Self {
+    fn new(spec: ServiceSpec, root: PathBuf) -> Self {
         Self {
             spec,
+            root,
+            warning: None,
             process: None,
             wanted: false,
             started_at: None,
@@ -113,9 +121,23 @@ impl Managed {
             }
         }
         if let Some(port) = self.spec.port {
+            let check = ports::check(port, IpAddr::V4(Ipv4Addr::LOCALHOST), &self.root);
+            if !check.blocking.is_empty() {
+                bail!(
+                    "port {port} sudah dipakai {}; hentikan program itu atau ubah port di devlock.toml",
+                    Summary(&check.blocking)
+                );
+            }
             if TcpListener::bind(("127.0.0.1", port)).is_err() {
                 bail!("port {port} sudah dipakai proses lain");
             }
+            self.warning = (!check.shadowing.is_empty()).then(|| {
+                format!(
+                    "{}: port {port} juga dipakai {} (Laragon/XAMPP/IIS?); akses lewat IPv6/LAN ke port ini masuk ke program itu, bukan DevLock",
+                    self.spec.name,
+                    Summary(&check.shadowing)
+                )
+            });
         }
         let process = Process::spawn(&self.spec.command, &self.spec.log)?;
         tracing::info!(service = %self.spec.name, pid = process.pid(), "start");
@@ -286,7 +308,10 @@ impl Supervisor {
                     }
                 }
                 None => {
-                    self.services.insert(spec.name.clone(), Managed::new(spec));
+                    self.services.insert(
+                        spec.name.clone(),
+                        Managed::new(spec, self.paths.root().to_path_buf()),
+                    );
                 }
             }
         }
@@ -374,11 +399,19 @@ impl Supervisor {
             Ok(message) => (true, message),
             Err(err) => (false, format!("{err:#}")),
         };
+        let mut warnings = self.warnings.clone();
+        warnings.extend(
+            self.order
+                .iter()
+                .filter_map(|name| self.services.get(name))
+                .filter(|m| m.process.is_some())
+                .filter_map(|m| m.warning.clone()),
+        );
         Response {
             ok,
             message,
             services: self.status(),
-            warnings: self.warnings.clone(),
+            warnings,
         }
     }
 }

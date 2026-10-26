@@ -39,7 +39,9 @@ pub fn apply(content: &str, domains: &[String]) -> String {
         }
         text.push_str(BEGIN);
         for domain in domains {
-            text.push_str(&format!("{newline}127.0.0.1 {domain}{newline}::1 {domain}"));
+            // Hanya IPv4: nginx DevLock mendengarkan di 127.0.0.1. Baris `::1` membuat browser
+            // (yang mendahulukan IPv6) mendarat di program lain yang memakai [::]:80.
+            text.push_str(&format!("{newline}127.0.0.1 {domain}"));
         }
         text.push_str(newline);
         text.push_str(END);
@@ -57,7 +59,8 @@ mod tests {
         let original = "127.0.0.1 localhost\r\n";
         let once = apply(original, &["blog.test".into()]);
         assert!(once.starts_with("127.0.0.1 localhost\r\n\r\n# devlock-start"));
-        assert!(once.contains("127.0.0.1 blog.test\r\n::1 blog.test"));
+        assert!(once.contains("127.0.0.1 blog.test\r\n# devlock-end"));
+        assert!(!once.contains("::1"));
 
         let twice = apply(&once, &["shop.test".into()]);
         assert!(!twice.contains("blog.test"));
