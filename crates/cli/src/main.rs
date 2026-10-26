@@ -1,6 +1,8 @@
 mod commands;
+mod runtimes;
 
 use clap::{Parser, Subcommand};
+use devlock_core::Kind;
 
 #[derive(Parser)]
 #[command(
@@ -25,6 +27,26 @@ enum Command {
     Config,
     /// Diagnosa lingkungan (root, PATH, port, dependency)
     Doctor,
+    /// Daftar versi runtime terinstall (atau yang tersedia dengan --available)
+    List {
+        /// php, node, composer, nginx, mysql, mariadb
+        kind: Kind,
+        /// Tampilkan versi yang bisa diinstall
+        #[arg(short, long)]
+        available: bool,
+        /// Dengan --available: tampilkan semua patch, bukan hanya terbaru per cabang
+        #[arg(long, requires = "available")]
+        all: bool,
+    },
+    /// Install runtime, mis. `devlock install php 8.3` atau `devlock install node lts`
+    Install {
+        kind: Kind,
+        /// Versi lengkap, awalan (8.3), `latest`, atau `lts`
+        #[arg(default_value = "latest")]
+        version: String,
+    },
+    /// Hapus versi runtime yang terinstall (versi lengkap)
+    Uninstall { kind: Kind, version: String },
 }
 
 fn main() {
@@ -35,6 +57,13 @@ fn main() {
         Command::Init => commands::init(),
         Command::Config => commands::config(),
         Command::Doctor => commands::doctor(),
+        Command::List {
+            kind,
+            available,
+            all,
+        } => runtimes::list(kind, available, all),
+        Command::Install { kind, version } => runtimes::install(kind, &version),
+        Command::Uninstall { kind, version } => runtimes::uninstall(kind, &version),
     };
 
     if let Err(err) = result {
