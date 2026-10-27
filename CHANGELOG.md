@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-27
+
 ### Added
 - Menu tray menampilkan status service (mis. "Service: 6/6 berjalan", juga di tooltip) dan submenu **Project**: tiap site bisa dibuka di browser, dibuka foldernya, atau dibuka terminalnya (dengan shim di PATH) langsung dari tray. Menu diperbarui otomatis bila status atau daftar site berubah.
 - DNS wildcard `*.<tld>`: `devlock dns enable|disable|status`. Service `dns` (`127.0.0.1:53`, UDP + TCP) menjawab semua nama di bawah TLD DevLock dengan `127.0.0.1` (AAAA kosong agar browser memakai IPv4), dan aturan NRPT Windows (dipasang lewat satu UAC) mengarahkan hanya query `.<tld>` ke sana. Selama aktif, domain `*.<tld>` tidak lagi ditulis ke file hosts dan tidak memicu peringatan hosts; alias di luar TLD tetap lewat hosts. Bila query ke `127.0.0.1:53` diambil program lain (mis. layanan Internet Connection Sharing), `enable`, `status`, dan service `dns` melaporkannya dengan jelas. `devlock doctor` ikut menguji resolusi saat DNS aktif.
@@ -102,7 +104,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/romyrudiansah/devlock/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/romyrudiansah/devlock/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/romyrudiansah/devlock/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/romyrudiansah/devlock/compare/v0.4.1...v0.4.2
