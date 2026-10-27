@@ -579,6 +579,9 @@ fn cache_service(
     let port = instance.port(config);
     let log = paths.logs().join(format!("{}.log", instance.name()));
     if instance.kind == Kind::Garnet {
+        // Runtime .NET portable yang dipasang bersama Garnet; DOTNET_ROOT_X64 ikut diisi
+        // karena variabel itu (bila ada di lingkungan pengguna) diutamakan apphost.
+        let dotnet = dir.join("dotnet").to_string_lossy().into_owned();
         let spec = ServiceSpec {
             name: instance.name(),
             group: instance.name(),
@@ -593,7 +596,10 @@ fn cache_service(
                     "Warning".into(),
                 ],
                 cwd: dir.to_path_buf(),
-                env: vec![],
+                env: vec![
+                    ("DOTNET_ROOT".into(), dotnet.clone()),
+                    ("DOTNET_ROOT_X64".into(), dotnet),
+                ],
             },
             stop: None,
             init: None,
@@ -623,13 +629,15 @@ fn cache_service(
          logfile \"\"\n",
         data = slash(&instance.data_dir(paths)),
     );
+    // Redis build msys2 menganggap path `D:/...` sebagai path relatif saat membuka file
+    // config, jadi config diberikan sebagai nama file dari folder `etc\redis`.
     let spec = ServiceSpec {
         name: instance.name(),
         group: instance.name(),
         command: Command {
             program: dir.join("redis-server.exe"),
-            args: vec![slash(&conf)],
-            cwd: dir.to_path_buf(),
+            args: vec![format!("{}.conf", instance.line)],
+            cwd: paths.etc().join("redis"),
             env: vec![],
         },
         // SHUTDOWN menyimpan snapshot RDB sebelum berhenti.
@@ -1174,6 +1182,8 @@ mod tests {
         let redis = plan.services.iter().find(|s| s.name == "redis@8").unwrap();
         assert_eq!(redis.port, Some(6389));
         assert!(redis.command.program.ends_with("redis-server.exe"));
+        assert_eq!(redis.command.args, ["8.conf"]);
+        assert_eq!(redis.command.cwd, paths.etc().join("redis"));
         assert_eq!(
             redis.stop.as_ref().unwrap().args.last().unwrap(),
             "shutdown"
@@ -1181,6 +1191,11 @@ mod tests {
         let garnet = plan.services.iter().find(|s| s.name == "garnet@2").unwrap();
         assert_eq!(garnet.port, Some(6402));
         assert!(garnet.command.args.contains(&"127.0.0.1".to_string()));
+        let dotnet = paths.runtime_dir("garnet", "2.2.4").join("dotnet");
+        assert!(garnet
+            .command
+            .env
+            .contains(&("DOTNET_ROOT".into(), dotnet.to_string_lossy().into_owned())));
 
         let (_, conf) = plan
             .files

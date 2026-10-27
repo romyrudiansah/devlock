@@ -6,10 +6,14 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- Redis tidak bisa start: build msys2 menganggap path config `D:/...` sebagai path relatif. Config kini diberikan sebagai nama file dengan folder kerja `etc\redis`.
+- Garnet tidak bisa start karena rilis Windows-nya butuh runtime .NET (bukan self-contained seperti dinyatakan di v0.9.0). `devlock install garnet` kini ikut memasang runtime .NET resmi Microsoft sesuai versi yang dibutuhkan bundle (portable di `runtimes\garnet\<versi>\dotnet`, diverifikasi SHA512), dan service Garnet memakainya lewat `DOTNET_ROOT`. Garnet yang sudah terinstall dengan v0.9.0 cukup menjalankan `devlock install garnet` lagi untuk melengkapi runtime-nya.
+
 ## [0.9.0] - 2026-10-28
 
 ### Added
-- Redis dan Garnet sebagai server cache per project: `devlock install redis` (build Windows komunitas redis-windows, varian msys2) dan `devlock install garnet` (Microsoft Garnet, self-contained), keduanya dari GitHub Releases dengan SHA256 dari GitHub. Pilih dengan `cache = "redis@8"` / `"garnet@2"` di `.devlock.toml` atau `devlock use cache … [--global]`. Instance per major dengan port sendiri (`redis@7` → 6379, `redis@8` → 6389, `garnet@2` → 6402, bisa ditimpa `[ports]`); Redis memakai `etc\redis\<major>.conf` hasil generate, data di `data\redis\<major>`, dan berhenti lewat `SHUTDOWN` (snapshot tersimpan). Target `devlock start/stop cache`, shim `redis-cli` yang otomatis terhubung ke instance project, dan `devlock current` menampilkan cache.
+- Redis dan Garnet sebagai server cache per project: `devlock install redis` (build Windows komunitas redis-windows, varian msys2) dan `devlock install garnet` (Microsoft Garnet), keduanya dari GitHub Releases dengan SHA256 dari GitHub. Pilih dengan `cache = "redis@8"` / `"garnet@2"` di `.devlock.toml` atau `devlock use cache … [--global]`. Instance per major dengan port sendiri (`redis@7` → 6379, `redis@8` → 6389, `garnet@2` → 6402, bisa ditimpa `[ports]`); Redis memakai `etc\redis\<major>.conf` hasil generate, data di `data\redis\<major>`, dan berhenti lewat `SHUTDOWN` (snapshot tersimpan). Target `devlock start/stop cache`, shim `redis-cli` yang otomatis terhubung ke instance project, dan `devlock current` menampilkan cache.
 - Nama file unduhan diberi awalan versi bila nama aset upstream tidak memuat versi (mis. Garnet), agar unduhan versi lain tidak saling menimpa atau dilanjutkan dari file yang salah.
 - Adminer bawaan: `devlock install adminer` (rilis resmi vrana/adminer, SHA256 dari GitHub) langsung menyediakan `adminer.<tld>` dengan PHP default. `index.php` pembungkus hasil generate menawarkan instance MySQL/MariaDB/PostgreSQL DevLock di field server dan mengizinkan login tanpa password (user lokal DevLock memang tanpa password; site hanya di `127.0.0.1`). Folder `www\adminer` milik pengguna menggantikan site bawaan.
 

@@ -5,7 +5,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
-use sha2::{Digest, Sha256};
+use sha2::{Digest, Sha256, Sha512};
 
 use crate::catalog::{Checksum, Release};
 use crate::http;
@@ -31,6 +31,11 @@ pub fn install(
     on_event: &mut dyn FnMut(Event),
 ) -> Result<PathBuf> {
     let target = paths.runtime_dir(release.kind.as_str(), &release.version);
+    if release.kind == Kind::Garnet && target.exists() && !target.join(DOTNET_DIR).is_dir() {
+        // Install Garnet lama (v0.9.0) belum menyertakan runtime .NET-nya.
+        install_dotnet(paths, &target, on_event)?;
+        return Ok(target);
+    }
     if target.exists() {
         bail!(
             "{} {} sudah terinstall di {}",
@@ -103,6 +108,9 @@ pub fn install(
         } else {
             single_child_dir(&staging)?.unwrap_or_else(|| staging.clone())
         };
+        if release.kind == Kind::Garnet {
+            install_dotnet(paths, &content_root, on_event)?;
+        }
         std::fs::rename(&content_root, &target)
             .with_context(|| format!("gagal memindahkan ke {}", target.display()))?;
         Ok(())
@@ -126,6 +134,69 @@ pub fn install(
         }
     }
     Ok(target)
+}
+
+/// Folder runtime .NET portable di dalam folder Garnet (`DOTNET_ROOT` service-nya).
+pub const DOTNET_DIR: &str = "dotnet";
+
+/// `GarnetServer.exe` rilis Windows adalah bundle single-file yang bergantung pada runtime
+/// .NET (tidak self-contained). Runtime resmi Microsoft sesuai TFM bundle dipasang portable
+/// di `<garnet>\dotnet`, diverifikasi dengan SHA512 dari metadata rilis .NET.
+fn install_dotnet(paths: &Paths, garnet: &Path, on_event: &mut dyn FnMut(Event)) -> Result<()> {
+    let exe = garnet.join("GarnetServer.exe");
+    let bytes = std::fs::read(&exe).with_context(|| format!("gagal membaca {}", exe.display()))?;
+    let channel = bundle_tfm(&bytes).context("versi .NET yang dibutuhkan Garnet tidak terbaca")?;
+    let runtime = crate::catalog::dotnet_runtime(&channel)?;
+    let label = format!(".NET {}", runtime.version);
+    on_event(Event::Configuring(&label));
+
+    std::fs::create_dir_all(paths.downloads())?;
+    let name = runtime
+        .url
+        .rsplit('/')
+        .next()
+        .unwrap_or("dotnet-runtime.zip");
+    let archive = paths.downloads().join(name);
+    let cached_ok =
+        archive.is_file() && sha512_file(&archive).ok().as_deref() == Some(&runtime.sha512);
+    if !cached_ok {
+        http::download(&runtime.url, &archive, &mut |downloaded, total| {
+            on_event(Event::Downloading { downloaded, total })
+        })?;
+        on_event(Event::Verifying);
+        let actual = sha512_file(&archive)?;
+        if actual != runtime.sha512 {
+            let _ = std::fs::remove_file(&archive);
+            bail!(
+                "checksum {name} tidak cocok (SHA512 diharapkan {}, didapat {actual})",
+                runtime.sha512
+            );
+        }
+    }
+    on_event(Event::Extracting);
+    let staging = garnet.join(".dotnet.tmp");
+    if staging.exists() {
+        std::fs::remove_dir_all(&staging)?;
+    }
+    let result = extract_zip_to(&archive, &staging)
+        .and_then(|()| Ok(std::fs::rename(&staging, garnet.join(DOTNET_DIR))?));
+    let _ = std::fs::remove_dir_all(&staging);
+    result.context("gagal memasang runtime .NET untuk Garnet")
+}
+
+/// Channel .NET (`10.0`) dari `"tfm": "net10.0"` di runtimeconfig yang tertanam di bundle.
+fn bundle_tfm(bytes: &[u8]) -> Option<String> {
+    let needle = b"\"tfm\"";
+    let at = bytes.windows(needle.len()).position(|w| w == needle)? + needle.len();
+    let tail = String::from_utf8_lossy(&bytes[at..bytes.len().min(at + 32)]).into_owned();
+    let rest = tail
+        .trim_start_matches([':', ' ', '"'])
+        .strip_prefix("net")?;
+    let channel: String = rest
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
+    (channel.contains('.') && channel.as_bytes()[0].is_ascii_digit()).then_some(channel)
 }
 
 /// Bundle CA Mozilla yang dikurasi proyek curl.
@@ -247,8 +318,16 @@ pub fn extract_zip_to(archive: &Path, dest: &Path) -> Result<()> {
 }
 
 pub fn sha256_file(path: &Path) -> Result<String> {
+    hash_file::<Sha256>(path)
+}
+
+fn sha512_file(path: &Path) -> Result<String> {
+    hash_file::<Sha512>(path)
+}
+
+fn hash_file<D: Digest>(path: &Path) -> Result<String> {
     let mut file = File::open(path).with_context(|| format!("gagal membuka {}", path.display()))?;
-    let mut hasher = Sha256::new();
+    let mut hasher = D::new();
     let mut buf = vec![0u8; 64 * 1024];
     loop {
         let n = file.read(&mut buf)?;
@@ -373,6 +452,15 @@ mod tests {
         );
         std::fs::write(tmp.path().join("php.exe"), b"").unwrap();
         assert_eq!(single_child_dir(tmp.path()).unwrap(), None);
+    }
+
+    #[test]
+    fn reads_bundle_tfm() {
+        let bundle = b"MZ\0\0{\"runtimeOptions\": {\"tfm\": \"net10.0\", \"framework\": {}}}";
+        assert_eq!(bundle_tfm(bundle).as_deref(), Some("10.0"));
+        assert_eq!(bundle_tfm(b"\"tfm\":\"net8.0\"").as_deref(), Some("8.0"));
+        assert_eq!(bundle_tfm(b"no runtimeconfig"), None);
+        assert_eq!(bundle_tfm(b"\"tfm\": \"netstandard2.0\""), None);
     }
 
     #[test]

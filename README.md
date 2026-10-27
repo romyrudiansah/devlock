@@ -147,7 +147,8 @@ Redis resmi tidak merilis binary Windows, jadi DevLock memakai build komunitas
 [redis-windows](https://github.com/redis-windows/redis-windows) (Redis asli, varian msys2).
 Alternatifnya [Garnet](https://github.com/microsoft/garnet) dari Microsoft
 (`devlock install garnet`, `cache = "garnet@2"`): server cache berprotokol Redis, berjalan di
-memori saja.
+memori saja. Garnet butuh runtime .NET; `devlock install garnet` ikut memasang runtime .NET
+resmi Microsoft (portable, diverifikasi SHA512) di folder Garnet, tanpa install .NET ke sistem.
 
 Tiap instance punya port sendiri: `redis@7` → 6379, `redis@8` → 6389, `garnet@2` → 6402 (ubah
 lewat `[ports]`). Data Redis tersimpan di `data\redis\<major>` (snapshot RDB, juga saat stop).
