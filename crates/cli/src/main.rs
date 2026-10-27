@@ -39,7 +39,7 @@ enum Command {
     Doctor,
     /// Daftar versi runtime terinstall (atau yang tersedia dengan --available)
     List {
-        /// php, node, composer, nginx, apache, mysql, mariadb, postgresql, redis, garnet
+        /// php, node, composer, nginx, apache, mysql, mariadb, postgresql, redis, garnet, adminer
         kind: Kind,
         /// Tampilkan versi yang bisa diinstall
         #[arg(short, long)]

@@ -70,16 +70,16 @@ pub fn url_for(domain: &str, https: bool, config: &Config) -> String {
     }
 }
 
-/// Semua site di folder www, urut nama.
+/// Semua site di folder www (ditambah site bawaan Adminer bila terinstall), urut nama.
 pub fn discover(paths: &Paths, config: &Config) -> Result<Vec<Site>> {
     let www = config.www_dir(paths);
-    let entries = match std::fs::read_dir(&www) {
-        Ok(entries) => entries,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+    let entries: Vec<std::fs::DirEntry> = match std::fs::read_dir(&www) {
+        Ok(entries) => entries.filter_map(|e| e.ok()).collect(),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
         Err(e) => return Err(e).with_context(|| format!("gagal membaca {}", www.display())),
     };
     let mut sites = Vec::new();
-    for entry in entries.filter_map(|e| e.ok()) {
+    for entry in entries {
         let dir = entry.path();
         let Some(name) = entry.file_name().to_str().map(str::to_string) else {
             continue;
@@ -89,8 +89,58 @@ pub fn discover(paths: &Paths, config: &Config) -> Result<Vec<Site>> {
         }
         sites.push(load_site(paths, config, &name, &dir)?);
     }
+    if !sites
+        .iter()
+        .any(|s| s.name.eq_ignore_ascii_case(ADMINER_SITE))
+    {
+        sites.extend(adminer_site(paths, config)?);
+    }
     sites.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(sites)
+}
+
+/// Nama site bawaan Adminer (`adminer.<tld>`); folder `www\adminer` milik pengguna menang.
+pub const ADMINER_SITE: &str = "adminer";
+
+/// Site bawaan untuk Adminer terinstall: docroot di folder runtime-nya, PHP versi default.
+/// `index.php` pembungkusnya ditulis oleh rencana service.
+fn adminer_site(paths: &Paths, config: &Config) -> Result<Option<Site>> {
+    let Some(version) = crate::runtime::resolve_installed(paths, Kind::Adminer, "latest")? else {
+        return Ok(None);
+    };
+    let dir = paths.runtime_dir(Kind::Adminer.as_str(), &version);
+    let mut warning = None;
+    let kind = match resolve::resolve(paths, config, Kind::Php, &dir) {
+        Ok(r) => SiteKind::Php {
+            line: Version::parse(&r.version)
+                .map(|v| v.major_minor())
+                .unwrap_or(r.version),
+        },
+        Err(err) => {
+            warning = Some(format!("Adminer butuh PHP: {err:#}"));
+            SiteKind::Static
+        }
+    };
+    Ok(Some(Site {
+        name: ADMINER_SITE.into(),
+        docroot: dir.clone(),
+        dir,
+        domains: vec![format!("{ADMINER_SITE}.{}", config.tld)],
+        kind,
+        database: None,
+        cache: None,
+        dev: None,
+        https: config.https.enabled,
+        apache: false,
+        warning,
+    }))
+}
+
+impl Site {
+    /// `true` untuk site bawaan Adminer (bukan folder di www).
+    pub fn is_adminer(&self, paths: &Paths) -> bool {
+        self.name == ADMINER_SITE && self.dir.starts_with(paths.runtimes().join("adminer"))
+    }
 }
 
 fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<Site> {

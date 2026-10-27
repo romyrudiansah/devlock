@@ -110,6 +110,11 @@ pub fn install(
     let _ = std::fs::remove_dir_all(&staging);
     result?;
 
+    if release.kind == Kind::Adminer {
+        // `adminer-6.2.0.php` → `adminer.php`; `index.php` pembungkusnya dibuat DevLock.
+        std::fs::rename(target.join(release.file_name()), target.join("adminer.php"))
+            .context("gagal menyiapkan adminer.php")?;
+    }
     if release.kind == Kind::Php {
         on_event(Event::Configuring("php.ini"));
         php::write_default_ini(&target)?;

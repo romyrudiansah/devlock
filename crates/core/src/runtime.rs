@@ -24,10 +24,11 @@ pub enum Kind {
     Postgresql,
     Redis,
     Garnet,
+    Adminer,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 10] = [
+    pub const ALL: [Kind; 11] = [
         Kind::Php,
         Kind::Node,
         Kind::Composer,
@@ -38,6 +39,7 @@ impl Kind {
         Kind::Postgresql,
         Kind::Redis,
         Kind::Garnet,
+        Kind::Adminer,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -52,11 +54,18 @@ impl Kind {
             Kind::Postgresql => "postgresql",
             Kind::Redis => "redis",
             Kind::Garnet => "garnet",
+            Kind::Adminer => "adminer",
         }
     }
 
     pub fn is_database(self) -> bool {
         matches!(self, Kind::Mysql | Kind::Mariadb | Kind::Postgresql)
+    }
+
+    /// Runtime yang punya versi default global / per project (`devlock use`). Database & cache
+    /// dipilih lewat instance, web server & Adminer lewat konfigurasi.
+    pub fn has_default_version(self) -> bool {
+        matches!(self, Kind::Php | Kind::Node | Kind::Composer)
     }
 
     /// Server cache (protokol Redis): instance per major, dipilih lewat `cache`.
@@ -91,6 +100,7 @@ impl FromStr for Kind {
             "postgresql" | "postgres" | "pgsql" | "pg" => Kind::Postgresql,
             "redis" => Kind::Redis,
             "garnet" => Kind::Garnet,
+            "adminer" => Kind::Adminer,
             other => bail!(
                 "runtime `{other}` tidak dikenal (pilihan: {})",
                 Kind::ALL.map(Kind::as_str).join(", ")

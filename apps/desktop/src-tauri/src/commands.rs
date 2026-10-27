@@ -305,11 +305,7 @@ pub async fn install_runtime(app: AppHandle, kind: String, version: String) -> C
         .map_err(err)?;
         emit("selesai", 0, None);
         // Sama seperti CLI: install pertama suatu runtime menjadi default.
-        if !config.defaults.contains_key(kind.as_str())
-            && !kind.is_database()
-            && !kind.is_cache()
-            && !kind.is_webserver()
-        {
+        if !config.defaults.contains_key(kind.as_str()) && kind.has_default_version() {
             Config::set_default(&paths, kind.as_str(), &release.version).map_err(err)?;
         }
         Ok(release.version)

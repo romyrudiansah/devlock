@@ -20,6 +20,8 @@ const REDIS_WINDOWS: &str =
     "https://api.github.com/repos/redis-windows/redis-windows/releases?per_page=100";
 /// Garnet: server cache berprotokol Redis dari Microsoft, build Windows resmi.
 const GARNET: &str = "https://api.github.com/repos/microsoft/garnet/releases?per_page=30";
+/// Adminer resmi: satu file PHP per rilis.
+const ADMINER: &str = "https://api.github.com/repos/vrana/adminer/releases?per_page=30";
 /// Build Apache httpd Windows (Win64, VS) dari Apache Lounge; hanya rilis terbaru yang tersedia.
 const APACHE_LOUNGE: &str = "https://www.apachelounge.com";
 const MARIADB_API: &str = "https://downloads.mariadb.org/rest-api/mariadb/";
@@ -155,6 +157,7 @@ pub fn available(kind: Kind) -> Result<Vec<Release>> {
         Kind::Garnet => github_releases(GARNET, Kind::Garnet, |_| {
             "win-x64-based-readytorun.zip".to_string()
         })?,
+        Kind::Adminer => github_releases(ADMINER, Kind::Adminer, |v| format!("adminer-{v}.php"))?,
     };
     releases.sort_by(|a, b| {
         let a = Version::parse(&a.version);
