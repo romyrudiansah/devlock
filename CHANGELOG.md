@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-27
+
 ### Added
 - Unduhan runtime yang terputus dilanjutkan otomatis (HTTP `Range`) saat perintah install diulang; server tanpa dukungan resume diunduh ulang dari awal.
 - Cache katalog versi di `tmp\catalog\<runtime>.json` (6 jam) untuk `devlock list --available`, `devlock install`, dan GUI; bila sumber resmi tidak bisa dihubungi, cache lama tetap dipakai. `devlock list <runtime> --available --refresh` memaksa ambil ulang.
@@ -95,7 +97,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/romyrudiansah/devlock/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/romyrudiansah/devlock/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/romyrudiansah/devlock/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/romyrudiansah/devlock/compare/v0.4.0...v0.4.1
