@@ -123,6 +123,9 @@ enum Command {
     },
     /// Samakan file hosts Windows dengan daftar site (minta UAC bila perlu)
     Hosts {
+        /// Hapus seluruh blok DevLock dari file hosts (mis. sebelum uninstall)
+        #[arg(long)]
+        clear: bool,
         #[arg(long, hide = true)]
         elevated: bool,
         #[arg(long, hide = true)]
@@ -217,11 +220,15 @@ fn main() {
         Command::Site {
             command: SiteCommand::List,
         } => services::site_list(),
-        Command::Hosts { elevated, root } => {
+        Command::Hosts {
+            clear,
+            elevated,
+            root,
+        } => {
             if let Some(root) = root {
                 std::env::set_var(devlock_core::paths::HOME_ENV, root);
             }
-            services::hosts(elevated)
+            services::hosts(elevated, clear)
         }
         Command::Db { command, instance } => {
             let instance = instance.as_deref();

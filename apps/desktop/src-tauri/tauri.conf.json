@@ -25,6 +25,8 @@
   },
   "bundle": {
     "active": false,
+    "publisher": "DevLock",
+    "copyright": "Copyright (c) 2026 Romy Rudiansah. MIT OR Apache-2.0",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.ico"]
   }
 }

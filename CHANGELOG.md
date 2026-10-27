@@ -6,6 +6,13 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- DevLock kini open source di bawah **MIT OR Apache-2.0** (`LICENSE-MIT`, `LICENSE-APACHE`, ikut di zip rilis).
+- Metadata versi Windows (ProductName "DevLock", versi, deskripsi, copyright, ikon) untuk `devlock.exe` dan `devlock-shim.exe`; GUI mendapat publisher & copyright yang sama.
+- `devlock hosts --clear` menghapus blok DevLock dari file hosts (untuk uninstall).
+- README: bagian "Perubahan pada sistem", "Uninstall", "Privasi", "Code signing policy", dan "Lisensi"; CONTRIBUTING: peran tim, kewajiban 2FA, dan setup SignPath.
+- Workflow rilis siap menandatangani binary lewat SignPath Foundation (aktif setelah secret `SIGNPATH_API_TOKEN` diisi), lalu memverifikasi tanda tangan setiap exe sebelum membuat zip. Catatan rilis menautkan Code signing policy.
+
 ## [0.5.0] - 2026-10-27
 
 ### Added

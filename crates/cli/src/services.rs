@@ -160,8 +160,15 @@ pub fn site_list() -> Result<()> {
     Ok(())
 }
 
-pub fn hosts(elevated: bool) -> Result<()> {
+pub fn hosts(elevated: bool, clear: bool) -> Result<()> {
     let (paths, config) = load()?;
+    if clear {
+        match launcher::clear_hosts(&paths, elevated)? {
+            HostsSync::Unchanged => println!("File hosts tidak berisi blok DevLock."),
+            HostsSync::Updated { .. } => println!("Blok DevLock dihapus dari file hosts."),
+        }
+        return Ok(());
+    }
     match launcher::sync_hosts(&paths, &config, elevated)? {
         HostsSync::Unchanged => println!("File hosts sudah sesuai."),
         HostsSync::Updated { domains } => println!("File hosts diperbarui ({domains} domain)."),
