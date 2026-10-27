@@ -37,6 +37,7 @@ pub fn ensure_daemon(paths: &Paths, config: &Config) -> Result<()> {
     paths.ensure_layout()?;
     let exe = devlock_exe()?;
     let log = paths.logs().join("daemon.log");
+    process::rotate_log(&log, process::MAX_LOG_BYTES);
     // Hanya handle log yang diwariskan, bukan stdout/stderr pemanggil: pipe seperti
     // `devlock start | Out-String` harus EOF begitu perintah ini selesai.
     let spawn = |flags: u32| -> std::io::Result<u32> {

@@ -11,6 +11,11 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Cache katalog versi di `tmp\catalog\<runtime>.json` (6 jam) untuk `devlock list --available`, `devlock install`, dan GUI; bila sumber resmi tidak bisa dihubungi, cache lama tetap dipakai. `devlock list <runtime> --available --refresh` memaksa ambil ulang.
 - Bundle CA untuk PHP: `ssl\ca-bundle.pem` (bundle Mozilla dari curl.se, diverifikasi SHA256, ditambah CA DevLock) dipasang ke `curl.cainfo` dan `openssl.cafile` saat install PHP, `devlock ssl trust/enable`, dan perintah baru `devlock ssl bundle`. Request HTTPS dari PHP (curl, `file_get_contents`, Composer) tidak lagi gagal "unable to get local issuer certificate", termasuk ke site HTTPS lokal DevLock.
 - Folder `dist\` ikut dideteksi sebagai document root (setelah `public`, `web`, `public_html`).
+- Daemon memantau folder `www`, `.devlock.toml`, dan `devlock.toml` (tiap ±3 detik): site baru/dihapus/berubah diterapkan tanpa `devlock reload`, dan service yang dibutuhkan site baru atau berubah (pool PHP, database, dev server) langsung dijalankan bila service lain sedang berjalan.
+- Perubahan yang hanya menyentuh `nginx.conf` memakai `nginx -s reload` (tanpa memutus koneksi; fallback ke restart bila gagal).
+- Peringatan bila ada domain site yang belum ada di file hosts.
+- Rotasi log: log service dan `daemon.log` di atas 10 MB diganti nama menjadi `.1` saat (re)start.
+- Port HTTPS (443) ikut dicek bentrok sebelum nginx start bila ada site HTTPS.
 
 ### Added
 - DevLock kini open source di bawah **MIT OR Apache-2.0** (`LICENSE-MIT`, `LICENSE-APACHE`, ikut di zip rilis).
