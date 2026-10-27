@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-28
+
 ### Added
 - Redis dan Garnet sebagai server cache per project: `devlock install redis` (build Windows komunitas redis-windows, varian msys2) dan `devlock install garnet` (Microsoft Garnet, self-contained), keduanya dari GitHub Releases dengan SHA256 dari GitHub. Pilih dengan `cache = "redis@8"` / `"garnet@2"` di `.devlock.toml` atau `devlock use cache … [--global]`. Instance per major dengan port sendiri (`redis@7` → 6379, `redis@8` → 6389, `garnet@2` → 6402, bisa ditimpa `[ports]`); Redis memakai `etc\redis\<major>.conf` hasil generate, data di `data\redis\<major>`, dan berhenti lewat `SHUTDOWN` (snapshot tersimpan). Target `devlock start/stop cache`, shim `redis-cli` yang otomatis terhubung ke instance project, dan `devlock current` menampilkan cache.
 - Nama file unduhan diberi awalan versi bila nama aset upstream tidak memuat versi (mis. Garnet), agar unduhan versi lain tidak saling menimpa atau dilanjutkan dari file yang salah.
@@ -123,7 +125,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/romyrudiansah/devlock/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/romyrudiansah/devlock/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/romyrudiansah/devlock/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/romyrudiansah/devlock/compare/v0.6.0...v0.7.0
