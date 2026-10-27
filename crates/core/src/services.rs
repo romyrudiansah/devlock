@@ -544,16 +544,18 @@ const ADMINER_INDEX: &str = r#"<?php
 // (root MySQL/MariaDB, postgres) memang tanpa password, jadi login tanpa password diizinkan.
 
 function adminer_object() {
+    // Tanpa type hint: method induk di adminer.php rilis (minified) tidak bertipe, dan PHP
+    // menolak override yang mempersempit tipe parameter.
     class DevLockAdminer extends \Adminer\Adminer {
-        function name(): string {
+        function name() {
             return 'DevLock Adminer';
         }
 
-        function login(string $login, string $password) {
+        function login($login, $password) {
             return true;
         }
 
-        function loginFormField(string $name, string $heading, string $value): string {
+        function loginFormField($name, $heading, $value) {
             if ($name == 'server') {
                 $value = str_replace("<input name='auth[server]'", "<input list='devlock-servers' name='auth[server]'", $value)
                     . "<datalist id='devlock-servers'>__OPTIONS__</datalist>"
@@ -1153,6 +1155,9 @@ mod tests {
         ));
         assert!(index.contains("include __DIR__ . '/adminer.php';"));
         assert!(!index.contains("__OPTIONS__"));
+        // Override harus sesignature method Adminer yang tidak bertipe.
+        assert!(index.contains("function loginFormField($name, $heading, $value) {"));
+        assert!(!index.contains("string $"));
 
         // Folder www\adminer milik pengguna menggantikan site bawaan.
         let www = paths.default_www().join("adminer");

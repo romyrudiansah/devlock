@@ -7,6 +7,7 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 ## [Unreleased]
 
 ### Fixed
+- `adminer.test` selalu fatal error: override di `index.php` pembungkus memakai type hint, padahal method `Adminer\Adminer` di rilis resmi (minified) tidak bertipe sehingga PHP menolak deklarasinya.
 - Redis tidak bisa start: build msys2 menganggap path config `D:/...` sebagai path relatif. Config kini diberikan sebagai nama file dengan folder kerja `etc\redis`.
 - Garnet tidak bisa start karena rilis Windows-nya butuh runtime .NET (bukan self-contained seperti dinyatakan di v0.9.0). `devlock install garnet` kini ikut memasang runtime .NET resmi Microsoft sesuai versi yang dibutuhkan bundle (portable di `runtimes\garnet\<versi>\dotnet`, diverifikasi SHA512), dan service Garnet memakainya lewat `DOTNET_ROOT`. Garnet yang sudah terinstall dengan v0.9.0 cukup menjalankan `devlock install garnet` lagi untuk melengkapi runtime-nya.
 
