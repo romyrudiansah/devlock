@@ -41,7 +41,20 @@ pub fn install(
     }
     std::fs::create_dir_all(paths.downloads())?;
 
-    let archive = paths.downloads().join(release.file_name());
+    // Nama aset tanpa versi (mis. Garnet `win-x64-based-readytorun.zip`) diberi awalan versi
+    // agar unduhan versi berbeda tidak saling menimpa atau dilanjutkan dari file yang salah.
+    let archive = paths
+        .downloads()
+        .join(if release.file_name().contains(&release.version) {
+            release.file_name().to_string()
+        } else {
+            format!(
+                "{}-{}-{}",
+                release.kind,
+                release.version,
+                release.file_name()
+            )
+        });
     let expected = expected_sha256(release)?;
     let cached_ok = archive.is_file()
         && expected

@@ -22,10 +22,12 @@ pub enum Kind {
     Mysql,
     Mariadb,
     Postgresql,
+    Redis,
+    Garnet,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 8] = [
+    pub const ALL: [Kind; 10] = [
         Kind::Php,
         Kind::Node,
         Kind::Composer,
@@ -34,6 +36,8 @@ impl Kind {
         Kind::Mysql,
         Kind::Mariadb,
         Kind::Postgresql,
+        Kind::Redis,
+        Kind::Garnet,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -46,11 +50,18 @@ impl Kind {
             Kind::Mysql => "mysql",
             Kind::Mariadb => "mariadb",
             Kind::Postgresql => "postgresql",
+            Kind::Redis => "redis",
+            Kind::Garnet => "garnet",
         }
     }
 
     pub fn is_database(self) -> bool {
         matches!(self, Kind::Mysql | Kind::Mariadb | Kind::Postgresql)
+    }
+
+    /// Server cache (protokol Redis): instance per major, dipilih lewat `cache`.
+    pub fn is_cache(self) -> bool {
+        matches!(self, Kind::Redis | Kind::Garnet)
     }
 
     /// Web server: dipakai lewat konfigurasi, bukan lewat shim/versi default project.
@@ -78,6 +89,8 @@ impl FromStr for Kind {
             "mysql" => Kind::Mysql,
             "mariadb" => Kind::Mariadb,
             "postgresql" | "postgres" | "pgsql" | "pg" => Kind::Postgresql,
+            "redis" => Kind::Redis,
+            "garnet" => Kind::Garnet,
             other => bail!(
                 "runtime `{other}` tidak dikenal (pilihan: {})",
                 Kind::ALL.map(Kind::as_str).join(", ")

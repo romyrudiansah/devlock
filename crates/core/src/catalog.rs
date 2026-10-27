@@ -15,6 +15,11 @@ use crate::version::{self, Version};
 const PHP_RELEASES: &str = "https://downloads.php.net/~windows/releases/";
 const NODE_DIST: &str = "https://nodejs.org/dist/";
 const NGINX_DOWNLOAD: &str = "https://nginx.org/download/";
+/// Build Redis untuk Windows (komunitas, msys2); Redis resmi tidak merilis binary Windows.
+const REDIS_WINDOWS: &str =
+    "https://api.github.com/repos/redis-windows/redis-windows/releases?per_page=100";
+/// Garnet: server cache berprotokol Redis dari Microsoft, build Windows resmi.
+const GARNET: &str = "https://api.github.com/repos/microsoft/garnet/releases?per_page=30";
 /// Build Apache httpd Windows (Win64, VS) dari Apache Lounge; hanya rilis terbaru yang tersedia.
 const APACHE_LOUNGE: &str = "https://www.apachelounge.com";
 const MARIADB_API: &str = "https://downloads.mariadb.org/rest-api/mariadb/";
@@ -144,6 +149,12 @@ pub fn available(kind: Kind) -> Result<Vec<Release>> {
         Kind::Mysql => mysql_releases(),
         Kind::Mariadb => mariadb_releases(None)?,
         Kind::Postgresql => postgresql_releases()?,
+        Kind::Redis => github_releases(REDIS_WINDOWS, Kind::Redis, |v| {
+            format!("Redis-{v}-Windows-x64-msys2.zip")
+        })?,
+        Kind::Garnet => github_releases(GARNET, Kind::Garnet, |_| {
+            "win-x64-based-readytorun.zip".to_string()
+        })?,
     };
     releases.sort_by(|a, b| {
         let a = Version::parse(&a.version);
@@ -344,6 +355,63 @@ fn nginx_releases() -> Result<Vec<Release>> {
             version,
         })
         .collect())
+}
+
+// --- GitHub Releases (Redis, Garnet) ----------------------------------------
+
+#[derive(Deserialize)]
+struct GithubRelease {
+    tag_name: String,
+    #[serde(default)]
+    prerelease: bool,
+    #[serde(default)]
+    draft: bool,
+    assets: Vec<GithubAsset>,
+}
+
+#[derive(Deserialize)]
+struct GithubAsset {
+    name: String,
+    browser_download_url: String,
+    /// `sha256:<hex>`, dihitung GitHub saat aset diunggah.
+    #[serde(default)]
+    digest: Option<String>,
+}
+
+/// Rilis stabil dari API GitHub Releases dengan aset bernama `asset(versi)`. Rilis tanpa
+/// SHA256 dari GitHub dilewati agar setiap install terverifikasi.
+fn github_releases(url: &str, kind: Kind, asset: impl Fn(&str) -> String) -> Result<Vec<Release>> {
+    let releases: Vec<GithubRelease> = http::get_json(url)?;
+    Ok(releases_from_github(releases, kind, asset))
+}
+
+fn releases_from_github(
+    releases: Vec<GithubRelease>,
+    kind: Kind,
+    asset: impl Fn(&str) -> String,
+) -> Vec<Release> {
+    releases
+        .into_iter()
+        .filter(|r| !r.prerelease && !r.draft)
+        .filter_map(|r| {
+            let version = r.tag_name.trim_start_matches('v').to_string();
+            Version::parse(&version)?;
+            let wanted = asset(&version);
+            let found = r.assets.into_iter().find(|a| a.name == wanted)?;
+            let sha256 = found
+                .digest
+                .as_deref()?
+                .strip_prefix("sha256:")?
+                .to_string();
+            Some(Release {
+                kind,
+                version,
+                url: found.browser_download_url,
+                checksum: Checksum::Sha256(sha256),
+                lts: false,
+            })
+        })
+        .collect()
 }
 
 // --- Apache ------------------------------------------------------------------
@@ -560,6 +628,33 @@ mod tests {
         assert_eq!(
             postgresql_zip_url("16.15", 2),
             "https://get.enterprisedb.com/postgresql/postgresql-16.15-2-windows-x64-binaries.zip"
+        );
+    }
+
+    #[test]
+    fn github_release_assets() {
+        let json = r#"[
+            {"tag_name": "8.10.3", "prerelease": false, "draft": false, "assets": [
+                {"name": "Redis-8.10.3-Windows-x64-msys2.zip", "browser_download_url": "https://x/r.zip",
+                 "digest": "sha256:af16df340525b431e9ec8dabfd625d5e7a233f82805b5418819904ea909c447f"},
+                {"name": "Redis-8.10.3-Windows-x64-cygwin.zip", "browser_download_url": "https://x/c.zip",
+                 "digest": "sha256:00"}]},
+            {"tag_name": "8.12.0-rc1", "prerelease": true, "draft": false, "assets": []},
+            {"tag_name": "7.0.0", "assets": [
+                {"name": "Redis-7.0.0-Windows-x64-msys2.zip", "browser_download_url": "https://x/old.zip"}]}
+        ]"#;
+        let releases: Vec<GithubRelease> = serde_json::from_str(json).unwrap();
+        let found = releases_from_github(releases, Kind::Redis, |v| {
+            format!("Redis-{v}-Windows-x64-msys2.zip")
+        });
+        assert_eq!(found.len(), 1, "prerelease & rilis tanpa digest dilewati");
+        assert_eq!(found[0].version, "8.10.3");
+        assert_eq!(found[0].url, "https://x/r.zip");
+        assert_eq!(
+            found[0].checksum,
+            Checksum::Sha256(
+                "af16df340525b431e9ec8dabfd625d5e7a233f82805b5418819904ea909c447f".into()
+            )
         );
     }
 

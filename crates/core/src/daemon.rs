@@ -287,6 +287,9 @@ fn needs_of(site: &crate::sites::Site) -> BTreeSet<String> {
     if let Some(db) = &site.database {
         needs.insert(db.name());
     }
+    if let Some(cache) = &site.cache {
+        needs.insert(cache.name());
+    }
     if site.dev.is_some() {
         needs.insert(format!("dev:{}", site.name));
     }
@@ -329,6 +332,10 @@ fn matches_target(target: &str, spec: &ServiceSpec) -> bool {
         || (target == "dev" && spec.group.starts_with("dev:"))
         || (matches!(target, "db" | "database")
             && ["mysql@", "mariadb@", "postgresql@"]
+                .iter()
+                .any(|engine| spec.group.starts_with(engine)))
+        || (target == "cache"
+            && ["redis@", "garnet@"]
                 .iter()
                 .any(|engine| spec.group.starts_with(engine)))
 }
@@ -775,6 +782,11 @@ mod tests {
         assert!(matches_target("mysql", &db));
         assert!(!matches_target("nginx", &db));
         assert!(matches_target("dev", &spec("dev:dash", "dev:dash")));
+        let redis = spec("redis@8", "redis@8");
+        assert!(matches_target("cache", &redis));
+        assert!(matches_target("redis", &redis));
+        assert!(matches_target("cache", &spec("garnet@2", "garnet@2")));
+        assert!(!matches_target("db", &redis));
     }
 
     #[test]

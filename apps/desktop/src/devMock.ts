@@ -84,6 +84,8 @@ const runtimes: RuntimeInfo[] = [
   { kind: "mysql", installed: [], default_spec: null, default_version: null },
   { kind: "mariadb", installed: ["11.4.13"], default_spec: null, default_version: null },
   { kind: "postgresql", installed: ["18.6"], default_spec: null, default_version: null },
+  { kind: "redis", installed: ["8.10.3"], default_spec: null, default_version: null },
+  { kind: "garnet", installed: [], default_spec: null, default_version: null },
 ];
 
 const available: AvailableRelease[] = [

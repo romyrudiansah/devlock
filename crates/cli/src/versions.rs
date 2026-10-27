@@ -2,10 +2,10 @@ use std::path::Path;
 
 use anyhow::{bail, Context, Result};
 use devlock_core::project::{find_project_file, ProjectConfig};
-use devlock_core::resolve::{self, DbInstance};
+use devlock_core::resolve::{self, CacheInstance, DbInstance};
 use devlock_core::{runtime, tools, Config, Kind, Paths};
 
-/// `devlock use <php|node|composer|database> <spec> [--global]`
+/// `devlock use <php|node|composer|database|cache> <spec> [--global]`
 pub fn use_version(target: &str, spec: &str, global: bool) -> Result<()> {
     let paths = Paths::discover()?;
     let cwd = std::env::current_dir()?;
@@ -22,10 +22,21 @@ pub fn use_version(target: &str, spec: &str, global: bool) -> Result<()> {
                 );
             }
             ("database", instance.name())
+        } else if target.eq_ignore_ascii_case("cache") {
+            let instance = CacheInstance::parse(spec)?;
+            if runtime::resolve_installed(&paths, instance.kind, &instance.line)?.is_none() {
+                println!(
+                    "peringatan: {} belum terinstall (`devlock install {} {}`)",
+                    instance.name(),
+                    instance.kind,
+                    instance.line
+                );
+            }
+            ("cache", instance.name())
         } else {
             let kind: Kind = target.parse()?;
             if !matches!(kind, Kind::Php | Kind::Node | Kind::Composer) {
-                bail!("`use` untuk php, node, composer, atau database");
+                bail!("`use` untuk php, node, composer, database, atau cache");
             }
             match runtime::resolve_installed(&paths, kind, spec)? {
                 Some(version) => println!("{kind} {spec} → {version}"),
@@ -95,6 +106,19 @@ pub fn current() -> Result<()> {
             );
         }
         None => println!("{:<9} -", "database"),
+    }
+    match resolve::find_cache(&config, &cwd)? {
+        Some((instance, source)) => {
+            let installed = runtime::resolve_installed(&paths, instance.kind, &instance.line)?;
+            let version = installed.unwrap_or_else(|| "belum terinstall".into());
+            println!(
+                "{:<9} {} ({version}, port {}) ← {source}",
+                "cache",
+                instance.name(),
+                instance.port(&config)
+            );
+        }
+        None => println!("{:<9} -", "cache"),
     }
     Ok(())
 }

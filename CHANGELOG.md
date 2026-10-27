@@ -6,6 +6,10 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- Redis dan Garnet sebagai server cache per project: `devlock install redis` (build Windows komunitas redis-windows, varian msys2) dan `devlock install garnet` (Microsoft Garnet, self-contained), keduanya dari GitHub Releases dengan SHA256 dari GitHub. Pilih dengan `cache = "redis@8"` / `"garnet@2"` di `.devlock.toml` atau `devlock use cache … [--global]`. Instance per major dengan port sendiri (`redis@7` → 6379, `redis@8` → 6389, `garnet@2` → 6402, bisa ditimpa `[ports]`); Redis memakai `etc\redis\<major>.conf` hasil generate, data di `data\redis\<major>`, dan berhenti lewat `SHUTDOWN` (snapshot tersimpan). Target `devlock start/stop cache`, shim `redis-cli` yang otomatis terhubung ke instance project, dan `devlock current` menampilkan cache.
+- Nama file unduhan diberi awalan versi bila nama aset upstream tidak memuat versi (mis. Garnet), agar unduhan versi lain tidak saling menimpa atau dilanjutkan dari file yang salah.
+
 ### Changed
 - README dan CONTRIBUTING: rilis dinyatakan belum ditandatangani karena pendaftaran SignPath Foundation belum disetujui (bisa diajukan ulang nanti), disertai cara menangani peringatan SmartScreen / Smart App Control. Tanda tangan lewat SignPath di workflow rilis tetap opsional.
 

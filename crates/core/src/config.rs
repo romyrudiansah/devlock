@@ -22,7 +22,7 @@ tld = "test"
 webserver = "nginx"
 
 # Versi default bila project tidak menentukan sendiri.
-# Contoh: php = "8.3", node = "22", database = "mariadb@11.4"
+# Contoh: php = "8.3", node = "22", database = "mariadb@11.4", cache = "redis@8"
 [defaults]
 
 [http]
