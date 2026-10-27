@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-27
+
 ### Added
 - Aksi cepat database untuk MySQL/MariaDB/PostgreSQL: `devlock db list|create|drop|dump|restore [--instance engine@versi]`. Instance default diambil dari `database` di `.devlock.toml` atau default global. Nama database divalidasi (`[A-Za-z_][A-Za-z0-9_]*`), database sistem dilindungi, `drop` wajib `--yes`, dump default ke `data\backups\<instance>\<db>-<waktu>.sql`.
 - Tombol "Buat DB" di kartu project GUI: membuat database bernama sesuai site (`my-shop` → `my_shop`) di instance project.
@@ -71,7 +73,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/romyrudiansah/devlock/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/romyrudiansah/devlock/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/romyrudiansah/devlock/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/romyrudiansah/devlock/compare/v0.3.1...v0.4.0
