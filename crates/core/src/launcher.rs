@@ -3,7 +3,7 @@
 
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
@@ -37,25 +37,16 @@ pub fn ensure_daemon(paths: &Paths, config: &Config) -> Result<()> {
     paths.ensure_layout()?;
     let exe = devlock_exe()?;
     let log = paths.logs().join("daemon.log");
-    let spawn = |flags: u32| -> std::io::Result<std::process::Child> {
+    // Hanya handle log yang diwariskan, bukan stdout/stderr pemanggil: pipe seperti
+    // `devlock start | Out-String` harus EOF begitu perintah ini selesai.
+    let spawn = |flags: u32| -> std::io::Result<u32> {
         let out = OpenOptions::new().create(true).append(true).open(&log)?;
-        let err = out.try_clone()?;
         let mut command = Command::new(&exe);
         command
             .arg("daemon")
             .env(crate::paths::HOME_ENV, paths.root())
-            .current_dir(paths.root())
-            .stdin(Stdio::null())
-            .stdout(out)
-            .stderr(err);
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(flags);
-        }
-        #[cfg(not(windows))]
-        let _ = flags;
-        command.spawn()
+            .current_dir(paths.root());
+        process::spawn_detached(command, out, flags)
     };
     let base =
         process::DETACHED_PROCESS | process::CREATE_NEW_PROCESS_GROUP | process::CREATE_NO_WINDOW;
