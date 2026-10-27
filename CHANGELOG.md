@@ -7,6 +7,10 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 ## [Unreleased]
 
 ### Added
+- HTTPS lokal: CA "DevLock Local CA" dibuat sekali di `ssl\`, sertifikat per site (domain + alias, ditandatangani CA, diperbarui otomatis saat domain berubah atau mendekati kedaluwarsa), dan nginx mendengarkan juga di `127.0.0.1:443`. Aktifkan global dengan `devlock ssl enable` (`[https] enabled`) atau per project dengan `https = true` di `.devlock.toml`.
+- `devlock ssl status|trust|untrust|enable|disable`. `trust` memasang CA ke store Root milik user (Windows meminta konfirmasi), sehingga Chrome/Edge langsung percaya.
+- Node (shim dan dev server) mendapat `NODE_EXTRA_CA_CERTS` agar percaya sertifikat site HTTPS.
+- `devlock site list` dan GUI menampilkan URL `https://` untuk site HTTPS.
 - Status service `starting`: service baru dianggap `running` setelah port-nya menerima koneksi. `devlock start` (dan tombol Start di GUI) menunggu hingga 20 detik sampai php-cgi, database, nginx, dan dev server siap, sehingga request pertama tidak lagi kena 502.
 
 ### Fixed

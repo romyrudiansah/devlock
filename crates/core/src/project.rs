@@ -23,6 +23,8 @@ pub struct ProjectConfig {
     pub dev: Option<String>,
     /// Port dev server yang di-reverse-proxy dari domain project.
     pub proxy_port: Option<u16>,
+    /// Layani juga lewat HTTPS; default mengikuti `[https] enabled` global.
+    pub https: Option<bool>,
 }
 
 impl ProjectConfig {

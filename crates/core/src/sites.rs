@@ -35,6 +35,8 @@ pub struct Site {
     pub database: Option<DbInstance>,
     /// Perintah dev server (project Node).
     pub dev: Option<String>,
+    /// Dilayani juga lewat HTTPS dengan sertifikat dari CA DevLock.
+    pub https: bool,
     /// Masalah konfigurasi yang membuat site tidak bisa dilayani sepenuhnya.
     pub warning: Option<String>,
 }
@@ -42,6 +44,25 @@ pub struct Site {
 impl Site {
     pub fn domain(&self) -> &str {
         &self.domains[0]
+    }
+
+    /// URL utama site: `https://` bila HTTPS aktif, port ditulis bila bukan default.
+    pub fn url(&self, config: &Config) -> String {
+        url_for(self.domain(), self.https, config)
+    }
+}
+
+/// URL untuk `domain` sesuai skema dan port DevLock.
+pub fn url_for(domain: &str, https: bool, config: &Config) -> String {
+    let (scheme, port, default) = if https {
+        ("https", config.https.port, 443)
+    } else {
+        ("http", config.http.port, 80)
+    };
+    if port == default {
+        format!("{scheme}://{domain}")
+    } else {
+        format!("{scheme}://{domain}:{port}")
     }
 }
 
@@ -115,6 +136,7 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
         kind,
         database,
         dev: project.dev.filter(|_| project.proxy_port.is_some()),
+        https: project.https.unwrap_or(config.https.enabled),
         warning,
     })
 }

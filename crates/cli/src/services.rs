@@ -144,14 +144,14 @@ pub fn site_list() -> Result<()> {
             .map(|db| db.name())
             .unwrap_or_else(|| "-".into());
         println!(
-            "http://{:<28} {:<12} db {:<14} {}",
-            site.domain(),
+            "{:<36} {:<12} db {:<14} {}",
+            site.url(&config),
             kind,
             db,
             site.docroot.display()
         );
         for alias in &site.domains[1..] {
-            println!("  alias http://{alias}");
+            println!("  alias {}", sites::url_for(alias, site.https, &config));
         }
         if let Some(warning) = &site.warning {
             println!("  ! {warning}");

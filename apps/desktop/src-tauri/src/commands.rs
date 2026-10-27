@@ -147,11 +147,6 @@ pub struct SiteInfo {
 pub async fn list_sites() -> CmdResult<Vec<SiteInfo>> {
     blocking(|| {
         let (paths, config) = context()?;
-        let port = if config.http.port == 80 {
-            String::new()
-        } else {
-            format!(":{}", config.http.port)
-        };
         let sites = sites::discover(&paths, &config).map_err(err)?;
         Ok(sites
             .iter()
@@ -163,7 +158,7 @@ pub async fn list_sites() -> CmdResult<Vec<SiteInfo>> {
                 };
                 SiteInfo {
                     name: site.name.clone(),
-                    url: format!("http://{}{port}", site.domain()),
+                    url: site.url(&config),
                     domains: site.domains.clone(),
                     kind: kind.into(),
                     detail,

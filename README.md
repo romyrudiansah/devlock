@@ -41,6 +41,18 @@ devlock hosts                      samakan file hosts dengan daftar site
 devlock doctor                     diagnosa PATH, port, dependency
 ```
 
+## HTTPS lokal
+
+```
+devlock ssl trust      # sekali: pasang CA DevLock ke Windows (ada dialog konfirmasi)
+devlock ssl enable     # HTTPS untuk semua site, atau `https = true` di .devlock.toml
+devlock reload
+```
+
+Sertifikat per site dibuat otomatis di `ssl\sites\`. Chrome/Edge memakai store Windows;
+Firefox perlu mengimpor `ssl\devlock-ca.crt` sendiri. `curl.exe` bawaan Windows perlu
+`--ssl-no-revoke` karena sertifikat lokal tidak punya daftar pencabutan (CRL).
+
 ## GUI
 
 `devlock-gui.exe` (satu folder dengan `devlock.exe`) membuka dashboard dan ikon tray:

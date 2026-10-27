@@ -27,6 +27,12 @@ webserver = "nginx"
 listen = "127.0.0.1"
 port = 80
 
+# HTTPS lokal dengan sertifikat dari CA DevLock (`devlock ssl trust` sekali).
+# Bisa juga per project: `https = true` di .devlock.toml.
+[https]
+enabled = false
+port = 443
+
 [php]
 # Jumlah proses php-cgi per versi PHP
 workers = 4
@@ -51,6 +57,7 @@ pub struct Config {
     /// Versi default per runtime, mis. `php = "8.3"`, `database = "mariadb@11.4"`.
     pub defaults: BTreeMap<String, String>,
     pub http: HttpConfig,
+    pub https: HttpsConfig,
     pub php: PhpConfig,
     pub daemon: DaemonConfig,
     /// Override port per instance, mis. `"mysql@8.4" = 3306`.
@@ -62,6 +69,23 @@ pub struct Config {
 pub struct HttpConfig {
     pub listen: String,
     pub port: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct HttpsConfig {
+    /// HTTPS untuk semua site (project bisa menimpa lewat `https` di `.devlock.toml`).
+    pub enabled: bool,
+    pub port: u16,
+}
+
+impl Default for HttpsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            port: 443,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -85,6 +109,7 @@ impl Default for Config {
             webserver: "nginx".into(),
             defaults: BTreeMap::new(),
             http: HttpConfig::default(),
+            https: HttpsConfig::default(),
             php: PhpConfig::default(),
             daemon: DaemonConfig::default(),
             ports: BTreeMap::new(),
@@ -157,6 +182,21 @@ impl Config {
             .with_context(|| format!("gagal menulis {}", file.display()))
     }
 
+    /// Ubah satu nilai `[table] key = value` tanpa menghilangkan komentar di file.
+    pub fn set_value(paths: &Paths, table: &str, key: &str, value: toml_edit::Item) -> Result<()> {
+        let file = paths.config_file();
+        let text = std::fs::read_to_string(&file).unwrap_or_else(|_| DEFAULT_CONFIG.to_string());
+        let mut doc: toml_edit::DocumentMut = text
+            .parse()
+            .with_context(|| format!("format {} tidak valid", file.display()))?;
+        if !doc.contains_table(table) {
+            doc[table] = toml_edit::table();
+        }
+        doc[table][key] = value;
+        std::fs::write(&file, doc.to_string())
+            .with_context(|| format!("gagal menulis {}", file.display()))
+    }
+
     pub fn www_dir(&self, paths: &Paths) -> PathBuf {
         paths.resolve(&self.www)
     }
@@ -183,6 +223,17 @@ mod tests {
         assert!(text.contains("# Konfigurasi global DevLock."));
         let config = Config::load(&paths).unwrap();
         assert_eq!(config.defaults.get("php").map(String::as_str), Some("8.2"));
+    }
+
+    #[test]
+    fn set_value_in_table() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        Config::write_default_if_missing(&paths).unwrap();
+        Config::set_value(&paths, "https", "enabled", toml_edit::value(true)).unwrap();
+        let config = Config::load(&paths).unwrap();
+        assert!(config.https.enabled);
+        assert_eq!(config.https.port, 443);
     }
 
     #[test]
