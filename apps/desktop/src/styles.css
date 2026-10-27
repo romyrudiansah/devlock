@@ -284,6 +284,7 @@ select {
 }
 
 .badge.partial,
+.badge.starting,
 .badge.restarting {
   background: var(--warn-bg);
   color: var(--warn);
