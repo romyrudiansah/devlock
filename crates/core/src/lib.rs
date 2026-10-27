@@ -25,6 +25,8 @@ pub mod http;
 #[cfg(feature = "net")]
 pub mod install;
 #[cfg(feature = "net")]
+pub mod scaffold;
+#[cfg(feature = "net")]
 pub mod xdebug;
 
 pub use config::Config;

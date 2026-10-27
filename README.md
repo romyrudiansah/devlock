@@ -57,6 +57,21 @@ devlock hosts                      samakan file hosts dengan daftar site
 devlock doctor                     diagnosa PATH, port, dependency
 ```
 
+## Project baru
+
+```
+devlock new --list                              # daftar template
+devlock new laravel toko --php 8.4 --db mysql@8.4
+devlock new wordpress blog --db mariadb@11.4
+devlock new next dashboard --node 22
+```
+
+Template: Laravel, Symfony, CodeIgniter 4 (`composer create-project`), WordPress (zip resmi,
+SHA1), Next.js, Nuxt, Vite + React, Vite + Vue (kerangka minimal + `npm install <paket>@latest`),
+dan HTML statis. DevLock menulis `.devlock.toml`, membuat database, mengisi `.env` Laravel /
+`wp-config.php` WordPress, dan mendaftarkan domain di file hosts. Di GUI: tombol **Project baru**
+di tab Project.
+
 ## PHP
 
 ```

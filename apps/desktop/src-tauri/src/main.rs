@@ -3,6 +3,7 @@
 
 mod commands;
 mod php_page;
+mod project_new;
 mod settings;
 mod tray;
 
@@ -66,6 +67,8 @@ fn main() {
             php_page::open_php_ini,
             settings::get_settings,
             settings::save_settings,
+            project_new::list_templates,
+            project_new::create_project,
         ])
         .run(tauri::generate_context!())
         .expect("gagal menjalankan DevLock");

@@ -527,3 +527,18 @@ select:focus {
   align-items: center;
   gap: 6px;
 }
+
+.modal-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.log.short {
+  flex: none;
+  max-height: 220px;
+  border-radius: 6px;
+}
