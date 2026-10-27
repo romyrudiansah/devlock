@@ -54,7 +54,10 @@ pub async fn create_project(
         })
         .map_err(err)?;
         if let Err(e) = launcher::sync_hosts(&paths, &config, false) {
-            let _ = app.emit("scaffold-log", format!("File hosts tidak diperbarui: {e:#}"));
+            let _ = app.emit(
+                "scaffold-log",
+                format!("File hosts tidak diperbarui: {e:#}"),
+            );
         }
         Ok(created)
     })
