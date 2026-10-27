@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-27
+
 ### Fixed
 - PHP di site `webserver = "apache"` selalu 500: handler balancer kini `proxy:balancer://phpXY/` (tanpa garis miring penutup mod_proxy_balancer tidak menemukan balancer-nya) dan `SCRIPT_FILENAME` dikirim sebagai path file Windows (`ProxyFCGISetEnvIf`), karena php-cgi tidak memahami format URL proxy ala PHP-FPM.
 - Shared memory Apache (`slotmem-shm`) disimpan di `tmp\apache` (`DefaultRuntimeDir`), bukan di folder runtime; vhost default Apache punya `DocumentRoot` sendiri.
@@ -113,7 +115,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/romyrudiansah/devlock/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/romyrudiansah/devlock/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/romyrudiansah/devlock/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/romyrudiansah/devlock/compare/v0.5.0...v0.6.0
