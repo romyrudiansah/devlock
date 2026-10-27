@@ -6,6 +6,22 @@ Local development environment untuk Windows — alternatif Laragon / WAMP / XAMP
 
 > Status: Fase 3 (CLI + GUI, PostgreSQL, HTTPS lokal, aksi database). Open source di bawah MIT OR Apache-2.0. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## Unduh
+
+Unduh `devlock-vX.Y.Z-windows-x64.zip` dari halaman
+[**Releases**](https://github.com/romyrudiansah/devlock/releases) (Windows 10/11 x64), cocokkan
+checksum-nya dengan file `.sha256` di rilis yang sama, lalu:
+
+1. Ekstrak ke folder instalasi, mis. `D:\DevLock` (hasilnya `D:\DevLock\bin\devlock.exe`, dst.).
+2. Jalankan `D:\DevLock\bin\devlock.exe init`, lalu `devlock path add` agar shim masuk PATH.
+3. Buka `devlock-gui.exe` untuk dashboard dan ikon tray, atau lanjut lewat CLI di bawah.
+
+**Code signing:** binary rilis DevLock ditandatangani lewat
+[SignPath.io](https://about.signpath.io/) dengan sertifikat dari
+[SignPath Foundation](https://signpath.org/) (free code signing for open source), setelah
+pendaftaran proyek ini diterima. Rilis yang dibuat sebelumnya belum bertanda tangan sehingga
+bisa diblokir Smart App Control / SmartScreen. Detail: [Code signing policy](#code-signing-policy).
+
 ## Konsep singkat
 
 ```toml
