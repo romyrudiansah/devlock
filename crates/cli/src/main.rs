@@ -1,4 +1,5 @@
 mod commands;
+mod db;
 mod runtimes;
 mod services;
 mod ssl;
@@ -107,6 +108,14 @@ enum Command {
         #[command(subcommand)]
         command: SiteCommand,
     },
+    /// Aksi cepat database: list, create, drop, dump, restore (instance harus berjalan)
+    Db {
+        #[command(subcommand)]
+        command: DbCommand,
+        /// Instance, mis. `mysql@8.4` atau `postgresql@18`; default dari .devlock.toml / global
+        #[arg(short, long, global = true)]
+        instance: Option<String>,
+    },
     /// HTTPS lokal: CA DevLock dan sertifikat per site
     Ssl {
         #[command(subcommand)]
@@ -122,6 +131,28 @@ enum Command {
     /// Proses latar yang mengawasi service (dijalankan otomatis oleh `start`)
     #[command(hide = true)]
     Daemon,
+}
+
+#[derive(Subcommand)]
+enum DbCommand {
+    /// Daftar database (tanpa database sistem)
+    List,
+    /// Buat database UTF-8
+    Create { name: String },
+    /// Hapus database (wajib `--yes`)
+    Drop {
+        name: String,
+        #[arg(long)]
+        yes: bool,
+    },
+    /// Simpan database ke file SQL (default: dataackups\<instance>\<db>-<waktu>.sql)
+    Dump {
+        name: String,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
+    /// Jalankan file SQL ke database (dibuat bila belum ada)
+    Restore { name: String, file: PathBuf },
 }
 
 #[derive(Subcommand)]
@@ -191,6 +222,16 @@ fn main() {
                 std::env::set_var(devlock_core::paths::HOME_ENV, root);
             }
             services::hosts(elevated)
+        }
+        Command::Db { command, instance } => {
+            let instance = instance.as_deref();
+            match command {
+                DbCommand::List => db::list(instance),
+                DbCommand::Create { name } => db::create(&name, instance),
+                DbCommand::Drop { name, yes } => db::drop(&name, instance, yes),
+                DbCommand::Dump { name, output } => db::dump(&name, instance, output),
+                DbCommand::Restore { name, file } => db::restore(&name, &file, instance),
+            }
         }
         Command::Ssl { command } => match command {
             SslCommand::Status => ssl::status(),

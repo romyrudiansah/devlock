@@ -7,6 +7,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 ## [Unreleased]
 
 ### Added
+- Aksi cepat database untuk MySQL/MariaDB/PostgreSQL: `devlock db list|create|drop|dump|restore [--instance engine@versi]`. Instance default diambil dari `database` di `.devlock.toml` atau default global. Nama database divalidasi (`[A-Za-z_][A-Za-z0-9_]*`), database sistem dilindungi, `drop` wajib `--yes`, dump default ke `data\backups\<instance>\<db>-<waktu>.sql`.
+- Tombol "Buat DB" di kartu project GUI: membuat database bernama sesuai site (`my-shop` → `my_shop`) di instance project.
 - HTTPS lokal: CA "DevLock Local CA" dibuat sekali di `ssl\`, sertifikat per site (domain + alias, ditandatangani CA, diperbarui otomatis saat domain berubah atau mendekati kedaluwarsa), dan nginx mendengarkan juga di `127.0.0.1:443`. Aktifkan global dengan `devlock ssl enable` (`[https] enabled`) atau per project dengan `https = true` di `.devlock.toml`.
 - `devlock ssl status|trust|untrust|enable|disable`. `trust` memasang CA ke store Root milik user (Windows meminta konfirmasi), sehingga Chrome/Edge langsung percaya.
 - Node (shim dan dev server) mendapat `NODE_EXTRA_CA_CERTS` agar percaya sertifikat site HTTPS.

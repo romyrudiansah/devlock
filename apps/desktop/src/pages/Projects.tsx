@@ -5,6 +5,7 @@ export default function Projects() {
   const [sites, setSites] = useState<SiteInfo[] | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const refresh = async () => {
     setError(null);
@@ -40,6 +41,7 @@ export default function Projects() {
       </header>
 
       {error && <div className="notice error">{error}</div>}
+      {notice && <div className="notice ok">{notice}</div>}
       {overview && !overview.daemon_running && sites && sites.length > 0 && (
         <div className="notice warn">Service belum berjalan — buka tab Service lalu klik Start semua.</div>
       )}
@@ -79,6 +81,19 @@ export default function Projects() {
               </button>
               <button onClick={() => act(api.openFolder(site.dir))}>Folder</button>
               <button onClick={() => act(api.openTerminal(site.dir))}>Terminal</button>
+              {site.database && (
+                <button
+                  title={`Buat database untuk ${site.name} di ${site.database}`}
+                  onClick={() =>
+                    api
+                      .createSiteDatabase(site.name)
+                      .then(setNotice)
+                      .catch((e) => setError(errorText(e)))
+                  }
+                >
+                  Buat DB
+                </button>
+              )}
             </div>
           </article>
         ))}

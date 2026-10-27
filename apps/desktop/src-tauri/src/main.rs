@@ -44,6 +44,7 @@ fn main() {
             commands::open_url,
             commands::open_folder,
             commands::open_terminal,
+            commands::create_site_database,
         ])
         .run(tauri::generate_context!())
         .expect("gagal menjalankan DevLock");

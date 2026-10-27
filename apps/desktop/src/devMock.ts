@@ -103,6 +103,7 @@ const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
   list_runtimes: () => runtimes,
   available_runtimes: () => available,
   install_runtime: () => new Promise((resolve) => setTimeout(() => resolve("8.4.27"), 1500)),
+  create_site_database: ({ site }) => `Database \`${String(site).replace(/-/g, "_")}\` dibuat di postgresql@18 (port 5418).`,
   read_log: ({ service }) => `[contoh] log ${service}\n2026-10-26 12:56:15 0 [Note] Server ready for connections.`,
 };
 

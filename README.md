@@ -41,6 +41,19 @@ devlock hosts                      samakan file hosts dengan daftar site
 devlock doctor                     diagnosa PATH, port, dependency
 ```
 
+## Database
+
+```
+devlock db create toko                 # di instance milik project (.devlock.toml)
+devlock db list --instance mysql@8.4
+devlock db dump toko                   # → data\backups\<instance>\toko-<waktu>.sql
+devlock db restore toko_salinan backup.sql
+devlock db drop toko --yes
+```
+
+Instance harus sedang berjalan (`devlock start db`). Login lokal: `root` (MySQL/MariaDB) atau
+`postgres` (PostgreSQL) tanpa password, hanya dari `127.0.0.1`.
+
 ## HTTPS lokal
 
 ```
