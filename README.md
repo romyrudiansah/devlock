@@ -115,6 +115,23 @@ PHP memakai `ssl\ca-bundle.pem` (bundle CA Mozilla + CA DevLock) untuk `curl.cai
 `openssl.cafile`, jadi request HTTPS dari PHP dan Composer langsung jalan. Perbarui dengan
 `devlock ssl bundle`.
 
+## DNS wildcard `*.test`
+
+```
+devlock dns enable     # sekali (UAC): aturan DNS Windows .test → DNS lokal DevLock
+devlock dns status
+```
+
+DevLock menjalankan service `dns` kecil di `127.0.0.1:53` yang menjawab semua `*.test`
+(termasuk subdomain seperti `api.shop.test`) dengan `127.0.0.1`. Windows hanya mengarahkan
+query `.test` ke sana lewat aturan NRPT; DNS lain tidak tersentuh. Setelah aktif, project baru
+tidak perlu menulis file hosts (alias di luar `.test` tetap lewat hosts). Matikan dengan
+`devlock dns disable`.
+
+Port 53 harus bebas. Layanan Windows **Internet Connection Sharing** (SharedAccess, dipakai
+Mobile Hotspot dan switch NAT Hyper-V) mengambil semua query ke `127.0.0.1:53`; `devlock dns
+enable` dan `devlock dns status` mendeteksinya. Hentikan layanan itu atau tetap pakai file hosts.
+
 ## GUI
 
 `devlock-gui.exe` (satu folder dengan `devlock.exe`) membuka dashboard dan ikon tray:
@@ -156,11 +173,13 @@ perintahnya**:
 | Blok `# devlock-start … # devlock-end` di file hosts Windows (lewat UAC) | `devlock hosts`, `devlock start` | `devlock hosts --clear` |
 | Folder `shims` di depan PATH user (registry `HKCU\Environment`) | `devlock path add` | `devlock path remove` |
 | CA "DevLock Local CA" di store sertifikat Root milik user (Windows meminta konfirmasi) | `devlock ssl trust` | `devlock ssl untrust` |
+| Aturan DNS (NRPT) `.test` → `127.0.0.1` berkomentar "DevLock" (lewat UAC) | `devlock dns enable` | `devlock dns disable` |
 
 ## Uninstall
 
 ```
 devlock stop
+devlock dns disable    # bila DNS wildcard pernah diaktifkan
 devlock hosts --clear
 devlock ssl untrust
 devlock path remove

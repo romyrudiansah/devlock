@@ -1,5 +1,6 @@
 mod commands;
 mod db;
+mod dns;
 mod new;
 mod php;
 mod runtimes;
@@ -163,9 +164,36 @@ enum Command {
         #[arg(long, hide = true)]
         root: Option<PathBuf>,
     },
+    /// DNS wildcard *.<tld> lewat DNS lokal (tanpa menulis file hosts tiap project)
+    Dns {
+        #[command(subcommand)]
+        command: Option<DnsCommand>,
+        #[arg(long, hide = true, global = true)]
+        root: Option<PathBuf>,
+    },
     /// Proses latar yang mengawasi service (dijalankan otomatis oleh `start`)
     #[command(hide = true)]
     Daemon,
+}
+
+#[derive(Subcommand)]
+enum DnsCommand {
+    /// Status DNS wildcard, aturan NRPT, dan uji resolusi
+    Status,
+    /// Aktifkan: pasang aturan NRPT `.<tld>` → 127.0.0.1 (UAC sekali) dan jalankan service dns
+    Enable,
+    /// Nonaktifkan dan hapus aturan NRPT (UAC sekali)
+    Disable,
+    /// Server DNS (dijalankan daemon sebagai service `dns`)
+    #[command(hide = true)]
+    Serve,
+    #[command(hide = true)]
+    Install {
+        #[arg(long)]
+        tld: String,
+    },
+    #[command(hide = true)]
+    Remove,
 }
 
 #[derive(Subcommand)]
@@ -219,7 +247,7 @@ enum DbCommand {
         #[arg(long)]
         yes: bool,
     },
-    /// Simpan database ke file SQL (default: dataackups\<instance>\<db>-<waktu>.sql)
+    /// Simpan database ke file SQL (default: data\backups\<instance>\<db>-<waktu>.sql)
     Dump {
         name: String,
         #[arg(short, long)]
@@ -254,7 +282,15 @@ enum SiteCommand {
 fn main() {
     let cli = Cli::parse();
     // Daemon menulis log ke file (stdout/stderr-nya diarahkan ke logs\daemon.log).
-    init_logging(if matches!(cli.command, Command::Daemon) {
+    let background = matches!(
+        cli.command,
+        Command::Daemon
+            | Command::Dns {
+                command: Some(DnsCommand::Serve),
+                ..
+            }
+    );
+    init_logging(if background {
         cli.verbose.max(1)
     } else {
         cli.verbose
@@ -357,6 +393,19 @@ fn main() {
             SslCommand::Disable => ssl::set_enabled(false),
             SslCommand::Bundle => ssl::bundle(),
         },
+        Command::Dns { command, root } => {
+            if let Some(root) = root {
+                std::env::set_var(devlock_core::paths::HOME_ENV, root);
+            }
+            match command.unwrap_or(DnsCommand::Status) {
+                DnsCommand::Status => dns::status(),
+                DnsCommand::Enable => dns::enable(),
+                DnsCommand::Disable => dns::disable(),
+                DnsCommand::Serve => dns::serve(),
+                DnsCommand::Install { tld } => dns::apply_elevated(Some(&tld)),
+                DnsCommand::Remove => dns::apply_elevated(None),
+            }
+        }
         Command::Daemon => services::run_daemon(),
     };
 

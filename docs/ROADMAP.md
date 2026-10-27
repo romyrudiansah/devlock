@@ -177,7 +177,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 
 ### E. DNS & Hosts — **P0 (hosts) / P1 (DNS)**
 - [x] P0: update `C:\Windows\System32\drivers\etc\hosts` via elevated helper (blok bertanda `# devlock-start/end`) _(elevasi UAC menjalankan `devlock hosts --elevated`; hanya IPv4 sejak v0.4.1)_
-- [ ] P1: DNS resolver lokal untuk wildcard `*.test` (tanpa edit hosts tiap project)
+- [x] P1: DNS resolver lokal untuk wildcard `*.test` (tanpa edit hosts tiap project) _(`devlock dns enable`: service `dns` di 127.0.0.1:53 + aturan NRPT; butuh port 53 bebas dari ICS)_
 
 ### F. SSL Lokal — **P1**
 - [ ] Generate root CA sekali, trust ke Windows Cert Store (helper + UAC) — juga NSS Firefox (opsional) _(sebagian: CA + trust store user, v0.5.0; Firefox belum)_
@@ -309,7 +309,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 | **0. Fondasi** | Workspace Rust, config `devlock.toml`, struktur folder, logging | Kerangka jalan | ✅ v0.1.0 |
 | **1. MVP CLI** | Runtime Manager (PHP, Node, Nginx, MariaDB), shim + resolver, service manager, auto vhost + hosts | Bisa dev Laravel & Node via CLI dengan multi-versi | ✅ v0.2.0 |
 | **2. GUI dasar** | Tray + dashboard service + halaman runtimes & projects | Pengalaman setara Laragon | ✅ v0.3.0–v0.3.1 |
-| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0); sisa: DNS wildcard, Apache, Redis, Adminer, tray per project |
+| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (berikutnya); sisa: Apache, Redis, Adminer |
 | **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ⏳ |
 
 ---

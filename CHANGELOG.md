@@ -8,6 +8,10 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ### Added
 - Menu tray menampilkan status service (mis. "Service: 6/6 berjalan", juga di tooltip) dan submenu **Project**: tiap site bisa dibuka di browser, dibuka foldernya, atau dibuka terminalnya (dengan shim di PATH) langsung dari tray. Menu diperbarui otomatis bila status atau daftar site berubah.
+- DNS wildcard `*.<tld>`: `devlock dns enable|disable|status`. Service `dns` (`127.0.0.1:53`, UDP + TCP) menjawab semua nama di bawah TLD DevLock dengan `127.0.0.1` (AAAA kosong agar browser memakai IPv4), dan aturan NRPT Windows (dipasang lewat satu UAC) mengarahkan hanya query `.<tld>` ke sana. Selama aktif, domain `*.<tld>` tidak lagi ditulis ke file hosts dan tidak memicu peringatan hosts; alias di luar TLD tetap lewat hosts. Bila query ke `127.0.0.1:53` diambil program lain (mis. layanan Internet Connection Sharing), `enable`, `status`, dan service `dns` melaporkannya dengan jelas. `devlock doctor` ikut menguji resolusi saat DNS aktif.
+
+### Fixed
+- Teks bantuan `devlock db dump` menampilkan path default `data\backups\…` dengan benar (sebelumnya berisi karakter kontrol).
 
 ## [0.6.0] - 2026-10-27
 
