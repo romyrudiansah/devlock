@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-27
+
 ### Added
 - Apache per project: `devlock install apache` (build Win64 Apache Lounge, SHA256 dari file checksum resminya; dokumentasi `manual\` dilewati) dan `webserver = "apache"` di `.devlock.toml` (atau global di `devlock.toml`). nginx tetap di depan (port 80/443, HTTPS) dan meneruskan site itu ke Apache di `127.0.0.1:8180` (`[apache] port`); Apache memproses `.htaccess` dan menjalankan PHP lewat pool php-cgi yang sama (mod_proxy_fcgi + balancer, `ProxyFCGIBackendType GENERIC`), IP klien & HTTPS diteruskan dari header nginx. Service `apache` dijalankan sebelum nginx dan otomatis start saat site pindah ke Apache. Bila Apache belum terinstall, site tetap dilayani nginx dengan peringatan. `devlock site list` dan tab Project menandai site Apache; tab Runtime menampilkan Apache.
 
@@ -107,7 +109,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/romyrudiansah/devlock/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/romyrudiansah/devlock/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/romyrudiansah/devlock/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/romyrudiansah/devlock/compare/v0.4.2...v0.5.0
