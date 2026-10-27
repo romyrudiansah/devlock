@@ -290,6 +290,9 @@ fn needs_of(site: &crate::sites::Site) -> BTreeSet<String> {
     if site.dev.is_some() {
         needs.insert(format!("dev:{}", site.name));
     }
+    if site.apache {
+        needs.insert("apache".into());
+    }
     needs
 }
 

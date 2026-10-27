@@ -140,11 +140,16 @@ pub fn site_list() -> Result<()> {
             SiteKind::Proxy { port } => format!("proxy :{port}"),
             SiteKind::Static => "static".into(),
         };
+        let kind = if site.apache {
+            format!("{kind} +apache")
+        } else {
+            kind
+        };
         let db = services::site_database(&config, site)
             .map(|db| db.name())
             .unwrap_or_else(|| "-".into());
         println!(
-            "{:<36} {:<12} db {:<14} {}",
+            "{:<36} {:<18} db {:<14} {}",
             site.url(&config),
             kind,
             db,

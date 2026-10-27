@@ -168,7 +168,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [x] Autostart service saat app dibuka _(`[gui] autostart_services`, v0.6.0; belum bisa pilih per service)_
 
 ### D. Web Server & Virtual Host — **P0**
-- [ ] Nginx (default) dan Apache (opsional), bisa pilih per project _(sebagian: nginx saja)_
+- [x] Nginx (default) dan Apache (opsional), bisa pilih per project _(Apache di belakang nginx, `webserver = "apache"`)_
 - [x] Auto vhost: scan `www\` (watch perubahan folder) → `<folder>.test` _(watcher daemon, v0.6.0)_
 - [x] Deteksi document root otomatis: `public\` (Laravel), `web\` (Symfony/Craft), `dist\`, root _(juga `public_html`)_
 - [x] Template vhost per tipe: PHP generic, Laravel, WordPress, static, **reverse proxy** (Node/Vite/Next) _(satu template PHP melayani Laravel/WordPress/generic)_
@@ -309,7 +309,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 | **0. Fondasi** | Workspace Rust, config `devlock.toml`, struktur folder, logging | Kerangka jalan | ✅ v0.1.0 |
 | **1. MVP CLI** | Runtime Manager (PHP, Node, Nginx, MariaDB), shim + resolver, service manager, auto vhost + hosts | Bisa dev Laravel & Node via CLI dengan multi-versi | ✅ v0.2.0 |
 | **2. GUI dasar** | Tray + dashboard service + halaman runtimes & projects | Pengalaman setara Laragon | ✅ v0.3.0–v0.3.1 |
-| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (berikutnya); sisa: Apache, Redis, Adminer |
+| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (berikutnya); sisa: Redis, Adminer |
 | **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ⏳ |
 
 ---

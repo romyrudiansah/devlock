@@ -83,7 +83,13 @@ pub fn install(
         } else {
             std::fs::copy(&archive, staging.join(release.file_name()))?;
         }
-        let content_root = single_child_dir(&staging)?.unwrap_or_else(|| staging.clone());
+        // Zip Apache Lounge berisi `Apache24\` ditambah ReadMe di root.
+        let apache_root = staging.join("Apache24");
+        let content_root = if release.kind == Kind::Apache && apache_root.is_dir() {
+            apache_root
+        } else {
+            single_child_dir(&staging)?.unwrap_or_else(|| staging.clone())
+        };
         std::fs::rename(&content_root, &target)
             .with_context(|| format!("gagal memindahkan ke {}", target.display()))?;
         Ok(())
@@ -245,6 +251,8 @@ fn hex(bytes: &[u8]) -> String {
 fn skipped_dirs(kind: Kind) -> &'static [&'static str] {
     match kind {
         Kind::Postgresql => &["pgAdmin 4", "StackBuilder", "doc", "include", "symbols"],
+        // Dokumentasi HTML Apache (~ribuan file) tidak dibutuhkan.
+        Kind::Apache => &["manual"],
         _ => &[],
     }
 }

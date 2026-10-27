@@ -7,6 +7,7 @@ const LABELS: Record<string, string> = {
   node: "Node.js",
   composer: "Composer",
   nginx: "nginx",
+  apache: "Apache",
   mysql: "MySQL",
   mariadb: "MariaDB",
   postgresql: "PostgreSQL",
@@ -116,7 +117,8 @@ function RuntimeRow(props: {
   const [choice, setChoice] = useState("");
   const [error, setError] = useState<string | null>(null);
   const isDatabase = ["mysql", "mariadb", "postgresql"].includes(rt.kind);
-  const canDefault = !isDatabase && rt.kind !== "nginx";
+  const isWebserver = rt.kind === "nginx" || rt.kind === "apache";
+  const canDefault = !isDatabase && !isWebserver;
 
   const loadAvailable = async () => {
     setLoading(true);
@@ -149,7 +151,7 @@ function RuntimeRow(props: {
               {available.map((r) => (
                 <option key={r.version} value={r.version}>
                   {r.version}
-                  {r.lts ? (rt.kind === "nginx" ? " (stable)" : " (LTS)") : ""}
+                  {r.lts ? (isWebserver ? " (stable)" : " (LTS)") : ""}
                   {rt.installed.includes(r.version) ? " — terinstall" : ""}
                 </option>
               ))}

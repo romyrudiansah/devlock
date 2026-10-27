@@ -37,6 +37,8 @@ pub struct Site {
     pub dev: Option<String>,
     /// Dilayani juga lewat HTTPS dengan sertifikat dari CA DevLock.
     pub https: bool,
+    /// Dilayani Apache (di belakang nginx) karena `webserver = "apache"`.
+    pub apache: bool,
     /// Masalah konfigurasi yang membuat site tidak bisa dilayani sepenuhnya.
     pub warning: Option<String>,
 }
@@ -117,6 +119,23 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
         SiteKind::Static
     };
 
+    // Dev server Node selalu lewat reverse proxy nginx.
+    let webserver = project
+        .webserver
+        .as_deref()
+        .unwrap_or(&config.webserver)
+        .to_ascii_lowercase();
+    let apache = match webserver.as_str() {
+        "apache" | "httpd" => !matches!(kind, SiteKind::Proxy { .. }),
+        "nginx" | "" => false,
+        other => {
+            warning.get_or_insert(format!(
+                "webserver `{other}` tidak dikenal (pilihan: nginx, apache); memakai nginx"
+            ));
+            false
+        }
+    };
+
     let database = match &project.database {
         Some(db) => match DbInstance::parse(db) {
             Ok(instance) => Some(instance),
@@ -137,6 +156,7 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
         database,
         dev: project.dev.filter(|_| project.proxy_port.is_some()),
         https: project.https.unwrap_or(config.https.enabled),
+        apache,
         warning,
     })
 }
@@ -200,6 +220,11 @@ mod tests {
         )
         .unwrap();
         std::fs::write(www.join("old/index.php"), "").unwrap();
+        std::fs::write(
+            www.join("landing/.devlock.toml"),
+            "webserver = \"apache\"\n",
+        )
+        .unwrap();
         std::fs::create_dir_all(www.join("bad name")).unwrap();
 
         let sites = discover(&paths, &Config::default()).unwrap();
@@ -212,6 +237,8 @@ mod tests {
         assert_eq!(sites[1].domains, ["dash.test", "admin.test"]);
         assert_eq!(sites[1].dev.as_deref(), Some("pnpm dev"));
         assert_eq!(sites[2].kind, SiteKind::Static);
+        assert!(sites[2].apache);
+        assert!(!sites[0].apache && !sites[1].apache);
         // PHP 7.4 belum terinstall: tetap terdaftar dengan peringatan.
         assert!(sites[3].warning.as_deref().unwrap().contains("php 7.4"));
         assert_eq!(sites[3].database.as_ref().unwrap().name(), "mysql@5.7");

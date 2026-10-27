@@ -58,7 +58,7 @@ pub struct Plan {
 }
 
 pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
-    let sites = sites::discover(paths, config)?;
+    let mut sites = sites::discover(paths, config)?;
     let mut services = Vec::new();
     let mut files = Vec::new();
     let mut warnings: Vec<String> = sites
@@ -106,6 +106,54 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
                 extra_ports: vec![],
                 log: paths.logs().join(format!("php@{line}.log")),
             });
+        }
+    }
+
+    // Apache (di belakang nginx) untuk site `webserver = "apache"`.
+    if sites.iter().any(|s| s.apache) {
+        let apache_spec = config
+            .defaults
+            .get("apache")
+            .map_or("latest", String::as_str);
+        match runtime::resolve_installed(paths, Kind::Apache, apache_spec)? {
+            Some(version) => {
+                let dir = paths.runtime_dir("apache", &version);
+                let conf = paths.etc().join("apache").join("httpd.conf");
+                files.push((
+                    conf.clone(),
+                    apache_conf(paths, config, &dir, &sites, workers),
+                ));
+                services.push(ServiceSpec {
+                    name: "apache".into(),
+                    group: "apache".into(),
+                    command: Command {
+                        program: dir.join("bin").join("httpd.exe"),
+                        args: vec!["-d".into(), slash(&dir), "-f".into(), slash(&conf)],
+                        cwd: dir.clone(),
+                        env: vec![],
+                    },
+                    stop: None,
+                    init: None,
+                    init_marker: None,
+                    port: Some(config.apache.port),
+                    extra_ports: vec![],
+                    log: paths.logs().join("apache.log"),
+                });
+            }
+            None => {
+                let names: Vec<&str> = sites
+                    .iter()
+                    .filter(|s| s.apache)
+                    .map(|s| s.domain())
+                    .collect();
+                warnings.push(format!(
+                    "Apache belum terinstall; {} sementara dilayani nginx. Jalankan `devlock install apache`",
+                    names.join(", ")
+                ));
+                for site in &mut sites {
+                    site.apache = false;
+                }
+            }
         }
     }
 
@@ -521,6 +569,22 @@ pub fn nginx_conf(
                 key = slash(&cert.key),
             );
         }
+        if site.apache {
+            let _ = write!(
+                c,
+                "\n        location / {{\n\
+                 \x20           proxy_pass http://127.0.0.1:{port};\n\
+                 \x20           proxy_http_version 1.1;\n\
+                 \x20           proxy_set_header Host $host;\n\
+                 \x20           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+                 \x20           proxy_set_header X-Forwarded-Proto $scheme;\n\
+                 \x20           proxy_set_header X-Forwarded-Port $server_port;\n\
+                 \x20           proxy_read_timeout 300;\n\
+                 \x20       }}\n    }}\n",
+                port = config.apache.port,
+            );
+            continue;
+        }
         match &site.kind {
             SiteKind::Php { line } => {
                 let _ = write!(
@@ -564,6 +628,140 @@ pub fn nginx_conf(
     }
     c.push_str("}\n");
     c
+}
+
+/// Modul Apache yang dimuat: cukup untuk `.htaccess` umum (rewrite, header, expires, auth
+/// basic, gaya lama `Order allow,deny`) dan PHP lewat FastCGI.
+const APACHE_MODULES: &[&str] = &[
+    "access_compat",
+    "alias",
+    "auth_basic",
+    "authn_core",
+    "authn_file",
+    "authz_core",
+    "authz_host",
+    "authz_user",
+    "autoindex",
+    "deflate",
+    "dir",
+    "env",
+    "expires",
+    "filter",
+    "headers",
+    "lbmethod_byrequests",
+    "log_config",
+    "mime",
+    "proxy",
+    "proxy_balancer",
+    "proxy_fcgi",
+    "remoteip",
+    "rewrite",
+    "setenvif",
+    "slotmem_shm",
+];
+
+/// `httpd.conf` untuk site `webserver = "apache"`: hanya mendengarkan di
+/// `127.0.0.1:<apache.port>` di belakang nginx, PHP diteruskan ke pool php-cgi DevLock.
+pub fn apache_conf(
+    paths: &Paths,
+    config: &Config,
+    apache_dir: &Path,
+    sites: &[Site],
+    workers: u16,
+) -> String {
+    let logs = slash(&paths.logs());
+    let listen = format!("127.0.0.1:{}", config.apache.port);
+    let mut c = String::new();
+    let _ = writeln!(
+        c,
+        "# Dibuat otomatis oleh DevLock; perubahan manual akan ditimpa.\n\
+         ServerRoot \"{root}\"\n\
+         Listen {listen}\n\
+         ServerName localhost\n\
+         PidFile \"{run}/httpd.pid\"\n",
+        root = slash(apache_dir),
+        run = slash(&paths.run()),
+    );
+    for module in APACHE_MODULES {
+        let _ = writeln!(c, "LoadModule {module}_module modules/mod_{module}.so");
+    }
+    let _ = write!(
+        c,
+        "\nTypesConfig conf/mime.types\n\
+         DirectoryIndex index.php index.html index.htm\n\
+         AcceptFilter http none\n\
+         AcceptFilter https none\n\
+         EnableSendfile off\n\
+         EnableMMAP off\n\
+         ErrorLog \"{logs}/apache-error.log\"\n\
+         LogLevel warn\n\
+         LogFormat \"%a %l %u %t \\\"%r\\\" %>s %b \\\"%{{Referer}}i\\\" \\\"%{{User-Agent}}i\\\"\" combined\n\
+         CustomLog \"{logs}/apache-access.log\" combined\n\n\
+         # Request datang dari nginx DevLock: IP klien & HTTPS diambil dari header-nya.\n\
+         RemoteIPHeader X-Forwarded-For\n\
+         RemoteIPInternalProxy 127.0.0.1\n\
+         SetEnvIf X-Forwarded-Proto \"^https$\" HTTPS=on\n\n\
+         # php-cgi bukan PHP-FPM: kirim SCRIPT_FILENAME sebagai path file biasa.\n\
+         ProxyFCGIBackendType GENERIC\n\
+         ProxyTimeout 300\n\n\
+         <Directory />\n    AllowOverride None\n    Require all denied\n</Directory>\n"
+    );
+
+    let lines: BTreeSet<&str> = sites
+        .iter()
+        .filter(|s| s.apache)
+        .filter_map(|s| match &s.kind {
+            SiteKind::Php { line } => Some(line.as_str()),
+            _ => None,
+        })
+        .collect();
+    for line in &lines {
+        let _ = writeln!(c, "\n<Proxy \"balancer://{}\">", balancer_name(line));
+        for worker in 0..workers {
+            let _ = writeln!(
+                c,
+                "    BalancerMember \"fcgi://127.0.0.1:{}\"",
+                php_port(line, worker)
+            );
+        }
+        let _ = writeln!(c, "</Proxy>");
+    }
+
+    // VirtualHost pertama menjadi default untuk Host yang tidak dikenal.
+    let _ = write!(
+        c,
+        "\n<VirtualHost {listen}>\n    ServerName default.invalid\n    <Location />\n        Require all denied\n    </Location>\n</VirtualHost>\n"
+    );
+    for site in sites.iter().filter(|s| s.apache) {
+        let root = slash(&site.docroot);
+        let _ = write!(
+            c,
+            "\n# {dir}\n<VirtualHost {listen}>\n    ServerName {name}\n",
+            dir = site.dir.display(),
+            name = site.domain(),
+        );
+        if site.domains.len() > 1 {
+            let _ = writeln!(c, "    ServerAlias {}", site.domains[1..].join(" "));
+        }
+        let _ = write!(
+            c,
+            "    DocumentRoot \"{root}\"\n    <Directory \"{root}\">\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n"
+        );
+        if let SiteKind::Php { line } = &site.kind {
+            let _ = write!(
+                c,
+                "    <FilesMatch \"\\.php$\">\n        SetHandler \"proxy:balancer://{}\"\n    </FilesMatch>\n",
+                balancer_name(line)
+            );
+        }
+        let _ = writeln!(c, "</VirtualHost>");
+    }
+    c
+}
+
+/// Nama balancer Apache (`8.3` → `php83`); hanya huruf/angka agar aman sebagai host URL.
+fn balancer_name(line: &str) -> String {
+    format!("php{}", line.replace('.', ""))
 }
 
 fn upstream_name(line: &str) -> String {
@@ -726,5 +924,62 @@ mod tests {
             .sites
             .iter()
             .any(|s| s.name == "secure" && s.url(&Config::default()) == "https://secure.test"));
+    }
+
+    #[test]
+    fn apache_sites_are_proxied_from_nginx() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("nginx", "1.30.6")).unwrap();
+        std::fs::create_dir_all(paths.runtime_dir("php", "8.3.12")).unwrap();
+        let www = paths.default_www();
+        std::fs::create_dir_all(www.join("legacy")).unwrap();
+        std::fs::write(www.join("legacy/index.php"), "").unwrap();
+        std::fs::write(
+            www.join("legacy/.devlock.toml"),
+            "webserver = \"apache\"\naliases = [\"old.local\"]\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(www.join("modern")).unwrap();
+        std::fs::write(www.join("modern/index.php"), "").unwrap();
+        let config = Config::default();
+
+        // Apache belum terinstall: tetap dilayani nginx, dengan peringatan.
+        let without = plan(&paths, &config).unwrap();
+        assert!(without.services.iter().all(|s| s.name != "apache"));
+        assert!(without.warnings.iter().any(|w| w.contains("legacy.test")));
+        assert!(without.sites.iter().all(|s| !s.apache));
+
+        std::fs::create_dir_all(paths.runtime_dir("apache", "2.4.69")).unwrap();
+        let with = plan(&paths, &config).unwrap();
+        let names: Vec<&str> = with.services.iter().map(|s| s.name.as_str()).collect();
+        let apache = names.iter().position(|n| *n == "apache").unwrap();
+        let nginx = names.iter().position(|n| *n == "nginx").unwrap();
+        assert!(apache < nginx, "Apache siap sebelum nginx: {names:?}");
+        assert_eq!(with.services[apache].port, Some(8180));
+
+        let file = |suffix: &str| {
+            with.files
+                .iter()
+                .find(|(p, _)| p.ends_with(suffix))
+                .map(|(_, c)| c.clone())
+                .unwrap()
+        };
+        let nginx_conf = file("nginx.conf");
+        let legacy = nginx_conf.split("server_name legacy.test").nth(1).unwrap();
+        let legacy = legacy.split("\n    }\n").next().unwrap();
+        assert!(legacy.contains("proxy_pass http://127.0.0.1:8180;"));
+        assert!(!legacy.contains("fastcgi_pass"));
+        let modern = nginx_conf.split("server_name modern.test").nth(1).unwrap();
+        assert!(modern.contains("fastcgi_pass"));
+
+        let httpd = file("httpd.conf");
+        assert!(httpd.contains("Listen 127.0.0.1:8180"));
+        assert!(httpd.contains("ServerName legacy.test\n    ServerAlias old.local"));
+        assert!(httpd.contains("AllowOverride All"));
+        assert!(httpd.contains("BalancerMember \"fcgi://127.0.0.1:9830\""));
+        assert!(httpd.contains("SetHandler \"proxy:balancer://php83\""));
+        assert!(httpd.contains("ProxyFCGIBackendType GENERIC"));
+        assert!(!httpd.contains("modern.test"));
     }
 }
