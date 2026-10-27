@@ -417,6 +417,72 @@ fn releases_from_github(
         .collect()
 }
 
+// --- .NET runtime (untuk Garnet) ---------------------------------------------
+
+/// Metadata rilis resmi .NET per channel, mis. `.../10.0/releases.json`.
+const DOTNET_RELEASES: &str = "https://builds.dotnet.microsoft.com/dotnet/release-metadata";
+
+/// Zip runtime .NET portable (`dotnet-runtime-<v>-win-x64.zip`) beserta SHA512-nya.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DotnetRuntime {
+    pub version: String,
+    pub url: String,
+    pub sha512: String,
+}
+
+#[derive(Deserialize)]
+struct DotnetChannel {
+    #[serde(rename = "latest-runtime")]
+    latest_runtime: String,
+    releases: Vec<DotnetRelease>,
+}
+
+#[derive(Deserialize)]
+struct DotnetRelease {
+    #[serde(default)]
+    runtime: Option<DotnetFiles>,
+}
+
+#[derive(Deserialize)]
+struct DotnetFiles {
+    version: String,
+    files: Vec<DotnetFile>,
+}
+
+#[derive(Deserialize)]
+struct DotnetFile {
+    name: String,
+    #[serde(default)]
+    rid: String,
+    url: String,
+    hash: String,
+}
+
+/// Runtime .NET terbaru di `channel` (mis. `10.0`) untuk Windows x64.
+pub fn dotnet_runtime(channel: &str) -> Result<DotnetRuntime> {
+    let meta: DotnetChannel =
+        http::get_json(&format!("{DOTNET_RELEASES}/{channel}/releases.json"))?;
+    dotnet_runtime_from(meta)
+        .with_context(|| format!("runtime .NET {channel} untuk win-x64 tidak ditemukan"))
+}
+
+fn dotnet_runtime_from(meta: DotnetChannel) -> Option<DotnetRuntime> {
+    let runtime = meta
+        .releases
+        .into_iter()
+        .filter_map(|r| r.runtime)
+        .find(|r| r.version == meta.latest_runtime)?;
+    let file = runtime
+        .files
+        .into_iter()
+        .find(|f| f.rid == "win-x64" && f.name == "dotnet-runtime-win-x64.zip")?;
+    Some(DotnetRuntime {
+        version: runtime.version,
+        url: file.url,
+        sha512: file.hash.to_lowercase(),
+    })
+}
+
 // --- Apache ------------------------------------------------------------------
 
 fn apache_releases() -> Result<Vec<Release>> {
@@ -632,6 +698,23 @@ mod tests {
             postgresql_zip_url("16.15", 2),
             "https://get.enterprisedb.com/postgresql/postgresql-16.15-2-windows-x64-binaries.zip"
         );
+    }
+
+    #[test]
+    fn dotnet_runtime_metadata() {
+        let json = r#"{"latest-runtime": "10.0.14", "releases": [
+            {"runtime": {"version": "10.0.14", "files": [
+                {"name": "dotnet-runtime-win-arm64.zip", "rid": "win-arm64", "url": "https://x/arm.zip", "hash": "AA"},
+                {"name": "dotnet-runtime-win-x64.exe", "rid": "win-x64", "url": "https://x/rt.exe", "hash": "BB"},
+                {"name": "dotnet-runtime-win-x64.zip", "rid": "win-x64", "url": "https://x/rt.zip", "hash": "CC"}
+            ]}},
+            {"runtime": null},
+            {"runtime": {"version": "10.0.13", "files": []}}
+        ]}"#;
+        let rt = dotnet_runtime_from(serde_json::from_str(json).unwrap()).unwrap();
+        assert_eq!(rt.version, "10.0.14");
+        assert_eq!(rt.url, "https://x/rt.zip");
+        assert_eq!(rt.sha512, "cc");
     }
 
     #[test]
