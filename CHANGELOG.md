@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-27
+
 ### Fixed
 - `devlock start` (juga tombol Start di GUI dan menu tray) tidak lagi menggantung bila output-nya di-pipe atau di-redirect, mis. `devlock start 2>&1 | Out-String`. Daemon latar dulu mewarisi semua handle pemanggil (termasuk pipe stdout/stderr) sehingga pipe tidak pernah EOF selama daemon hidup; kini daemon hanya mewarisi handle log-nya, dan service yang dijalankan daemon tidak lagi ikut memegang stdout/stderr daemon.
 
@@ -57,7 +59,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/romyrudiansah/devlock/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/romyrudiansah/devlock/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/romyrudiansah/devlock/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/romyrudiansah/devlock/compare/v0.3.0...v0.3.1
