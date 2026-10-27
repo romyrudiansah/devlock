@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-10-28
+
 ### Fixed
 - Log Redis (`logs\redis@<major>.log`) selalu kosong: log service dibuka sebagai handle append-only (`FILE_APPEND_DATA` tanpa `FILE_WRITE_DATA`), dan program berbasis msys2/Cygwin diam-diam gagal menulis ke handle itu. Log kini dibuka dengan akses tulis biasa di posisi akhir file.
 
@@ -135,7 +137,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/romyrudiansah/devlock/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/romyrudiansah/devlock/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/romyrudiansah/devlock/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/romyrudiansah/devlock/compare/v0.8.0...v0.8.1
