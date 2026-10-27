@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- Log Redis (`logs\redis@<major>.log`) selalu kosong: log service dibuka sebagai handle append-only (`FILE_APPEND_DATA` tanpa `FILE_WRITE_DATA`), dan program berbasis msys2/Cygwin diam-diam gagal menulis ke handle itu. Log kini dibuka dengan akses tulis biasa di posisi akhir file.
+
 ## [0.9.1] - 2026-10-28
 
 ### Fixed

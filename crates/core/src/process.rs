@@ -30,6 +30,22 @@ pub fn rotate_log(log: &std::path::Path, max: u64) {
     }
 }
 
+/// Buka `log` untuk stdout/stderr service dengan posisi tulis di akhir file.
+///
+/// Sengaja bukan `append(true)`: di Windows itu menghasilkan handle `FILE_APPEND_DATA` tanpa
+/// `FILE_WRITE_DATA`, dan program berbasis runtime Cygwin/msys2 (mis. redis-windows) diam-diam
+/// gagal menulis ke handle seperti itu sehingga log-nya selalu kosong.
+pub fn open_log(log: &std::path::Path) -> std::io::Result<File> {
+    use std::io::{Seek, SeekFrom};
+    let mut file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(log)?;
+    file.seek(SeekFrom::End(0))?;
+    Ok(file)
+}
+
 pub struct Process {
     pub child: Child,
     job: Job,
@@ -41,11 +57,7 @@ impl Process {
             std::fs::create_dir_all(dir)?;
         }
         rotate_log(log, MAX_LOG_BYTES);
-        let out = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(log)
-            .with_context(|| format!("gagal membuka log {}", log.display()))?;
+        let out = open_log(log).with_context(|| format!("gagal membuka log {}", log.display()))?;
         let err = out.try_clone()?;
 
         let mut command = std_command(cmd);
@@ -368,7 +380,21 @@ impl Job {
 
 #[cfg(test)]
 mod rotate_tests {
-    use super::rotate_log;
+    use super::{open_log, rotate_log};
+
+    #[test]
+    fn open_log_keeps_content_and_allows_full_write_access() {
+        use std::io::Write;
+        let tmp = tempfile::tempdir().unwrap();
+        let log = tmp.path().join("redis@8.log");
+        std::fs::write(&log, "lama\n").unwrap();
+        let mut file = open_log(&log).unwrap();
+        file.write_all(b"baru\n").unwrap();
+        // set_len butuh FILE_WRITE_DATA, yang tidak dimiliki handle append-only.
+        file.set_len(10).unwrap();
+        drop(file);
+        assert_eq!(std::fs::read_to_string(&log).unwrap(), "lama\nbaru\n");
+    }
 
     #[test]
     fn rotates_large_logs_only() {
