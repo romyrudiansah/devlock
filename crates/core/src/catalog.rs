@@ -1,11 +1,14 @@
 //! Katalog versi yang bisa diinstall, diambil dari sumber resmi masing-masing runtime.
 
 use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::http;
+use crate::paths::Paths;
 use crate::runtime::Kind;
 use crate::version::{self, Version};
 
@@ -38,7 +41,7 @@ const MYSQL_RELEASES: &[(&str, &str)] = &[
     ),
 ];
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Checksum {
     None,
     Sha256(String),
@@ -46,7 +49,7 @@ pub enum Checksum {
     ShasumsFile(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Release {
     pub kind: Kind,
     pub version: String,
@@ -60,6 +63,72 @@ impl Release {
     pub fn file_name(&self) -> &str {
         self.url.rsplit('/').next().unwrap_or(&self.url)
     }
+}
+
+/// Umur maksimal cache katalog sebelum diambil ulang dari sumber resmi.
+pub const CACHE_TTL: Duration = Duration::from_secs(6 * 60 * 60);
+
+fn cache_file(paths: &Paths, kind: Kind) -> PathBuf {
+    paths.tmp().join("catalog").join(format!("{kind}.json"))
+}
+
+/// Seperti [`available`], tapi memakai cache `tmp\catalog\<kind>.json` yang belum lewat
+/// [`CACHE_TTL`]. Bila sumber resmi gagal dihubungi, cache lama tetap dipakai.
+pub fn available_cached(paths: &Paths, kind: Kind, refresh: bool) -> Result<Vec<Release>> {
+    let file = cache_file(paths, kind);
+    let read_cache = || -> Option<Vec<Release>> {
+        serde_json::from_str(&std::fs::read_to_string(&file).ok()?).ok()
+    };
+    let fresh = std::fs::metadata(&file)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.elapsed().ok())
+        .is_some_and(|age| age < CACHE_TTL);
+    if fresh && !refresh {
+        if let Some(cached) = read_cache() {
+            return Ok(cached);
+        }
+    }
+    match available(kind) {
+        Ok(releases) => {
+            if let Some(dir) = file.parent() {
+                let _ = std::fs::create_dir_all(dir);
+            }
+            let _ = std::fs::write(&file, serde_json::to_string(&releases)?);
+            Ok(releases)
+        }
+        Err(err) => match read_cache() {
+            Some(stale) => {
+                tracing::warn!("katalog {kind} memakai cache lama: {err:#}");
+                Ok(stale)
+            }
+            None => Err(err),
+        },
+    }
+}
+
+/// Seperti [`find`], tapi mencari di katalog ter-cache dulu.
+pub fn find_cached(paths: &Paths, kind: Kind, spec: &str) -> Result<Release> {
+    if let Ok(releases) = available_cached(paths, kind, false) {
+        if let Some(release) = best_match(&releases, spec) {
+            return Ok(release.clone());
+        }
+    }
+    find(kind, spec)
+}
+
+fn best_match<'a>(releases: &'a [Release], spec: &str) -> Option<&'a Release> {
+    let lts_only = spec.eq_ignore_ascii_case("lts") || spec.starts_with("lts/");
+    releases
+        .iter()
+        .filter(|r| {
+            if lts_only {
+                r.lts
+            } else {
+                version::matches(spec, &r.version)
+            }
+        })
+        .max_by(|a, b| Version::parse(&a.version).cmp(&Version::parse(&b.version)))
 }
 
 /// Semua versi yang tersedia, terbaru lebih dulu.
@@ -90,18 +159,7 @@ pub fn find(kind: Kind, spec: &str) -> Result<Release> {
         }
         _ => available(kind)?,
     };
-    let lts_only = spec.eq_ignore_ascii_case("lts") || spec.starts_with("lts/");
-    let found = releases
-        .iter()
-        .filter(|r| {
-            if lts_only {
-                r.lts
-            } else {
-                version::matches(spec, &r.version)
-            }
-        })
-        .max_by(|a, b| Version::parse(&a.version).cmp(&Version::parse(&b.version)));
-    if let Some(release) = found {
+    if let Some(release) = best_match(&releases, spec) {
         return Ok(release.clone());
     }
     if kind == Kind::Php {

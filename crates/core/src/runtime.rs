@@ -9,7 +9,10 @@ use anyhow::{bail, Context, Result};
 use crate::paths::Paths;
 use crate::version;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
+#[serde(rename_all = "lowercase")]
 pub enum Kind {
     Php,
     Node,

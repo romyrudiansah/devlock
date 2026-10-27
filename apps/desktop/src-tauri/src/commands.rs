@@ -249,7 +249,8 @@ pub struct AvailableRelease {
 pub async fn available_runtimes(kind: String) -> CmdResult<Vec<AvailableRelease>> {
     blocking(move || {
         let kind: Kind = kind.parse().map_err(err)?;
-        let releases = catalog::available(kind).map_err(err)?;
+        let (paths, _) = context()?;
+        let releases = catalog::available_cached(&paths, kind, false).map_err(err)?;
         Ok(catalog::latest_per_line(kind, &releases)
             .into_iter()
             .map(|r: &Release| AvailableRelease {
@@ -276,7 +277,7 @@ pub async fn install_runtime(app: AppHandle, kind: String, version: String) -> C
         let (paths, config) = context()?;
         paths.ensure_layout().map_err(err)?;
         let kind: Kind = kind.parse().map_err(err)?;
-        let release = catalog::find(kind, &version).map_err(err)?;
+        let release = catalog::find_cached(&paths, kind, &version).map_err(err)?;
         let emit = |stage: &str, downloaded: u64, total: Option<u64>| {
             let _ = app.emit(
                 "install-progress",
