@@ -4,7 +4,7 @@ Local development environment untuk Windows — alternatif Laragon / WAMP / XAMP
 **multi-versi runtime** (PHP, Node, MySQL/MariaDB, PostgreSQL) yang bisa berjalan
 **bersamaan** dan dipilih **per-project**.
 
-> Status: Fase 2 (CLI + GUI dasar dengan tray). Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
+> Status: Fase 3 (CLI + GUI, PostgreSQL, HTTPS lokal, aksi database). Open source di bawah MIT OR Apache-2.0. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Konsep singkat
 
@@ -95,3 +95,66 @@ Mode development GUI (hot reload): `cd apps\desktop` lalu `npx tauri dev`. Untuk
 ## Kontribusi
 
 Lihat [CONTRIBUTING.md](CONTRIBUTING.md) untuk alur branch, format commit, dan rilis.
+
+## Perubahan pada sistem
+
+DevLock bersifat portable: semua runtime, data, dan konfigurasi ada di folder instalasinya.
+Di luar folder itu DevLock hanya mengubah hal berikut, dan **hanya saat Anda menjalankan
+perintahnya**:
+
+| Perubahan | Kapan | Membatalkan |
+|---|---|---|
+| Blok `# devlock-start … # devlock-end` di file hosts Windows (lewat UAC) | `devlock hosts`, `devlock start` | `devlock hosts --clear` |
+| Folder `shims` di depan PATH user (registry `HKCU\Environment`) | `devlock path add` | `devlock path remove` |
+| CA "DevLock Local CA" di store sertifikat Root milik user (Windows meminta konfirmasi) | `devlock ssl trust` | `devlock ssl untrust` |
+
+## Uninstall
+
+```
+devlock stop
+devlock hosts --clear
+devlock ssl untrust
+devlock path remove
+```
+
+Lalu hapus folder instalasi DevLock (berisi runtime, database di `data`, dan project di `www`;
+cadangkan dulu yang masih diperlukan, mis. dengan `devlock db dump`).
+
+## Privasi
+
+DevLock tidak mengumpulkan atau mengirim data penggunaan (tanpa telemetri). Koneksi keluar
+hanya dibuat saat Anda meminta daftar atau unduhan runtime, langsung ke sumber resminya:
+`downloads.php.net`, `nodejs.org`, `getcomposer.org`, `nginx.org`, `downloads.mariadb.org`,
+`cdn.mysql.com`, `www.postgresql.org`, dan `get.enterprisedb.com`. Daemon DevLock dan semua
+service hanya mendengarkan di `127.0.0.1`.
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/).
+
+- Hanya binary DevLock sendiri (`devlock.exe`, `devlock-shim.exe`, `devlock-gui.exe`) yang
+  ditandatangani, dan selalu dibangun otomatis oleh [GitHub Actions](.github/workflows/release.yml)
+  dari source di repository ini. Runtime yang diunduh DevLock (PHP, Node, dll.) tetap memakai
+  tanda tangan atau checksum dari penerbit aslinya.
+- Setiap rilis yang ditandatangani disetujui manual oleh approver di bawah.
+- Rilis yang dibuat sebelum pendaftaran SignPath diterima belum ditandatangani.
+
+Peran tim:
+
+| Peran | Anggota |
+|---|---|
+| Committers & reviewers | [@romyrudiansah](https://github.com/romyrudiansah) |
+| Approvers | [@romyrudiansah](https://github.com/romyrudiansah) |
+
+Kebijakan privasi: lihat bagian [Privasi](#privasi).
+
+## Lisensi
+
+DevLock dilisensikan di bawah salah satu dari, sesuai pilihan Anda:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT license ([LICENSE-MIT](LICENSE-MIT))
+
+Kecuali dinyatakan lain, setiap kontribusi yang Anda kirim untuk dimasukkan ke DevLock
+dilisensikan ganda seperti di atas, tanpa syarat atau ketentuan tambahan.

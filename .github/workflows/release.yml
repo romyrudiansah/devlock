@@ -10,6 +10,9 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      # Tanda tangan SignPath aktif hanya bila secret sudah diisi (lihat CONTRIBUTING.md).
+      SIGNPATH_ENABLED: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -34,13 +37,54 @@ jobs:
 
       - run: cargo build --release --workspace --features devlock-desktop/custom-protocol
 
+      - name: Kumpulkan binary
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force unsigned/bin | Out-Null
+          Get-ChildItem target/release/*.exe | Copy-Item -Destination unsigned/bin
+
+      - name: Unggah binary untuk SignPath
+        id: unsigned
+        if: env.SIGNPATH_ENABLED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-binaries
+          path: unsigned/
+
+      # Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+      # Setiap permintaan wajib disetujui manual oleh approver di SignPath.
+      - name: Tanda tangani lewat SignPath
+        if: env.SIGNPATH_ENABLED == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'devlock' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed
+
+      - name: Verifikasi tanda tangan
+        if: env.SIGNPATH_ENABLED == 'true'
+        shell: pwsh
+        run: |
+          foreach ($exe in Get-ChildItem signed/bin/*.exe) {
+            $sig = Get-AuthenticodeSignature $exe.FullName
+            "{0}: {1} ({2})" -f $exe.Name, $sig.Status, $sig.SignerCertificate.Subject
+            if ($sig.Status -ne 'Valid') { throw "$($exe.Name) tidak bertanda tangan valid" }
+          }
+
       - name: Paket zip
         shell: pwsh
         run: |
           $name = "devlock-${{ github.ref_name }}-windows-x64"
+          $source = if ($env:SIGNPATH_ENABLED -eq 'true') { 'signed/bin' } else { 'unsigned/bin' }
           New-Item -ItemType Directory -Force "$name/bin" | Out-Null
-          Get-ChildItem target/release/*.exe | Copy-Item -Destination "$name/bin"
-          Copy-Item README.md, CHANGELOG.md -Destination $name
+          Get-ChildItem "$source/*.exe" | Copy-Item -Destination "$name/bin"
+          Copy-Item README.md, CHANGELOG.md, LICENSE-MIT, LICENSE-APACHE -Destination $name
           Compress-Archive -Path "$name/*" -DestinationPath "$name.zip"
           $hash = (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower()
           # Akhiran LF agar `sha256sum -c` bisa langsung dipakai.
@@ -56,7 +100,13 @@ jobs:
           $rest = $lines[$start..($lines.Count - 1)]
           $end = ($rest | Select-String -Pattern '^## \[' | Select-Object -First 1).LineNumber
           if ($end) { $rest = $rest[0..($end - 2)] }
-          $rest = $rest | Where-Object { $_ -notmatch '^\[.+\]: ' }
+          $rest = @($rest | Where-Object { $_ -notmatch '^\[.+\]: ' })
+          $policy = "https://github.com/${{ github.repository }}#code-signing-policy"
+          if ($env:SIGNPATH_ENABLED -eq 'true') {
+            $rest += "", "Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). [Code signing policy]($policy)"
+          } else {
+            $rest += "", "Binary rilis ini belum ditandatangani. [Code signing policy]($policy)"
+          }
           $rest -join "`n" | Out-File -Encoding utf8 notes.md
 
       - uses: softprops/action-gh-release@v2

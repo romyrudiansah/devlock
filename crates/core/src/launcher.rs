@@ -79,10 +79,24 @@ pub fn sync_hosts(paths: &Paths, config: &Config, elevated: bool) -> Result<Host
         .into_iter()
         .flat_map(|s| s.domains)
         .collect();
+    write_hosts(paths, &domains, elevated, false)
+}
+
+/// Hapus seluruh blok DevLock dari file hosts (untuk uninstall).
+pub fn clear_hosts(paths: &Paths, elevated: bool) -> Result<HostsSync> {
+    write_hosts(paths, &[], elevated, true)
+}
+
+fn write_hosts(
+    paths: &Paths,
+    domains: &[String],
+    elevated: bool,
+    clear: bool,
+) -> Result<HostsSync> {
     let file = hosts::hosts_file();
     let current = std::fs::read_to_string(&file)
         .with_context(|| format!("gagal membaca {}", file.display()))?;
-    let wanted = hosts::apply(&current, &domains);
+    let wanted = hosts::apply(&current, domains);
     if wanted == current {
         return Ok(HostsSync::Unchanged);
     }
@@ -91,7 +105,7 @@ pub fn sync_hosts(paths: &Paths, config: &Config, elevated: bool) -> Result<Host
             domains: domains.len(),
         }),
         Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied && !elevated => {
-            run_elevated_hosts(paths)?;
+            run_elevated_hosts(paths, clear)?;
             if std::fs::read_to_string(&file)? != wanted {
                 bail!("file hosts belum berubah (UAC ditolak?)");
             }
@@ -103,15 +117,16 @@ pub fn sync_hosts(paths: &Paths, config: &Config, elevated: bool) -> Result<Host
     }
 }
 
-fn run_elevated_hosts(paths: &Paths) -> Result<()> {
+fn run_elevated_hosts(paths: &Paths, clear: bool) -> Result<()> {
     let exe = devlock_exe()?;
     let escape = |p: &Path| p.to_string_lossy().replace('\'', "''");
     // Proses elevated tidak selalu mewarisi environment, jadi root dikirim sebagai argumen
     // (dibungkus kutip ganda agar path berspasi tetap satu argumen).
     let script = format!(
-        "Start-Process -FilePath '{exe}' -ArgumentList @('hosts','--elevated','--root','\"{root}\"') -Verb RunAs -Wait -WindowStyle Hidden",
+        "Start-Process -FilePath '{exe}' -ArgumentList @('hosts','--elevated',{clear}'--root','\"{root}\"') -Verb RunAs -Wait -WindowStyle Hidden",
         exe = escape(&exe),
         root = escape(paths.root()),
+        clear = if clear { "'--clear'," } else { "" },
     );
     let mut command = Command::new("powershell.exe");
     command.args(["-NoProfile", "-NonInteractive", "-Command", &script]);

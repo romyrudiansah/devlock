@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Konfigurasi artifact SignPath untuk rilis DevLock (salin ke dashboard SignPath:
+  Project "devlock" > Artifact configurations). Artifact GitHub "unsigned-binaries"
+  berisi folder bin\ dengan tiga exe yang dibangun workflow rilis.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file-set>
+      <include path="bin/devlock.exe" />
+      <include path="bin/devlock-shim.exe" />
+      <include path="bin/devlock-gui.exe" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>
