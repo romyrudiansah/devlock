@@ -235,6 +235,12 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
     }
     instances.sort_by_key(DbInstance::name);
     instances.dedup();
+    if let Some(adminer) = sites.iter().find(|s| s.is_adminer(paths)) {
+        files.push((
+            adminer.dir.join("index.php"),
+            adminer_index(config, &instances),
+        ));
+    }
     for instance in instances {
         match runtime::resolve_installed(paths, instance.kind, &instance.line)? {
             Some(version) => {
@@ -503,6 +509,64 @@ fn postgresql_service(
         log: paths.logs().join(format!("{}.log", instance.name())),
     }
 }
+
+/// `index.php` pembungkus Adminer: login tanpa password diizinkan (user database lokal
+/// DevLock memang tanpa password dan site hanya terjangkau dari 127.0.0.1), dan field server
+/// menawarkan instance database DevLock.
+pub fn adminer_index(config: &Config, instances: &[DbInstance]) -> String {
+    let mut options = String::new();
+    let mut hints = String::new();
+    for instance in instances {
+        let (system, user) = if instance.kind == Kind::Postgresql {
+            ("PostgreSQL", "postgres")
+        } else {
+            ("MySQL / MariaDB", "root")
+        };
+        let address = format!("127.0.0.1:{}", instance.port(config));
+        let name = instance.name();
+        let _ = write!(
+            options,
+            "<option value='{address}' label='{name} ({system}, user {user})'>"
+        );
+        let _ = write!(
+            hints,
+            "<br><code>{name}</code>: {system}, server <code>{address}</code>, user <code>{user}</code>"
+        );
+    }
+    ADMINER_INDEX
+        .replace("__OPTIONS__", &options)
+        .replace("__HINTS__", &hints)
+}
+
+const ADMINER_INDEX: &str = r#"<?php
+// Dibuat otomatis oleh DevLock; perubahan manual akan ditimpa.
+// adminer.test hanya terjangkau dari 127.0.0.1 (nginx DevLock), dan user database lokal DevLock
+// (root MySQL/MariaDB, postgres) memang tanpa password, jadi login tanpa password diizinkan.
+
+function adminer_object() {
+    class DevLockAdminer extends \Adminer\Adminer {
+        function name(): string {
+            return 'DevLock Adminer';
+        }
+
+        function login(string $login, string $password) {
+            return true;
+        }
+
+        function loginFormField(string $name, string $heading, string $value): string {
+            if ($name == 'server') {
+                $value = str_replace("<input name='auth[server]'", "<input list='devlock-servers' name='auth[server]'", $value)
+                    . "<datalist id='devlock-servers'>__OPTIONS__</datalist>"
+                    . "<small>__HINTS__</small>";
+            }
+            return parent::loginFormField($name, $heading, $value);
+        }
+    }
+    return new DevLockAdminer;
+}
+
+include __DIR__ . '/adminer.php';
+"#;
 
 /// Service cache beserta file konfigurasinya (`etc\redis\<major>.conf` untuk Redis).
 /// Redis menyimpan snapshot RDB di `data\redis\<major>`; Garnet berjalan di memori saja.
@@ -1044,6 +1108,53 @@ mod tests {
             .sites
             .iter()
             .any(|s| s.name == "secure" && s.url(&Config::default()) == "https://secure.test"));
+    }
+
+    #[test]
+    fn adminer_builtin_site() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("nginx", "1.30.6")).unwrap();
+        std::fs::create_dir_all(paths.runtime_dir("php", "8.4.27")).unwrap();
+        let mut config = Config::default();
+        config
+            .defaults
+            .insert("database".into(), "mysql@8.4".into());
+
+        // Belum terinstall: tidak ada site adminer.
+        assert!(plan(&paths, &config)
+            .unwrap()
+            .sites
+            .iter()
+            .all(|s| s.name != "adminer"));
+
+        let dir = paths.runtime_dir("adminer", "6.2.0");
+        std::fs::create_dir_all(&dir).unwrap();
+        let with = plan(&paths, &config).unwrap();
+        let site = with.sites.iter().find(|s| s.name == "adminer").unwrap();
+        assert_eq!(site.domains, ["adminer.test"]);
+        assert_eq!(site.kind, SiteKind::Php { line: "8.4".into() });
+        assert!(site.is_adminer(&paths));
+        let (_, index) = with
+            .files
+            .iter()
+            .find(|(p, _)| *p == dir.join("index.php"))
+            .unwrap();
+        assert!(index.contains(
+            "<option value='127.0.0.1:3384' label='mysql@8.4 (MySQL / MariaDB, user root)'>"
+        ));
+        assert!(index.contains("include __DIR__ . '/adminer.php';"));
+        assert!(!index.contains("__OPTIONS__"));
+
+        // Folder www\adminer milik pengguna menggantikan site bawaan.
+        let www = paths.default_www().join("adminer");
+        std::fs::create_dir_all(&www).unwrap();
+        std::fs::write(www.join("index.html"), "").unwrap();
+        let user = plan(&paths, &config).unwrap();
+        let sites: Vec<_> = user.sites.iter().filter(|s| s.name == "adminer").collect();
+        assert_eq!(sites.len(), 1);
+        assert!(!sites[0].is_adminer(&paths));
+        assert!(user.files.iter().all(|(p, _)| *p != dir.join("index.php")));
     }
 
     #[test]

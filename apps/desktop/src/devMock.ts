@@ -86,6 +86,7 @@ const runtimes: RuntimeInfo[] = [
   { kind: "postgresql", installed: ["18.6"], default_spec: null, default_version: null },
   { kind: "redis", installed: ["8.10.3"], default_spec: null, default_version: null },
   { kind: "garnet", installed: [], default_spec: null, default_version: null },
+  { kind: "adminer", installed: ["6.2.0"], default_spec: null, default_version: null },
 ];
 
 const available: AvailableRelease[] = [

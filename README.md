@@ -123,6 +123,18 @@ devlock db drop toko --yes
 Instance harus sedang berjalan (`devlock start db`). Login lokal: `root` (MySQL/MariaDB) atau
 `postgres` (PostgreSQL) tanpa password, hanya dari `127.0.0.1`.
 
+## Adminer (panel database)
+
+```
+devlock install adminer          # adminer.php resmi (vrana/adminer), SHA256 dari GitHub
+```
+
+Setelah terinstall, `http://adminer.test` langsung tersedia (memakai PHP default) untuk
+MySQL, MariaDB, dan PostgreSQL. Field server menawarkan instance DevLock (mis.
+`127.0.0.1:3384`), dan login tanpa password diizinkan karena user lokal DevLock (`root`,
+`postgres`) memang tanpa password dan site ini hanya terjangkau dari `127.0.0.1`. Folder
+`www\adminer` milik Anda sendiri menggantikan site bawaan ini.
+
 ## Redis / Garnet (cache)
 
 ```

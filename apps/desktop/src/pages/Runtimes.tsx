@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
   postgresql: "PostgreSQL",
   redis: "Redis",
   garnet: "Garnet",
+  adminer: "Adminer",
 };
 
 function formatBytes(n: number) {
@@ -118,10 +119,10 @@ function RuntimeRow(props: {
   const [loading, setLoading] = useState(false);
   const [choice, setChoice] = useState("");
   const [error, setError] = useState<string | null>(null);
-  // Database & cache dipilih per project lewat instance (`database`/`cache`), bukan versi default.
-  const isInstance = ["mysql", "mariadb", "postgresql", "redis", "garnet"].includes(rt.kind);
   const isWebserver = rt.kind === "nginx" || rt.kind === "apache";
-  const canDefault = !isInstance && !isWebserver;
+  // Sama dengan Kind::has_default_version: database & cache dipilih lewat instance,
+  // web server & Adminer lewat konfigurasi.
+  const canDefault = ["php", "node", "composer"].includes(rt.kind);
 
   const loadAvailable = async () => {
     setLoading(true);
