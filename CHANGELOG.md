@@ -6,6 +6,12 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- Status service `starting`: service baru dianggap `running` setelah port-nya menerima koneksi. `devlock start` (dan tombol Start di GUI) menunggu hingga 20 detik sampai php-cgi, database, nginx, dan dev server siap, sehingga request pertama tidak lagi kena 502.
+
+### Fixed
+- Target `db` / `database` pada `devlock start/stop/restart` kini juga mencakup instance PostgreSQL.
+
 ## [0.4.2] - 2026-10-27
 
 ### Fixed

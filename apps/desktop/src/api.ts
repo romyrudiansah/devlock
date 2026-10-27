@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 export interface ServiceStatus {
   name: string;
   group: string;
-  state: "running" | "stopped" | "restarting" | "failed";
+  state: "running" | "starting" | "stopped" | "restarting" | "failed";
   pid: number | null;
   port: number | null;
   uptime_secs: number | null;

@@ -21,6 +21,18 @@ use crate::services::{self, ServiceSpec};
 const MIN_HEALTHY: Duration = Duration::from_secs(5);
 const MAX_FAILURES: u32 = 5;
 const STOP_TIMEOUT: Duration = Duration::from_secs(10);
+/// Batas menunggu port service siap setelah `start`; dev server Node bisa lebih lama dan
+/// akan tampil "starting" sampai siap.
+const READY_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// `true` bila ada yang menerima koneksi di `127.0.0.1:<port>`.
+fn port_ready(port: u16) -> bool {
+    TcpStream::connect_timeout(
+        &(Ipv4Addr::LOCALHOST, port).into(),
+        Duration::from_millis(150),
+    )
+    .is_ok()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "cmd", rename_all = "lowercase")]
@@ -70,6 +82,8 @@ struct Managed {
     process: Option<Process>,
     wanted: bool,
     started_at: Option<Instant>,
+    /// Port service sudah menerima koneksi (service tanpa port langsung dianggap siap).
+    ready: bool,
     next_retry: Option<Instant>,
     restarts: u32,
     failures: u32,
@@ -89,6 +103,7 @@ impl Managed {
             process: None,
             wanted: false,
             started_at: None,
+            ready: false,
             next_retry: None,
             restarts: 0,
             failures: 0,
@@ -143,7 +158,17 @@ impl Managed {
         tracing::info!(service = %self.spec.name, pid = process.pid(), "start");
         self.process = Some(process);
         self.started_at = Some(Instant::now());
+        self.ready = self.spec.port.is_none();
         Ok(())
+    }
+
+    /// Tandai siap begitu port service bisa dihubungi. Proses yang sudah hidup belum
+    /// tentu sudah listen (php-cgi, MySQL, dev server butuh beberapa detik).
+    fn check_ready(&mut self) {
+        if self.process.is_none() || self.ready {
+            return;
+        }
+        self.ready = self.spec.port.map_or(true, port_ready);
     }
 
     fn stop(&mut self) {
@@ -165,12 +190,14 @@ impl Managed {
         tracing::info!(service = %self.spec.name, "stop");
         process.kill();
         self.started_at = None;
+        self.ready = false;
     }
 
     /// Cek proses yang keluar sendiri dan jadwalkan restart dengan backoff.
     fn tick(&mut self) {
         if let Some(process) = &mut self.process {
             let Ok(Some(status)) = process.child.try_wait() else {
+                self.check_ready();
                 return;
             };
             let uptime = self.started_at.map(|t| t.elapsed()).unwrap_or_default();
@@ -179,6 +206,7 @@ impl Managed {
                 process.kill();
             }
             self.started_at = None;
+            self.ready = false;
             if !self.wanted {
                 return;
             }
@@ -214,6 +242,7 @@ impl Managed {
 
     fn status(&self) -> ServiceStatus {
         let state = match (&self.process, self.wanted, &self.error) {
+            (Some(_), _, _) if !self.ready => "starting",
             (Some(_), _, _) => "running",
             (None, true, _) => "restarting",
             (None, false, Some(_)) => "failed",
@@ -249,7 +278,9 @@ fn matches_target(target: &str, spec: &ServiceSpec) -> bool {
         || spec.group.starts_with(&format!("{target}@"))
         || (target == "dev" && spec.group.starts_with("dev:"))
         || (matches!(target, "db" | "database")
-            && (spec.group.starts_with("mysql@") || spec.group.starts_with("mariadb@")))
+            && ["mysql@", "mariadb@", "postgresql@"]
+                .iter()
+                .any(|engine| spec.group.starts_with(engine)))
 }
 
 impl Supervisor {
@@ -332,7 +363,27 @@ impl Supervisor {
                 started.push(name.clone());
             }
         }
+        self.wait_ready(&started, READY_TIMEOUT);
         started
+    }
+
+    /// Tunggu sampai service yang baru dijalankan siap menerima koneksi (atau gagal),
+    /// supaya `start` tidak melapor "running" sebelum php-cgi/database benar-benar listen.
+    fn wait_ready(&mut self, names: &[String], timeout: Duration) {
+        let deadline = Instant::now() + timeout;
+        loop {
+            let mut pending = false;
+            for name in names {
+                if let Some(managed) = self.services.get_mut(name) {
+                    managed.tick();
+                    pending |= managed.process.is_some() && !managed.ready;
+                }
+            }
+            if !pending || Instant::now() >= deadline {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(200));
+        }
     }
 
     pub fn stop(&mut self, target: &str) -> Vec<String> {
@@ -515,6 +566,15 @@ mod tests {
     }
 
     #[test]
+    fn port_readiness() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        assert!(port_ready(port));
+        drop(listener);
+        assert!(!port_ready(port));
+    }
+
+    #[test]
     fn target_matching() {
         let php = spec("php@8.3#0", "php@8.3");
         assert!(matches_target("all", &php));
@@ -523,6 +583,10 @@ mod tests {
         assert!(!matches_target("php@8.2", &php));
         let db = spec("mysql@8.4", "mysql@8.4");
         assert!(matches_target("db", &db));
+        assert!(matches_target(
+            "db",
+            &spec("postgresql@18", "postgresql@18")
+        ));
         assert!(matches_target("mysql", &db));
         assert!(!matches_target("nginx", &db));
         assert!(matches_target("dev", &spec("dev:dash", "dev:dash")));

@@ -12,8 +12,17 @@ function groupServices(services: ServiceStatus[]) {
   return [...groups.entries()].map(([group, items]) => {
     const running = items.filter((s) => s.state === "running").length;
     const failed = items.find((s) => s.state === "failed");
+    const starting = items.some((s) => s.state === "starting");
     const state =
-      running === items.length ? "running" : failed ? "failed" : running > 0 ? "partial" : items[0].state;
+      running === items.length
+        ? "running"
+        : failed
+          ? "failed"
+          : starting
+            ? "starting"
+            : running > 0
+              ? "partial"
+              : items[0].state;
     const ports = items.map((s) => s.port).filter((p): p is number => p !== null);
     return {
       group,
@@ -40,6 +49,7 @@ const STATE_LABEL: Record<string, string> = {
   partial: "Sebagian",
   stopped: "Berhenti",
   restarting: "Restart…",
+  starting: "Menyiapkan…",
   failed: "Gagal",
 };
 
@@ -160,7 +170,7 @@ export default function Dashboard() {
                 <td>{formatUptime(g.uptime)}</td>
                 <td>{g.restarts}</td>
                 <td className="row-actions">
-                  {g.state === "running" || g.state === "partial" ? (
+                  {g.state === "running" || g.state === "partial" || g.state === "starting" ? (
                     <>
                       <button disabled={!!busy} onClick={() => run("restart", g.group)}>
                         Restart
