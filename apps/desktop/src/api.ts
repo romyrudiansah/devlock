@@ -75,6 +75,7 @@ export const api = {
   openUrl: (url: string) => invoke<void>("open_url", { url }),
   openFolder: (path: string) => invoke<void>("open_folder", { path }),
   openTerminal: (dir: string) => invoke<void>("open_terminal", { dir }),
+  createSiteDatabase: (site: string) => invoke<string>("create_site_database", { site }),
 };
 
 /** Pesan error dari command Tauri (string) atau Error biasa. */

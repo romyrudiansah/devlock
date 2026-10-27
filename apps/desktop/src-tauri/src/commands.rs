@@ -8,7 +8,7 @@ use devlock_core::daemon::{self, Request, Response, ServiceStatus};
 use devlock_core::install::{self, Event};
 use devlock_core::launcher::{self, HostsSync};
 use devlock_core::sites::{self, SiteKind};
-use devlock_core::{runtime, services, version, Config, Kind, Paths};
+use devlock_core::{db, runtime, services, version, Config, Kind, Paths};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
@@ -141,6 +141,37 @@ pub struct SiteInfo {
     dir: String,
     docroot: String,
     warning: Option<String>,
+}
+
+/// Buat database bernama sesuai site (`my-shop` → `my_shop`) di instance database site itu.
+#[tauri::command]
+pub async fn create_site_database(site: String) -> CmdResult<String> {
+    blocking(move || {
+        let (paths, config) = context()?;
+        let sites = sites::discover(&paths, &config).map_err(err)?;
+        let site = sites
+            .iter()
+            .find(|s| s.name == site)
+            .ok_or_else(|| format!("site `{site}` tidak ditemukan"))?;
+        let instance = services::site_database(&config, site).ok_or_else(|| {
+            format!(
+                "{} belum punya database; set `database` di .devlock.toml",
+                site.domain()
+            )
+        })?;
+        let name = db::name_for_site(&site.name);
+        let created = db::create(&paths, &config, &instance, &name).map_err(err)?;
+        Ok(if created {
+            format!(
+                "Database `{name}` dibuat di {} (port {}).",
+                instance.name(),
+                instance.port(&config)
+            )
+        } else {
+            format!("Database `{name}` sudah ada di {}.", instance.name())
+        })
+    })
+    .await
 }
 
 #[tauri::command]
