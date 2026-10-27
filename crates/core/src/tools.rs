@@ -166,6 +166,7 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
             if *kind == Kind::Node {
                 plan.env
                     .push(("NPM_CONFIG_PREFIX".into(), r.dir.clone().into()));
+                plan.env.extend(node_ca_env(paths));
             }
             plan.record(&r);
             Ok(plan)
@@ -183,6 +184,7 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
             plan.path_prepend.push(r.dir.clone());
             plan.env
                 .push(("NPM_CONFIG_PREFIX".into(), r.dir.clone().into()));
+            plan.env.extend(node_ca_env(paths));
             plan.record(&r);
             Ok(plan)
         }
@@ -229,6 +231,11 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
             Ok(plan)
         }
     }
+}
+
+/// `NODE_EXTRA_CA_CERTS` dalam bentuk env shim, bila CA DevLock sudah dibuat.
+fn node_ca_env(paths: &Paths) -> Option<(String, OsString)> {
+    crate::services::node_ca_env(paths).map(|(k, v)| (k, v.into()))
 }
 
 fn first_existing(dir: &Path, candidates: &[&str], tool: &str) -> Result<PathBuf> {

@@ -1,6 +1,7 @@
 mod commands;
 mod runtimes;
 mod services;
+mod ssl;
 mod user_path;
 mod versions;
 
@@ -106,6 +107,11 @@ enum Command {
         #[command(subcommand)]
         command: SiteCommand,
     },
+    /// HTTPS lokal: CA DevLock dan sertifikat per site
+    Ssl {
+        #[command(subcommand)]
+        command: SslCommand,
+    },
     /// Samakan file hosts Windows dengan daftar site (minta UAC bila perlu)
     Hosts {
         #[arg(long, hide = true)]
@@ -116,6 +122,20 @@ enum Command {
     /// Proses latar yang mengawasi service (dijalankan otomatis oleh `start`)
     #[command(hide = true)]
     Daemon,
+}
+
+#[derive(Subcommand)]
+enum SslCommand {
+    /// Status CA, kepercayaan Windows, dan site yang memakai HTTPS
+    Status,
+    /// Pasang CA DevLock ke store Root user (Windows meminta konfirmasi)
+    Trust,
+    /// Cabut CA DevLock dari store Root user
+    Untrust,
+    /// Aktifkan HTTPS untuk semua site ([https] enabled = true)
+    Enable,
+    /// Nonaktifkan HTTPS global
+    Disable,
 }
 
 #[derive(Subcommand)]
@@ -172,6 +192,13 @@ fn main() {
             }
             services::hosts(elevated)
         }
+        Command::Ssl { command } => match command {
+            SslCommand::Status => ssl::status(),
+            SslCommand::Trust => ssl::trust(),
+            SslCommand::Untrust => ssl::untrust(),
+            SslCommand::Enable => ssl::set_enabled(true),
+            SslCommand::Disable => ssl::set_enabled(false),
+        },
         Command::Daemon => services::run_daemon(),
     };
 

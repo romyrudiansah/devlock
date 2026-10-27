@@ -298,6 +298,11 @@ impl Supervisor {
         let config = Config::load(&self.paths)?;
         let plan = services::plan(&self.paths, &config)?;
         self.warnings = plan.warnings;
+        if plan.sites.iter().any(|s| s.https) && !crate::ssl::is_trusted() {
+            self.warnings.push(
+                "CA DevLock belum dipercaya Windows; browser akan memperingatkan sertifikat HTTPS. Jalankan `devlock ssl trust`".into(),
+            );
+        }
 
         let mut changed_files = false;
         for (path, content) in &plan.files {

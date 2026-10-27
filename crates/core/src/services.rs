@@ -1,7 +1,7 @@
 //! Rencana service (nginx, php-cgi, database, dev server) dari konfigurasi + site,
 //! termasuk file konfigurasi yang harus ditulis sebelum service dijalankan.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
@@ -13,6 +13,7 @@ use crate::paths::Paths;
 use crate::resolve::{self, DbInstance};
 use crate::runtime::{self, Kind};
 use crate::sites::{self, Site, SiteKind};
+use crate::ssl;
 use crate::version::Version;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -116,9 +117,22 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
             for sub in ["client_body", "proxy", "fastcgi", "uwsgi", "scgi"] {
                 std::fs::create_dir_all(paths.tmp().join("nginx").join(sub))?;
             }
+            // Sertifikat untuk site HTTPS (dibuat/diperbarui seperlunya).
+            let mut certs = BTreeMap::new();
+            for site in sites.iter().filter(|s| s.https) {
+                match ssl::site_cert(paths, &site.name, &site.domains) {
+                    Ok(cert) => {
+                        certs.insert(site.name.clone(), cert);
+                    }
+                    Err(err) => warnings.push(format!(
+                        "{}: sertifikat HTTPS gagal dibuat: {err:#}",
+                        site.domain()
+                    )),
+                }
+            }
             files.push((
                 conf.clone(),
-                nginx_conf(paths, config, &dir, &sites, workers),
+                nginx_conf(paths, config, &dir, &sites, workers, &certs),
             ));
             let base_args = vec![
                 "-p".to_string(),
@@ -206,7 +220,10 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
                     ("PORT".into(), port.to_string()),
                     ("PATH".into(), path.to_string_lossy().into()),
                     ("BROWSER".into(), "none".into()),
-                ],
+                ]
+                .into_iter()
+                .chain(node_ca_env(paths))
+                .collect(),
             },
             stop: None,
             init: None,
@@ -378,16 +395,29 @@ fn slash(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
 
+/// `NODE_EXTRA_CA_CERTS` agar Node (fetch, axios, Vite proxy) percaya sertifikat site HTTPS.
+pub fn node_ca_env(paths: &Paths) -> Option<(String, String)> {
+    let ca = ssl::ca_cert_path(paths);
+    ca.is_file().then(|| {
+        (
+            "NODE_EXTRA_CA_CERTS".to_string(),
+            ca.to_string_lossy().into_owned(),
+        )
+    })
+}
+
 pub fn nginx_conf(
     paths: &Paths,
     config: &Config,
     nginx_dir: &Path,
     sites: &[Site],
     workers: u16,
+    certs: &BTreeMap<String, ssl::SiteCert>,
 ) -> String {
     let tmp = slash(&paths.tmp().join("nginx"));
     let logs = slash(&paths.logs());
     let listen = format!("{}:{}", config.http.listen, config.http.port);
+    let https_listen = format!("{}:{}", config.http.listen, config.https.port);
     let mut c = String::new();
     let _ = write!(
         c,
@@ -444,6 +474,14 @@ pub fn nginx_conf(
             dir = site.dir.display(),
             names = site.domains.join(" "),
         );
+        if let Some(cert) = certs.get(&site.name) {
+            let _ = write!(
+                c,
+                "        listen {https_listen} ssl;\n        ssl_certificate \"{crt}\";\n        ssl_certificate_key \"{key}\";\n",
+                crt = slash(&cert.cert),
+                key = slash(&cert.key),
+            );
+        }
         match &site.kind {
             SiteKind::Php { line } => {
                 let _ = write!(
@@ -620,5 +658,34 @@ mod tests {
         );
         // PostgreSQL tidak memakai my.ini.
         assert!(!plan.files.iter().any(|(p, _)| p.ends_with("my.ini")));
+    }
+
+    #[test]
+    fn https_site_gets_ssl_listener() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("nginx", "1.30.6")).unwrap();
+        let www = paths.default_www();
+        for name in ["secure", "plain"] {
+            std::fs::create_dir_all(www.join(name)).unwrap();
+            std::fs::write(www.join(name).join("index.html"), "").unwrap();
+        }
+        std::fs::write(www.join("secure/.devlock.toml"), "https = true\n").unwrap();
+
+        let plan = plan(&paths, &Config::default()).unwrap();
+        let (_, conf) = plan
+            .files
+            .iter()
+            .find(|(p, _)| p.ends_with("nginx.conf"))
+            .unwrap();
+        assert_eq!(conf.matches("listen 127.0.0.1:443 ssl;").count(), 1);
+        let crt = slash(&paths.ssl().join("sites/secure.crt"));
+        assert!(conf.contains(&format!("ssl_certificate \"{crt}\";")));
+        assert!(paths.ssl().join("sites/secure.key").is_file());
+        assert!(!paths.ssl().join("sites/plain.crt").exists());
+        assert!(plan
+            .sites
+            .iter()
+            .any(|s| s.name == "secure" && s.url(&Config::default()) == "https://secure.test"));
     }
 }
