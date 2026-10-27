@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
 use crate::paths::Paths;
-use crate::resolve::{self, DbInstance};
+use crate::resolve::{self, CacheInstance, DbInstance};
 use crate::runtime::{self, Kind};
 use crate::sites::{self, Site, SiteKind};
 use crate::ssl;
@@ -252,6 +252,31 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
         }
     }
 
+    // Cache (Redis/Garnet): instance yang dipakai site + default global.
+    let mut caches: Vec<CacheInstance> = sites.iter().filter_map(|s| s.cache.clone()).collect();
+    if let Some(cache) = config.defaults.get("cache") {
+        caches.push(CacheInstance::parse(cache)?);
+    }
+    caches.sort_by_key(CacheInstance::name);
+    caches.dedup();
+    for instance in caches {
+        match runtime::resolve_installed(paths, instance.kind, &instance.line)? {
+            Some(version) => {
+                let dir = paths.runtime_dir(instance.kind.as_str(), &version);
+                std::fs::create_dir_all(instance.data_dir(paths))?;
+                let (spec, config_file) = cache_service(paths, config, &instance, &dir);
+                files.extend(config_file);
+                services.push(spec);
+            }
+            None => warnings.push(format!(
+                "{} belum terinstall; jalankan `devlock install {} {}`",
+                instance.name(),
+                instance.kind,
+                instance.line
+            )),
+        }
+    }
+
     // DNS wildcard `*.<tld>`: `devlock dns serve` sebagai service biasa (port 53 juga TCP,
     // jadi cek kesiapan TCP berlaku).
     if config.dns.enabled {
@@ -477,6 +502,92 @@ fn postgresql_service(
         extra_ports: vec![],
         log: paths.logs().join(format!("{}.log", instance.name())),
     }
+}
+
+/// Service cache beserta file konfigurasinya (`etc\redis\<major>.conf` untuk Redis).
+/// Redis menyimpan snapshot RDB di `data\redis\<major>`; Garnet berjalan di memori saja.
+fn cache_service(
+    paths: &Paths,
+    config: &Config,
+    instance: &CacheInstance,
+    dir: &Path,
+) -> (ServiceSpec, Option<(PathBuf, String)>) {
+    let port = instance.port(config);
+    let log = paths.logs().join(format!("{}.log", instance.name()));
+    if instance.kind == Kind::Garnet {
+        let spec = ServiceSpec {
+            name: instance.name(),
+            group: instance.name(),
+            command: Command {
+                program: dir.join("GarnetServer.exe"),
+                args: vec![
+                    "--bind".into(),
+                    "127.0.0.1".into(),
+                    "--port".into(),
+                    port.to_string(),
+                    "--logger-level".into(),
+                    "Warning".into(),
+                ],
+                cwd: dir.to_path_buf(),
+                env: vec![],
+            },
+            stop: None,
+            init: None,
+            init_marker: None,
+            port: Some(port),
+            extra_ports: vec![],
+            log,
+        };
+        return (spec, None);
+    }
+
+    let conf = paths
+        .etc()
+        .join("redis")
+        .join(format!("{}.conf", instance.line));
+    let content = format!(
+        "# Dibuat otomatis oleh DevLock; perubahan manual akan ditimpa.\n\
+         bind 127.0.0.1\n\
+         port {port}\n\
+         protected-mode yes\n\
+         daemonize no\n\
+         dir \"{data}\"\n\
+         dbfilename dump.rdb\n\
+         save 3600 1 300 100 60 10000\n\
+         appendonly no\n\
+         loglevel notice\n\
+         logfile \"\"\n",
+        data = slash(&instance.data_dir(paths)),
+    );
+    let spec = ServiceSpec {
+        name: instance.name(),
+        group: instance.name(),
+        command: Command {
+            program: dir.join("redis-server.exe"),
+            args: vec![slash(&conf)],
+            cwd: dir.to_path_buf(),
+            env: vec![],
+        },
+        // SHUTDOWN menyimpan snapshot RDB sebelum berhenti.
+        stop: Some(Command {
+            program: dir.join("redis-cli.exe"),
+            args: vec![
+                "-h".into(),
+                "127.0.0.1".into(),
+                "-p".into(),
+                port.to_string(),
+                "shutdown".into(),
+            ],
+            cwd: dir.to_path_buf(),
+            env: vec![],
+        }),
+        init: None,
+        init_marker: None,
+        port: Some(port),
+        extra_ports: vec![],
+        log,
+    };
+    (spec, Some((conf, content)))
 }
 
 fn slash(path: &Path) -> String {
@@ -933,6 +1044,42 @@ mod tests {
             .sites
             .iter()
             .any(|s| s.name == "secure" && s.url(&Config::default()) == "https://secure.test"));
+    }
+
+    #[test]
+    fn cache_instances_from_sites_and_default() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("redis", "8.10.3")).unwrap();
+        std::fs::create_dir_all(paths.runtime_dir("garnet", "2.2.4")).unwrap();
+        let www = paths.default_www();
+        std::fs::create_dir_all(www.join("app")).unwrap();
+        std::fs::write(www.join("app/index.html"), "").unwrap();
+        std::fs::write(www.join("app/.devlock.toml"), "cache = \"redis@8\"\n").unwrap();
+        let mut config = Config::default();
+        config.defaults.insert("cache".into(), "garnet@2".into());
+
+        let plan = plan(&paths, &config).unwrap();
+        let redis = plan.services.iter().find(|s| s.name == "redis@8").unwrap();
+        assert_eq!(redis.port, Some(6389));
+        assert!(redis.command.program.ends_with("redis-server.exe"));
+        assert_eq!(
+            redis.stop.as_ref().unwrap().args.last().unwrap(),
+            "shutdown"
+        );
+        let garnet = plan.services.iter().find(|s| s.name == "garnet@2").unwrap();
+        assert_eq!(garnet.port, Some(6402));
+        assert!(garnet.command.args.contains(&"127.0.0.1".to_string()));
+
+        let (_, conf) = plan
+            .files
+            .iter()
+            .find(|(p, _)| p.ends_with("8.conf"))
+            .unwrap();
+        assert!(conf.contains("bind 127.0.0.1\nport 6389\n"));
+        let data = slash(&paths.data().join("redis").join("8"));
+        assert!(conf.contains(&format!("dir \"{data}\"")));
+        assert!(paths.data().join("redis").join("8").is_dir());
     }
 
     #[test]

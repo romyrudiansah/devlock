@@ -39,7 +39,7 @@ enum Command {
     Doctor,
     /// Daftar versi runtime terinstall (atau yang tersedia dengan --available)
     List {
-        /// php, node, composer, nginx, apache, mysql, mariadb, postgresql
+        /// php, node, composer, nginx, apache, mysql, mariadb, postgresql, redis, garnet
         kind: Kind,
         /// Tampilkan versi yang bisa diinstall
         #[arg(short, long)]
@@ -60,9 +60,9 @@ enum Command {
     },
     /// Hapus versi runtime yang terinstall (versi lengkap)
     Uninstall { kind: Kind, version: String },
-    /// Pilih versi untuk project ini (.devlock.toml) atau global, mis. `use php 8.2`, `use database mysql@8.4`
+    /// Pilih versi untuk project ini (.devlock.toml) atau global, mis. `use php 8.2`, `use database mysql@8.4`, `use cache redis@8`
     Use {
-        /// php, node, composer, atau database
+        /// php, node, composer, database, atau cache
         target: String,
         version: String,
         /// Simpan sebagai default global di devlock.toml
@@ -80,7 +80,7 @@ enum Command {
         #[arg(value_parser = ["add", "remove"])]
         action: String,
     },
-    /// Jalankan service (default semua): all, nginx, php, php@8.3, mysql@8.4, db, dev, dev:<site>
+    /// Jalankan service (default semua): all, nginx, php, php@8.3, mysql@8.4, db, cache, dev, dev:<site>
     Start {
         #[arg(default_value = "all")]
         target: String,

@@ -20,6 +20,9 @@ enum Launch {
     /// Client database di `bin\` instance milik project. `Kind` pada tabel menyatakan
     /// keluarganya: `Mysql` (MySQL/MariaDB) atau `Postgresql`.
     DbClient(&'static [&'static str]),
+    /// `redis-cli` dari Redis terinstall, diarahkan ke instance cache milik project
+    /// (Redis atau Garnet).
+    CacheClient,
 }
 
 const TOOLS: &[(&str, Kind, Launch)] = &[
@@ -103,6 +106,7 @@ const TOOLS: &[(&str, Kind, Launch)] = &[
         Kind::Postgresql,
         Launch::DbClient(&["bin/dropdb.exe"]),
     ),
+    ("redis-cli", Kind::Redis, Launch::CacheClient),
 ];
 
 /// Nama semua shim (tanpa `.exe`).
@@ -230,6 +234,31 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
             plan.resolved.push((instance.name(), version, source));
             Ok(plan)
         }
+        Launch::CacheClient => {
+            let Some((instance, source)) = resolve::find_cache(config, cwd)? else {
+                bail!("belum ada cache untuk folder ini; set `cache = \"redis@8\"` di .devlock.toml, atau `devlock use cache redis@8 --global`");
+            };
+            // Garnet tidak membawa redis-cli: pakai milik Redis terinstall terbaru.
+            let spec = if instance.kind == Kind::Redis {
+                instance.line.as_str()
+            } else {
+                "latest"
+            };
+            let Some(version) = runtime::resolve_installed(paths, Kind::Redis, spec)? else {
+                bail!("redis-cli butuh Redis terinstall (`devlock install redis {spec}`)");
+            };
+            let dir = paths.runtime_dir("redis", &version);
+            let mut plan = Plan::new(first_existing(&dir, &["redis-cli.exe"], tool)?);
+            // Di depan argumen pengguna: `-h`/`-p` yang ditulis sendiri tetap menang.
+            plan.prefix_args.extend([
+                "-h".into(),
+                "127.0.0.1".into(),
+                "-p".into(),
+                instance.port(config).to_string().into(),
+            ]);
+            plan.resolved.push((instance.name(), version, source));
+            Ok(plan)
+        }
     }
 }
 
@@ -319,5 +348,28 @@ mod tests {
 
         let err = super::plan(&paths, &config, tmp.path(), "mysql").unwrap_err();
         assert!(err.to_string().contains("postgresql@16"));
+    }
+
+    #[test]
+    fn redis_cli_targets_cache_instance() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        let redis = paths.runtime_dir("redis", "8.10.3");
+        std::fs::create_dir_all(&redis).unwrap();
+        std::fs::write(redis.join("redis-cli.exe"), b"").unwrap();
+        let mut config = Config::default();
+        assert!(plan(&paths, &config, tmp.path(), "redis-cli").is_err());
+
+        config.defaults.insert("cache".into(), "redis@8".into());
+        let p = plan(&paths, &config, tmp.path(), "redis-cli").unwrap();
+        assert_eq!(p.program, redis.join("redis-cli.exe"));
+        let args: Vec<_> = p.prefix_args.iter().map(|a| a.to_string_lossy()).collect();
+        assert_eq!(args, ["-h", "127.0.0.1", "-p", "6389"]);
+
+        // Garnet tidak punya redis-cli sendiri: memakai milik Redis terinstall.
+        config.defaults.insert("cache".into(), "garnet@2".into());
+        let p = plan(&paths, &config, tmp.path(), "redis-cli").unwrap();
+        assert_eq!(p.program, redis.join("redis-cli.exe"));
+        assert_eq!(p.prefix_args[3].to_string_lossy(), "6402");
     }
 }

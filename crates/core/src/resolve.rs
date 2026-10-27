@@ -226,6 +226,68 @@ impl DbInstance {
     }
 }
 
+/// Instance cache (protokol Redis) seperti `redis@8` atau `garnet@2`; satu instance per major.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CacheInstance {
+    pub kind: Kind,
+    /// Major version, juga nama folder data.
+    pub line: String,
+}
+
+impl CacheInstance {
+    pub fn parse(text: &str) -> Result<Self> {
+        let (engine, spec) = text.split_once('@').unwrap_or((text, ""));
+        let kind: Kind = engine.trim().parse()?;
+        if !kind.is_cache() {
+            bail!("`{engine}` bukan server cache (pilihan: redis, garnet)");
+        }
+        let Some(v) = Version::parse(spec) else {
+            bail!("versi cache harus major, mis. `{engine}@8`");
+        };
+        Ok(Self {
+            kind,
+            line: v.major().to_string(),
+        })
+    }
+
+    pub fn name(&self) -> String {
+        format!("{}@{}", self.kind, self.line)
+    }
+
+    /// Port default: Redis `6309 + major*10` (7 → 6379, 8 → 6389), Garnet `6400 + major`
+    /// (2 → 6402). Bisa ditimpa `[ports]`.
+    pub fn port(&self, config: &Config) -> u16 {
+        if let Some(port) = config.ports.get(&self.name()) {
+            return *port;
+        }
+        let major = self.line.parse::<u16>().unwrap_or(0);
+        match self.kind {
+            Kind::Garnet => 6400 + major,
+            _ => 6309 + major * 10,
+        }
+    }
+
+    pub fn data_dir(&self, paths: &Paths) -> PathBuf {
+        paths.data().join(self.kind.as_str()).join(&self.line)
+    }
+}
+
+/// Instance cache untuk folder: `cache` di `.devlock.toml` terdekat, lalu default global.
+pub fn find_cache(config: &Config, cwd: &Path) -> Result<Option<(CacheInstance, Source)>> {
+    for dir in cwd.ancestors() {
+        let file = dir.join(PROJECT_FILE);
+        if file.is_file() {
+            if let Some(cache) = ProjectConfig::load(&file)?.cache {
+                return Ok(Some((CacheInstance::parse(&cache)?, Source::File(file))));
+            }
+        }
+    }
+    match config.defaults.get("cache") {
+        Some(cache) => Ok(Some((CacheInstance::parse(cache)?, Source::Global))),
+        None => Ok(None),
+    }
+}
+
 /// Instance database untuk folder: `database` di `.devlock.toml` terdekat, lalu default global.
 pub fn find_database(config: &Config, cwd: &Path) -> Result<Option<(DbInstance, Source)>> {
     for dir in cwd.ancestors() {

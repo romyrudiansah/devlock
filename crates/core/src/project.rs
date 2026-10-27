@@ -14,6 +14,8 @@ pub struct ProjectConfig {
     pub node: Option<String>,
     /// Instance database, mis. `mysql@8.4` atau `mariadb@11.4`.
     pub database: Option<String>,
+    /// Instance cache, mis. `redis@8` atau `garnet@2`.
+    pub cache: Option<String>,
     pub webserver: Option<String>,
     /// Document root relatif ke folder project; default dideteksi otomatis.
     pub docroot: Option<PathBuf>,

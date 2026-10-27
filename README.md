@@ -123,6 +123,24 @@ devlock db drop toko --yes
 Instance harus sedang berjalan (`devlock start db`). Login lokal: `root` (MySQL/MariaDB) atau
 `postgres` (PostgreSQL) tanpa password, hanya dari `127.0.0.1`.
 
+## Redis / Garnet (cache)
+
+```
+devlock install redis 8          # build Windows komunitas (redis-windows), SHA256 dari GitHub
+devlock use cache redis@8        # per project (.devlock.toml), atau --global
+redis-cli ping                   # shim: otomatis ke instance milik project
+```
+
+Redis resmi tidak merilis binary Windows, jadi DevLock memakai build komunitas
+[redis-windows](https://github.com/redis-windows/redis-windows) (Redis asli, varian msys2).
+Alternatifnya [Garnet](https://github.com/microsoft/garnet) dari Microsoft
+(`devlock install garnet`, `cache = "garnet@2"`): server cache berprotokol Redis, berjalan di
+memori saja.
+
+Tiap instance punya port sendiri: `redis@7` → 6379, `redis@8` → 6389, `garnet@2` → 6402 (ubah
+lewat `[ports]`). Data Redis tersimpan di `data\redis\<major>` (snapshot RDB, juga saat stop).
+Isi `REDIS_PORT` di `.env` project sesuai port instance; `devlock current` menampilkannya.
+
 ## HTTPS lokal
 
 ```

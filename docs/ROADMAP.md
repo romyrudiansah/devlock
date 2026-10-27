@@ -154,7 +154,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [ ] Progress download + resume + mirror fallback _(sebagian: progress & resume ada (v0.6.0); mirror belum)_
 
 ### B. Version Resolver & Shim — **P0**
-- [ ] Binary shim generik (`php`, `php-cgi`, `node`, `npm`, `npx`, `pnpm`, `yarn`, `composer`, `mysql`, `mysqldump`, `psql`, `redis-cli`) _(sebagian: 18 shim termasuk `pg_dump`/`createdb`; `redis-cli` menunggu Redis)_
+- [x] Binary shim generik (`php`, `php-cgi`, `node`, `npm`, `npx`, `pnpm`, `yarn`, `composer`, `mysql`, `mysqldump`, `psql`, `redis-cli`) _(19 shim termasuk `pg_dump`/`createdb` dan `redis-cli`)_
 - [x] Resolusi per-project (urutan file seperti di 4.2)
 - [x] Tambah `shims\` ke PATH user (dengan opsi on/off) + deteksi konflik dengan PHP/Node lain di PATH
 - [x] `devlock which php` / `devlock current` untuk debug
@@ -189,7 +189,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [x] MySQL & MariaDB multi-versi berjalan bersamaan, port per versi, data dir terpisah (lihat 4.5)
 - [x] Inisialisasi data dir otomatis (`mysqld --initialize-insecure` / `mariadb-install-db`)
 - [x] PostgreSQL (`initdb`) _(v0.4.0)_
-- [ ] Redis, MongoDB (P2)
+- [ ] Redis, MongoDB (P2) _(sebagian: Redis (redis-windows) & Garnet sebagai `cache` per project; MongoDB belum)_
 - [x] Quick action: buat database untuk project _(`devlock db create`, tombol "Buat DB", v0.5.0; user khusus belum)_
 - [x] Backup / restore (dump) per database _(`devlock db dump/restore`, v0.5.0)_
 - [ ] Panel DB web bawaan (Adminer — 1 file PHP, ringan) di `adminer.test`
@@ -309,7 +309,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 | **0. Fondasi** | Workspace Rust, config `devlock.toml`, struktur folder, logging | Kerangka jalan | ✅ v0.1.0 |
 | **1. MVP CLI** | Runtime Manager (PHP, Node, Nginx, MariaDB), shim + resolver, service manager, auto vhost + hosts | Bisa dev Laravel & Node via CLI dengan multi-versi | ✅ v0.2.0 |
 | **2. GUI dasar** | Tray + dashboard service + halaman runtimes & projects | Pengalaman setara Laragon | ✅ v0.3.0–v0.3.1 |
-| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (berikutnya); sisa: Redis, Adminer |
+| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (v0.8.x), Redis/Garnet (berikutnya); sisa: Adminer |
 | **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ⏳ |
 
 ---

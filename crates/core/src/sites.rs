@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use crate::config::Config;
 use crate::paths::Paths;
 use crate::project::ProjectConfig;
-use crate::resolve::{self, DbInstance};
+use crate::resolve::{self, CacheInstance, DbInstance};
 use crate::runtime::Kind;
 use crate::version::Version;
 
@@ -33,6 +33,8 @@ pub struct Site {
     pub domains: Vec<String>,
     pub kind: SiteKind,
     pub database: Option<DbInstance>,
+    /// Instance cache (Redis/Garnet) dari `cache` di `.devlock.toml`.
+    pub cache: Option<CacheInstance>,
     /// Perintah dev server (project Node).
     pub dev: Option<String>,
     /// Dilayani juga lewat HTTPS dengan sertifikat dari CA DevLock.
@@ -147,6 +149,17 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
         None => None,
     };
 
+    let cache = match &project.cache {
+        Some(cache) => match CacheInstance::parse(cache) {
+            Ok(instance) => Some(instance),
+            Err(err) => {
+                warning.get_or_insert(format!("{err:#}"));
+                None
+            }
+        },
+        None => None,
+    };
+
     Ok(Site {
         name: name.to_string(),
         dir: dir.to_path_buf(),
@@ -154,6 +167,7 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
         domains,
         kind,
         database,
+        cache,
         dev: project.dev.filter(|_| project.proxy_port.is_some()),
         https: project.https.unwrap_or(config.https.enabled),
         apache,
@@ -216,7 +230,7 @@ mod tests {
         std::fs::create_dir_all(www.join("old")).unwrap();
         std::fs::write(
             www.join("old/.devlock.toml"),
-            "php = \"7.4\"\ndatabase = \"mysql@5.7\"\n",
+            "php = \"7.4\"\ndatabase = \"mysql@5.7\"\ncache = \"redis@8.10\"\n",
         )
         .unwrap();
         std::fs::write(www.join("old/index.php"), "").unwrap();
@@ -242,5 +256,6 @@ mod tests {
         // PHP 7.4 belum terinstall: tetap terdaftar dengan peringatan.
         assert!(sites[3].warning.as_deref().unwrap().contains("php 7.4"));
         assert_eq!(sites[3].database.as_ref().unwrap().name(), "mysql@5.7");
+        assert_eq!(sites[3].cache.as_ref().unwrap().name(), "redis@8");
     }
 }

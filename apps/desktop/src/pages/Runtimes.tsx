@@ -11,6 +11,8 @@ const LABELS: Record<string, string> = {
   mysql: "MySQL",
   mariadb: "MariaDB",
   postgresql: "PostgreSQL",
+  redis: "Redis",
+  garnet: "Garnet",
 };
 
 function formatBytes(n: number) {
@@ -116,9 +118,10 @@ function RuntimeRow(props: {
   const [loading, setLoading] = useState(false);
   const [choice, setChoice] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const isDatabase = ["mysql", "mariadb", "postgresql"].includes(rt.kind);
+  // Database & cache dipilih per project lewat instance (`database`/`cache`), bukan versi default.
+  const isInstance = ["mysql", "mariadb", "postgresql", "redis", "garnet"].includes(rt.kind);
   const isWebserver = rt.kind === "nginx" || rt.kind === "apache";
-  const canDefault = !isDatabase && !isWebserver;
+  const canDefault = !isInstance && !isWebserver;
 
   const loadAvailable = async () => {
     setLoading(true);
