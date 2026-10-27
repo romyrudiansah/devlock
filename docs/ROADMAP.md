@@ -146,12 +146,12 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 ## 5. Breakdown Fitur per Modul
 
 ### A. Runtime Manager — **P0**
-- [ ] Ambil & cache katalog versi _(sebagian: diambil langsung dari sumber resmi tiap kali; belum di-cache)_
+- [x] Ambil & cache katalog versi _(cache 6 jam di `tmp\catalog`, fallback ke cache lama; v0.6.0)_
 - [x] Install / uninstall versi (download → verifikasi SHA256 → extract → post-install hook)
-- [ ] Post-install: generate `php.ini` dari template, aktifkan ekstensi umum, set `extension_dir`, CA bundle (`curl.cainfo`) _(sebagian: semua kecuali CA bundle)_
+- [x] Post-install: generate `php.ini` dari template, aktifkan ekstensi umum, set `extension_dir`, CA bundle (`curl.cainfo`) _(CA bundle v0.6.0)_
 - [x] Deteksi & peringatan dependency (Visual C++ Redistributable untuk PHP/Apache) _(lewat `devlock doctor`)_
 - [x] Set versi default global
-- [ ] Progress download + resume + mirror fallback _(sebagian: progress ada; resume & mirror belum)_
+- [ ] Progress download + resume + mirror fallback _(sebagian: progress & resume ada (v0.6.0); mirror belum)_
 
 ### B. Version Resolver & Shim — **P0**
 - [ ] Binary shim generik (`php`, `php-cgi`, `node`, `npm`, `npx`, `pnpm`, `yarn`, `composer`, `mysql`, `mysqldump`, `psql`, `redis-cli`) _(sebagian: 18 shim termasuk `pg_dump`/`createdb`; `redis-cli` menunggu Redis)_
@@ -162,42 +162,42 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 ### C. Service Manager — **P0**
 - [x] Start / stop / restart semua service atau satu-satu
 - [x] Proses anak dimasukkan ke **Windows Job Object** → ikut mati kalau DevLock ditutup/crash
-- [x] Cek port bentrok sebelum start (tampilkan proses yang memakai port) _(IPv4 & IPv6, v0.4.1)_
-- [ ] Health check (TCP/HTTP) + auto-restart dengan backoff _(sebagian: auto-restart + backoff saat proses mati; belum ada health check TCP/HTTP)_
-- [ ] Log stdout/stderr per service ke `logs\` + rotasi _(sebagian: log per service ada; rotasi belum)_
-- [ ] Autostart service saat app dibuka (pilih service mana)
+- [x] Cek port bentrok sebelum start (tampilkan proses yang memakai port) _(IPv4 & IPv6, v0.4.1; port 443 v0.6.0)_
+- [x] Health check (TCP/HTTP) + auto-restart dengan backoff _(cek TCP & status `starting`, v0.5.0)_
+- [x] Log stdout/stderr per service ke `logs\` + rotasi _(rotasi di atas 10 MB, v0.6.0)_
+- [x] Autostart service saat app dibuka _(`[gui] autostart_services`, v0.6.0; belum bisa pilih per service)_
 
 ### D. Web Server & Virtual Host — **P0**
 - [ ] Nginx (default) dan Apache (opsional), bisa pilih per project _(sebagian: nginx saja)_
-- [ ] Auto vhost: scan `www\` (watch perubahan folder) → `<folder>.test` _(sebagian: scan saat start/reload; belum watch folder)_
-- [ ] Deteksi document root otomatis: `public\` (Laravel), `web\` (Symfony/Craft), `dist\`, root _(sebagian: `public`, `web`, `public_html`, root; `dist` belum)_
+- [x] Auto vhost: scan `www\` (watch perubahan folder) → `<folder>.test` _(watcher daemon, v0.6.0)_
+- [x] Deteksi document root otomatis: `public\` (Laravel), `web\` (Symfony/Craft), `dist\`, root _(juga `public_html`)_
 - [x] Template vhost per tipe: PHP generic, Laravel, WordPress, static, **reverse proxy** (Node/Vite/Next) _(satu template PHP melayani Laravel/WordPress/generic)_
 - [x] Custom domain & alias tambahan per project
-- [ ] Regenerate config + reload graceful _(sebagian: config dibuat ulang; nginx di-restart, belum reload graceful)_
+- [x] Regenerate config + reload graceful _(`nginx -s reload`, v0.6.0)_
 
 ### E. DNS & Hosts — **P0 (hosts) / P1 (DNS)**
 - [x] P0: update `C:\Windows\System32\drivers\etc\hosts` via elevated helper (blok bertanda `# devlock-start/end`) _(elevasi UAC menjalankan `devlock hosts --elevated`; hanya IPv4 sejak v0.4.1)_
 - [ ] P1: DNS resolver lokal untuk wildcard `*.test` (tanpa edit hosts tiap project)
 
 ### F. SSL Lokal — **P1**
-- [ ] Generate root CA sekali, trust ke Windows Cert Store (helper + UAC) — juga NSS Firefox (opsional)
-- [ ] Sertifikat per host / wildcard otomatis saat vhost dibuat
-- [ ] Toggle HTTPS per project, redirect HTTP→HTTPS opsional
-- [ ] Set `NODE_EXTRA_CA_CERTS` dan `curl.cainfo` agar runtime percaya CA lokal
+- [ ] Generate root CA sekali, trust ke Windows Cert Store (helper + UAC) — juga NSS Firefox (opsional) _(sebagian: CA + trust store user, v0.5.0; Firefox belum)_
+- [x] Sertifikat per host / wildcard otomatis saat vhost dibuat _(per site + alias, v0.5.0)_
+- [ ] Toggle HTTPS per project, redirect HTTP→HTTPS opsional _(sebagian: toggle global & per project ada; redirect belum)_
+- [x] Set `NODE_EXTRA_CA_CERTS` dan `curl.cainfo` agar runtime percaya CA lokal _(v0.5.0 / v0.6.0)_
 
 ### G. Database — **P0 (MySQL/MariaDB) / P1 (lainnya)**
 - [x] MySQL & MariaDB multi-versi berjalan bersamaan, port per versi, data dir terpisah (lihat 4.5)
 - [x] Inisialisasi data dir otomatis (`mysqld --initialize-insecure` / `mariadb-install-db`)
 - [x] PostgreSQL (`initdb`) _(v0.4.0)_
 - [ ] Redis, MongoDB (P2)
-- [ ] Quick action: buat database + user untuk project
-- [ ] Backup / restore (dump) per database, sebelum upgrade versi
+- [x] Quick action: buat database untuk project _(`devlock db create`, tombol "Buat DB", v0.5.0; user khusus belum)_
+- [x] Backup / restore (dump) per database _(`devlock db dump/restore`, v0.5.0)_
 - [ ] Panel DB web bawaan (Adminer — 1 file PHP, ringan) di `adminer.test`
 
 ### H. PHP Tools — **P1**
-- [ ] Toggle ekstensi per versi (checkbox UI → edit `php.ini`)
-- [ ] Toggle Xdebug 1 klik (install DLL yang cocok dengan versi/TS/VS)
-- [ ] Editor `php.ini` + preset (memory_limit, upload_max_filesize, max_execution_time)
+- [x] Toggle ekstensi per versi (checkbox UI → edit `php.ini`) _(v0.6.0)_
+- [x] Toggle Xdebug 1 klik (install DLL yang cocok dengan versi/TS/VS) _(v0.6.0)_
+- [x] Editor `php.ini` + preset (memory_limit, upload_max_filesize, max_execution_time) _(v0.6.0)_
 - [x] Composer terkelola (global, dijalankan dengan PHP sesuai project)
 
 ### I. Node Tools — **P1**
@@ -206,9 +206,9 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [ ] Deteksi port dev server otomatis dari output
 
 ### J. Quick Create Project — **P1**
-- [ ] Template: Laravel, WordPress, Symfony, CodeIgniter, Next.js, Nuxt, Vite (React/Vue), static HTML
-- [ ] Wizard: nama → template → versi PHP/Node → buat DB → vhost + SSL langsung jadi
-- [ ] Auto-isi `.env` (DB_HOST, DB_PORT, DB_DATABASE, APP_URL)
+- [x] Template: Laravel, WordPress, Symfony, CodeIgniter, Next.js, Nuxt, Vite (React/Vue), static HTML _(v0.6.0)_
+- [x] Wizard: nama → template → versi PHP/Node → buat DB → vhost + SSL langsung jadi _(GUI "Project baru", v0.6.0)_
+- [x] Auto-isi `.env` (DB_HOST, DB_PORT, DB_DATABASE, APP_URL) _(Laravel; WordPress lewat `wp-config.php`)_
 
 ### K. Terminal Terintegrasi — **P1**
 - [x] "Open Terminal" di folder project dengan env yang sudah benar (Windows Terminal / PowerShell / cmd) _(tombol di GUI; belum diuji manual)_
@@ -227,7 +227,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [x] Halaman Runtimes: daftar versi tersedia vs terinstall, install/uninstall, set default
 - [ ] Halaman Projects: daftar project, versi yang dipakai, buka di browser/editor/terminal _(sebagian: browser, folder, terminal; editor belum)_
 - [x] Log viewer realtime per service
-- [ ] Settings: lokasi `www`, TLD (`.test`), port, autostart Windows, bahasa (ID/EN)
+- [ ] Settings: lokasi `www`, TLD (`.test`), port, autostart Windows, bahasa (ID/EN) _(sebagian: semua kecuali bahasa, v0.6.0)_
 
 ### N. CLI — **P0**
 ```
@@ -309,7 +309,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 | **0. Fondasi** | Workspace Rust, config `devlock.toml`, struktur folder, logging | Kerangka jalan | ✅ v0.1.0 |
 | **1. MVP CLI** | Runtime Manager (PHP, Node, Nginx, MariaDB), shim + resolver, service manager, auto vhost + hosts | Bisa dev Laravel & Node via CLI dengan multi-versi | ✅ v0.2.0 |
 | **2. GUI dasar** | Tray + dashboard service + halaman runtimes & projects | Pengalaman setara Laragon | ✅ v0.3.0–v0.3.1 |
-| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), deteksi bentrok port (v0.4.1) |
+| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0); sisa: DNS wildcard, Apache, Redis, Adminer, tray per project |
 | **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ⏳ |
 
 ---

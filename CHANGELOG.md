@@ -22,8 +22,6 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - GUI: tab **PHP** (pilih versi, centang ekstensi, Xdebug satu klik, nilai php.ini umum, buka php.ini) dan tab **Settings** (folder www, TLD, port HTTP/HTTPS, HTTPS global, worker php-cgi, autostart service saat GUI dibuka, buka DevLock di tray saat login Windows).
 - `[gui] autostart_services` di `devlock.toml`; `devlock-gui.exe --minimized` langsung ke tray.
 - Quick create project: `devlock new <template> <nama> [--php] [--node] [--db]` dan tombol **Project baru** di GUI (log composer/npm tampil langsung). Template: Laravel, Symfony, CodeIgniter 4 (`composer create-project --no-interaction` dengan PHP pilihan), WordPress (zip resmi wordpress.org, verifikasi SHA1, `wp-config.php` terisi dengan database & salt acak), Next.js, Nuxt, Vite + React, Vite + Vue (kerangka minimal + `npm install <paket>@latest` dengan Node pilihan, dev server & `proxy_port` diatur otomatis), dan HTML statis. Database dibuat otomatis dan `.env` Laravel diisi (`DB_CONNECTION`, port instance, `APP_URL`).
-
-### Added
 - DevLock kini open source di bawah **MIT OR Apache-2.0** (`LICENSE-MIT`, `LICENSE-APACHE`, ikut di zip rilis).
 - Metadata versi Windows (ProductName "DevLock", versi, deskripsi, copyright, ikon) untuk `devlock.exe` dan `devlock-shim.exe`; GUI mendapat publisher & copyright yang sama.
 - `devlock hosts --clear` menghapus blok DevLock dari file hosts (untuk uninstall).
