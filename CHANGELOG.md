@@ -6,6 +6,10 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- PHP di site `webserver = "apache"` selalu 500: handler balancer kini `proxy:balancer://phpXY/` (tanpa garis miring penutup mod_proxy_balancer tidak menemukan balancer-nya) dan `SCRIPT_FILENAME` dikirim sebagai path file Windows (`ProxyFCGISetEnvIf`), karena php-cgi tidak memahami format URL proxy ala PHP-FPM.
+- Shared memory Apache (`slotmem-shm`) disimpan di `tmp\apache` (`DefaultRuntimeDir`), bukan di folder runtime; vhost default Apache punya `DocumentRoot` sendiri.
+
 ## [0.8.0] - 2026-10-27
 
 ### Added
