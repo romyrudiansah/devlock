@@ -203,6 +203,33 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
         }
     }
 
+    // DNS wildcard `*.<tld>`: `devlock dns serve` sebagai service biasa (port 53 juga TCP,
+    // jadi cek kesiapan TCP berlaku).
+    if config.dns.enabled {
+        match crate::launcher::devlock_exe() {
+            Ok(exe) => services.push(ServiceSpec {
+                name: "dns".into(),
+                group: "dns".into(),
+                command: Command {
+                    program: exe,
+                    args: vec!["dns".into(), "serve".into()],
+                    cwd: paths.root().to_path_buf(),
+                    env: vec![(
+                        crate::paths::HOME_ENV.into(),
+                        paths.root().to_string_lossy().into(),
+                    )],
+                },
+                stop: None,
+                init: None,
+                init_marker: None,
+                port: Some(crate::dns::PORT),
+                extra_ports: vec![],
+                log: paths.logs().join("dns.log"),
+            }),
+            Err(err) => warnings.push(format!("DNS wildcard tidak bisa dijalankan: {err:#}")),
+        }
+    }
+
     // Dev server project Node: dijalankan lewat shim agar versi Node sesuai project.
     for site in &sites {
         let (Some(dev), SiteKind::Proxy { port }) = (&site.dev, &site.kind) else {

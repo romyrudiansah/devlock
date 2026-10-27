@@ -134,6 +134,13 @@ pub fn doctor() -> Result<()> {
             Summary(&ports.shadowing)
         ),
     );
+    if config.dns.enabled {
+        check(
+            crate::dns::system_resolves(&config.tld),
+            &format!("DNS wildcard: *.{} → 127.0.0.1", config.tld),
+            "jalankan `devlock start` (service dns) dan cek `devlock dns status`",
+        );
+    }
 
     if problems == 0 {
         println!("\nSemua pemeriksaan lolos.");

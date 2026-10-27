@@ -414,7 +414,12 @@ impl Supervisor {
             }
         }
         self.order = new_names;
-        self.sites = plan.sites.iter().flat_map(|s| s.domains.clone()).collect();
+        self.sites = plan
+            .sites
+            .iter()
+            .flat_map(|s| s.domains.clone())
+            .filter(|d| !crate::dns::covers(&config, d))
+            .collect();
         self.site_needs = plan
             .sites
             .iter()
@@ -435,20 +440,27 @@ impl Supervisor {
         tracing::info!("perubahan site/konfigurasi terdeteksi; memuat ulang");
         let active = self.services.values().any(|m| m.wanted);
         let before = self.site_needs.clone();
-        if let Err(err) = self.reload() {
-            tracing::error!("reload otomatis gagal: {err:#}");
-            return;
-        }
+        let added = match self.reload() {
+            Ok(added) => added,
+            Err(err) => {
+                tracing::error!("reload otomatis gagal: {err:#}");
+                return;
+            }
+        };
         if !active {
             return;
         }
-        // Jalankan kebutuhan site yang baru atau berubah (pool PHP, database, dev server).
-        let groups: BTreeSet<String> = self
+        // Jalankan kebutuhan site yang baru atau berubah (pool PHP, database, dev server),
+        // dan DNS bila baru diaktifkan.
+        let mut groups: BTreeSet<String> = self
             .site_needs
             .iter()
             .filter(|(site, needs)| before.get(*site) != Some(*needs))
             .flat_map(|(_, needs)| needs.iter().cloned())
             .collect();
+        if added.iter().any(|name| name == "dns") {
+            groups.insert("dns".into());
+        }
         let mut started = Vec::new();
         for name in &self.order {
             let Some(managed) = self.services.get_mut(name) else {

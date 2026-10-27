@@ -79,6 +79,8 @@ pub fn sync_hosts(paths: &Paths, config: &Config, elevated: bool) -> Result<Host
     let domains: Vec<String> = sites::discover(paths, config)?
         .into_iter()
         .flat_map(|s| s.domains)
+        // Domain `*.<tld>` dijawab DNS DevLock bila aktif; alias di luar TLD tetap ke hosts.
+        .filter(|d| !crate::dns::covers(config, d))
         .collect();
     write_hosts(paths, &domains, elevated, false)
 }

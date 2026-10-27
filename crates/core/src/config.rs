@@ -33,6 +33,11 @@ port = 80
 enabled = false
 port = 443
 
+# DNS lokal untuk wildcard *.<tld>: semua subdomain langsung mengarah ke 127.0.0.1
+# tanpa menulis file hosts per project. Aktifkan dengan `devlock dns enable` (UAC sekali).
+[dns]
+enabled = false
+
 [php]
 # Jumlah proses php-cgi per versi PHP
 workers = 4
@@ -62,6 +67,7 @@ pub struct Config {
     pub defaults: BTreeMap<String, String>,
     pub http: HttpConfig,
     pub https: HttpsConfig,
+    pub dns: DnsConfig,
     pub php: PhpConfig,
     pub daemon: DaemonConfig,
     pub gui: GuiConfig,
@@ -93,6 +99,13 @@ impl Default for HttpsConfig {
     }
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DnsConfig {
+    /// Jalankan DNS lokal (`127.0.0.1:53`) yang menjawab `*.<tld>`.
+    pub enabled: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PhpConfig {
@@ -115,6 +128,7 @@ impl Default for Config {
             defaults: BTreeMap::new(),
             http: HttpConfig::default(),
             https: HttpsConfig::default(),
+            dns: DnsConfig::default(),
             php: PhpConfig::default(),
             daemon: DaemonConfig::default(),
             gui: GuiConfig::default(),

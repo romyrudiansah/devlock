@@ -3,6 +3,7 @@
 pub mod config;
 pub mod daemon;
 pub mod db;
+pub mod dns;
 pub mod hosts;
 pub mod launcher;
 pub mod paths;
