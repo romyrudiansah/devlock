@@ -12,19 +12,19 @@ use devlock_core::{db, runtime, services, version, Config, Kind, Paths};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
-type CmdResult<T> = Result<T, String>;
+pub(crate) type CmdResult<T> = Result<T, String>;
 
-fn err(e: anyhow::Error) -> String {
+pub(crate) fn err(e: anyhow::Error) -> String {
     format!("{e:#}")
 }
 
-fn context() -> CmdResult<(Paths, Config)> {
+pub(crate) fn context() -> CmdResult<(Paths, Config)> {
     let paths = Paths::discover().map_err(err)?;
     let config = Config::load(&paths).map_err(err)?;
     Ok((paths, config))
 }
 
-async fn blocking<T, F>(f: F) -> CmdResult<T>
+pub(crate) async fn blocking<T, F>(f: F) -> CmdResult<T>
 where
     T: Send + 'static,
     F: FnOnce() -> CmdResult<T> + Send + 'static,

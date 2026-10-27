@@ -16,6 +16,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Peringatan bila ada domain site yang belum ada di file hosts.
 - Rotasi log: log service dan `daemon.log` di atas 10 MB diganti nama menjadi `.1` saat (re)start.
 - Port HTTPS (443) ikut dicek bentrok sebelum nginx start bila ada site HTTPS.
+- Alat PHP per versi: `devlock php ext list|enable|disable`, `devlock php ini get|set|path`, dan `devlock php xdebug status|install|on|off [--php 8.3]`. Xdebug diunduh dari xdebug.org sesuai versi PHP (NTS x64, compiler cocok) dengan verifikasi SHA256, lalu diaktifkan (mode debug+develop, trigger `XDEBUG_SESSION`, port 9003). Pool php-cgi yang berjalan di-restart otomatis setelah perubahan.
+- GUI: tab **PHP** (pilih versi, centang ekstensi, Xdebug satu klik, nilai php.ini umum, buka php.ini) dan tab **Settings** (folder www, TLD, port HTTP/HTTPS, HTTPS global, worker php-cgi, autostart service saat GUI dibuka, buka DevLock di tray saat login Windows).
+- `[gui] autostart_services` di `devlock.toml`; `devlock-gui.exe --minimized` langsung ke tray.
 
 ### Added
 - DevLock kini open source di bawah **MIT OR Apache-2.0** (`LICENSE-MIT`, `LICENSE-APACHE`, ikut di zip rilis).

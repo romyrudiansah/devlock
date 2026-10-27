@@ -2,11 +2,15 @@ import { useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Runtimes from "./pages/Runtimes";
+import Php from "./pages/Php";
+import Settings from "./pages/Settings";
 
 const TABS = [
   { id: "dashboard", label: "Service" },
   { id: "projects", label: "Project" },
   { id: "runtimes", label: "Runtime" },
+  { id: "php", label: "PHP" },
+  { id: "settings", label: "Settings" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
@@ -37,6 +41,8 @@ export default function App() {
         {tab === "dashboard" && <Dashboard />}
         {tab === "projects" && <Projects />}
         {tab === "runtimes" && <Runtimes />}
+        {tab === "php" && <Php />}
+        {tab === "settings" && <Settings />}
       </main>
     </div>
   );

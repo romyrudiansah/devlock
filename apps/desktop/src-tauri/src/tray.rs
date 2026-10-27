@@ -68,7 +68,7 @@ fn load() -> anyhow::Result<(Paths, Config)> {
 }
 
 /// Start/stop dari tray tanpa memblokir thread UI; dashboard diberi tahu lewat event.
-fn run_in_background(app: &AppHandle, action: &'static str) {
+pub(crate) fn run_in_background(app: &AppHandle, action: &'static str) {
     let app = app.clone();
     std::thread::spawn(move || {
         let result = (|| -> anyhow::Result<()> {

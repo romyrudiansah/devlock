@@ -24,6 +24,8 @@ pub mod catalog;
 pub mod http;
 #[cfg(feature = "net")]
 pub mod install;
+#[cfg(feature = "net")]
+pub mod xdebug;
 
 pub use config::Config;
 pub use paths::Paths;

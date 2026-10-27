@@ -56,6 +56,32 @@ export interface InstallProgress {
   total: number | null;
 }
 
+export interface PhpExtension {
+  name: string;
+  enabled: boolean;
+  zend: boolean;
+}
+
+export interface PhpInfo {
+  version: string;
+  ini_path: string;
+  extensions: PhpExtension[];
+  xdebug_installed: boolean;
+  xdebug_enabled: boolean;
+  ini: [string, string | null][];
+}
+
+export interface Settings {
+  www: string;
+  tld: string;
+  http_port: number;
+  https_enabled: boolean;
+  https_port: number;
+  php_workers: number;
+  autostart_services: boolean;
+  start_with_windows: boolean;
+}
+
 export type ServiceAction = "start" | "stop" | "restart" | "reload" | "shutdown";
 
 export const api = {
@@ -76,6 +102,16 @@ export const api = {
   openFolder: (path: string) => invoke<void>("open_folder", { path }),
   openTerminal: (dir: string) => invoke<void>("open_terminal", { dir }),
   createSiteDatabase: (site: string) => invoke<string>("create_site_database", { site }),
+  phpInfo: (version: string) => invoke<PhpInfo>("php_info", { version }),
+  phpSetExtension: (version: string, name: string, enabled: boolean) =>
+    invoke<PhpInfo>("php_set_extension", { version, name, enabled }),
+  phpXdebug: (version: string, action: "install" | "on" | "off") =>
+    invoke<PhpInfo>("php_xdebug", { version, action }),
+  phpSetIni: (version: string, values: [string, string][]) =>
+    invoke<PhpInfo>("php_set_ini", { version, values }),
+  openPhpIni: (version: string) => invoke<void>("open_php_ini", { version }),
+  getSettings: () => invoke<Settings>("get_settings"),
+  saveSettings: (settings: Settings) => invoke<string>("save_settings", { settings }),
 };
 
 /** Pesan error dari command Tauri (string) atau Error biasa. */

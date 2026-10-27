@@ -668,6 +668,31 @@ fn handle_client(stream: TcpStream, supervisor: &Mutex<Supervisor>) -> Result<bo
     Ok(shutdown)
 }
 
+/// Restart grup service (mis. `php@8.3`) bila daemon berjalan dan grup itu sedang aktif,
+/// agar perubahan `php.ini` langsung dipakai. `Ok(true)` bila restart dilakukan.
+pub fn restart_group_if_running(config: &Config, group: &str) -> Result<bool> {
+    let Some(status) = send(config, &Request::Status)? else {
+        return Ok(false);
+    };
+    let active = status
+        .services
+        .iter()
+        .any(|s| s.group == group && s.state != "stopped" && s.state != "failed");
+    if !active {
+        return Ok(false);
+    }
+    match send(
+        config,
+        &Request::Restart {
+            target: group.to_string(),
+        },
+    )? {
+        Some(r) if r.ok => Ok(true),
+        Some(r) => bail!("restart {group} gagal: {}", r.message),
+        None => Ok(false),
+    }
+}
+
 /// Kirim satu request ke daemon. `None` bila daemon tidak berjalan.
 pub fn send(config: &Config, request: &Request) -> Result<Option<Response>> {
     let Ok(mut stream) = TcpStream::connect_timeout(

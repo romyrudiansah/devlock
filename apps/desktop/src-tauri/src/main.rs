@@ -2,6 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
+mod php_page;
+mod settings;
 mod tray;
 
 use tauri::{Manager, WindowEvent};
@@ -22,6 +24,18 @@ fn main() {
         }))
         .setup(|app| {
             tray::create(app.handle())?;
+            // Dijalankan saat login Windows (`--minimized`): langsung ke tray.
+            if std::env::args().any(|a| a == "--minimized") {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+            }
+            let autostart = devlock_core::Paths::discover()
+                .and_then(|paths| devlock_core::Config::load(&paths))
+                .is_ok_and(|config| config.gui.autostart_services);
+            if autostart {
+                tray::run_in_background(app.handle(), "start");
+            }
             Ok(())
         })
         // Menutup jendela hanya menyembunyikannya ke tray; service tetap diawasi daemon.
@@ -45,6 +59,13 @@ fn main() {
             commands::open_folder,
             commands::open_terminal,
             commands::create_site_database,
+            php_page::php_info,
+            php_page::php_set_extension,
+            php_page::php_xdebug,
+            php_page::php_set_ini,
+            php_page::open_php_ini,
+            settings::get_settings,
+            settings::save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("gagal menjalankan DevLock");

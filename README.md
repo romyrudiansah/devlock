@@ -57,6 +57,20 @@ devlock hosts                      samakan file hosts dengan daftar site
 devlock doctor                     diagnosa PATH, port, dependency
 ```
 
+## PHP
+
+```
+devlock php ext list                   # ekstensi PHP milik project ini
+devlock php ext enable gmp bz2 --php 8.3
+devlock php xdebug install             # unduh dari xdebug.org (SHA256) + aktifkan
+devlock php xdebug off
+devlock php ini set memory_limit 1G
+```
+
+Perubahan langsung diterapkan ke pool php-cgi yang sedang berjalan. Xdebug aktif dengan mode
+`debug,develop`, mulai saat ada trigger `XDEBUG_SESSION`, dan terhubung ke `127.0.0.1:9003`.
+Semua ini juga tersedia di tab **PHP** pada GUI.
+
 ## Database
 
 ```

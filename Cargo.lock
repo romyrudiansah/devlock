@@ -955,6 +955,8 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-opener",
  "tauri-plugin-single-instance",
+ "toml_edit 0.22.27",
+ "winreg 0.52.0",
 ]
 
 [[package]]
