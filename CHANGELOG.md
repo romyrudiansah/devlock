@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- Menu tray menampilkan status service (mis. "Service: 6/6 berjalan", juga di tooltip) dan submenu **Project**: tiap site bisa dibuka di browser, dibuka foldernya, atau dibuka terminalnya (dengan shim di PATH) langsung dari tray. Menu diperbarui otomatis bila status atau daftar site berubah.
+
 ## [0.6.0] - 2026-10-27
 
 ### Added
