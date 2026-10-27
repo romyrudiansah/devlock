@@ -119,6 +119,7 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
             Some(version) => {
                 let dir = paths.runtime_dir("apache", &version);
                 let conf = paths.etc().join("apache").join("httpd.conf");
+                std::fs::create_dir_all(paths.tmp().join("apache"))?;
                 files.push((
                     conf.clone(),
                     apache_conf(paths, config, &dir, &sites, workers),
@@ -678,9 +679,12 @@ pub fn apache_conf(
          ServerRoot \"{root}\"\n\
          Listen {listen}\n\
          ServerName localhost\n\
-         PidFile \"{run}/httpd.pid\"\n",
+         PidFile \"{run}/httpd.pid\"\n\
+         # Shared memory balancer dll. di tmp, bukan di folder runtime.\n\
+         DefaultRuntimeDir \"{runtime}\"\n",
         root = slash(apache_dir),
         run = slash(&paths.run()),
+        runtime = slash(&paths.tmp().join("apache")),
     );
     for module in APACHE_MODULES {
         let _ = writeln!(c, "LoadModule {module}_module modules/mod_{module}.so");
@@ -701,8 +705,10 @@ pub fn apache_conf(
          RemoteIPHeader X-Forwarded-For\n\
          RemoteIPInternalProxy 127.0.0.1\n\
          SetEnvIf X-Forwarded-Proto \"^https$\" HTTPS=on\n\n\
-         # php-cgi bukan PHP-FPM: kirim SCRIPT_FILENAME sebagai path file biasa.\n\
+         # php-cgi bukan PHP-FPM: SCRIPT_FILENAME harus path file Windows biasa\n\
+         # (`D:/.../index.php`), bukan URL proxy.\n\
          ProxyFCGIBackendType GENERIC\n\
+         ProxyFCGISetEnvIf \"true\" SCRIPT_FILENAME \"%{{DOCUMENT_ROOT}}%{{reqenv:SCRIPT_NAME}}\"\n\
          ProxyTimeout 300\n\n\
          <Directory />\n    AllowOverride None\n    Require all denied\n</Directory>\n"
     );
@@ -730,7 +736,8 @@ pub fn apache_conf(
     // VirtualHost pertama menjadi default untuk Host yang tidak dikenal.
     let _ = write!(
         c,
-        "\n<VirtualHost {listen}>\n    ServerName default.invalid\n    <Location />\n        Require all denied\n    </Location>\n</VirtualHost>\n"
+        "\n<VirtualHost {listen}>\n    ServerName default.invalid\n    DocumentRoot \"{htdocs}\"\n    <Location />\n        Require all denied\n    </Location>\n</VirtualHost>\n",
+        htdocs = slash(&apache_dir.join("htdocs")),
     );
     for site in sites.iter().filter(|s| s.apache) {
         let root = slash(&site.docroot);
@@ -748,9 +755,11 @@ pub fn apache_conf(
             "    DocumentRoot \"{root}\"\n    <Directory \"{root}\">\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n"
         );
         if let SiteKind::Php { line } = &site.kind {
+            // Garis miring penutup wajib: tanpa itu mod_proxy_balancer tidak mengenali
+            // nama balancer dan request berakhir 500 ("No protocol handler").
             let _ = write!(
                 c,
-                "    <FilesMatch \"\\.php$\">\n        SetHandler \"proxy:balancer://{}\"\n    </FilesMatch>\n",
+                "    <FilesMatch \"\\.php$\">\n        SetHandler \"proxy:balancer://{}/\"\n    </FilesMatch>\n",
                 balancer_name(line)
             );
         }
@@ -978,8 +987,13 @@ mod tests {
         assert!(httpd.contains("ServerName legacy.test\n    ServerAlias old.local"));
         assert!(httpd.contains("AllowOverride All"));
         assert!(httpd.contains("BalancerMember \"fcgi://127.0.0.1:9830\""));
-        assert!(httpd.contains("SetHandler \"proxy:balancer://php83\""));
+        assert!(httpd.contains("SetHandler \"proxy:balancer://php83/\""));
         assert!(httpd.contains("ProxyFCGIBackendType GENERIC"));
+        assert!(httpd.contains(
+            "ProxyFCGISetEnvIf \"true\" SCRIPT_FILENAME \"%{DOCUMENT_ROOT}%{reqenv:SCRIPT_NAME}\""
+        ));
+        let runtime = slash(&paths.tmp().join("apache"));
+        assert!(httpd.contains(&format!("DefaultRuntimeDir \"{runtime}\"")));
         assert!(!httpd.contains("modern.test"));
     }
 }
