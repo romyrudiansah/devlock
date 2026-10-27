@@ -92,6 +92,42 @@ const available: AvailableRelease[] = [
   { version: "7.4.33", lts: false },
 ];
 
+const mockExtensions = [
+  "bz2", "curl", "fileinfo", "gd", "gmp", "intl", "mbstring", "mysqli", "opcache", "openssl",
+  "pdo_mysql", "pdo_pgsql", "pdo_sqlite", "sodium", "sqlite3", "xsl", "zip",
+].map((name) => ({
+  name,
+  enabled: ["curl", "fileinfo", "gd", "intl", "mbstring", "mysqli", "openssl", "pdo_mysql", "pdo_pgsql", "pdo_sqlite", "sodium", "sqlite3", "zip"].includes(name),
+  zend: name === "opcache",
+}));
+const xdebug = { installed: false, enabled: false };
+const mockIni: Record<string, string> = {
+  memory_limit: "512M",
+  upload_max_filesize: "128M",
+  post_max_size: "128M",
+  max_execution_time: "120",
+};
+const phpInfo = (version: string) => ({
+  version,
+  ini_path: ["D:", "DevLock", "runtimes", "php", version, "php.ini"].join("\\"),
+  extensions: [...mockExtensions, ...(xdebug.installed ? [{ name: "xdebug", enabled: xdebug.enabled, zend: true }] : [])],
+  xdebug_installed: xdebug.installed,
+  xdebug_enabled: xdebug.enabled,
+  ini: ["memory_limit", "upload_max_filesize", "post_max_size", "max_execution_time", "display_errors", "date.timezone"].map(
+    (k) => [k, mockIni[k] ?? null],
+  ),
+});
+const mockSettings = {
+  www: "D:\\DevLock\\www",
+  tld: "test",
+  http_port: 80,
+  https_enabled: false,
+  https_port: 443,
+  php_workers: 4,
+  autostart_services: false,
+  start_with_windows: false,
+};
+
 const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
   overview: () => overview(),
   service_action: ({ action, target }) => {
@@ -104,6 +140,30 @@ const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
   available_runtimes: () => available,
   install_runtime: () => new Promise((resolve) => setTimeout(() => resolve("8.4.27"), 1500)),
   create_site_database: ({ site }) => `Database \`${String(site).replace(/-/g, "_")}\` dibuat di postgresql@18 (port 5418).`,
+  php_info: ({ version }) => phpInfo(String(version)),
+  php_set_extension: ({ version, name, enabled }) => {
+    const ext = mockExtensions.find((e) => e.name === name);
+    if (ext) ext.enabled = Boolean(enabled);
+    return phpInfo(String(version));
+  },
+  php_xdebug: ({ version, action }) =>
+    new Promise((resolve) =>
+      setTimeout(() => {
+        xdebug.installed = true;
+        xdebug.enabled = action !== "off";
+        resolve(phpInfo(String(version)));
+      }, 800),
+    ),
+  php_set_ini: ({ version, values }) => {
+    for (const [k, v] of values as [string, string][]) mockIni[k] = v;
+    return phpInfo(String(version));
+  },
+  open_php_ini: () => undefined,
+  get_settings: () => ({ ...mockSettings }),
+  save_settings: ({ settings }) => {
+    Object.assign(mockSettings, settings as object);
+    return "Pengaturan disimpan dan diterapkan.";
+  },
   read_log: ({ service }) => `[contoh] log ${service}\n2026-10-26 12:56:15 0 [Note] Server ready for connections.`,
 };
 

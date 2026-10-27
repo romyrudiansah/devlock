@@ -1,5 +1,6 @@
 mod commands;
 mod db;
+mod php;
 mod runtimes;
 mod services;
 mod ssl;
@@ -119,6 +120,14 @@ enum Command {
         #[arg(short, long, global = true)]
         instance: Option<String>,
     },
+    /// Alat PHP: ekstensi, Xdebug, dan php.ini per versi
+    Php {
+        #[command(subcommand)]
+        command: PhpCommand,
+        /// Versi PHP, mis. `8.3`; default versi milik folder kerja
+        #[arg(long = "php", global = true)]
+        version: Option<String>,
+    },
     /// HTTPS lokal: CA DevLock dan sertifikat per site
     Ssl {
         #[command(subcommand)]
@@ -137,6 +146,45 @@ enum Command {
     /// Proses latar yang mengawasi service (dijalankan otomatis oleh `start`)
     #[command(hide = true)]
     Daemon,
+}
+
+#[derive(Subcommand)]
+enum PhpCommand {
+    /// Ekstensi PHP: list, enable, disable
+    Ext {
+        #[command(subcommand)]
+        command: ExtCommand,
+    },
+    /// Xdebug: status, install (unduh dari xdebug.org + aktifkan), on, off
+    Xdebug {
+        #[arg(value_parser = ["status", "install", "on", "off"], default_value = "status")]
+        action: String,
+    },
+    /// php.ini: get <key>, set <key> <value>, path
+    Ini {
+        #[command(subcommand)]
+        command: IniCommand,
+    },
+}
+
+#[derive(Subcommand)]
+enum ExtCommand {
+    /// Semua ekstensi di ext\ beserta statusnya
+    List,
+    /// Aktifkan ekstensi, mis. `devlock php ext enable redis gmp`
+    Enable { names: Vec<String> },
+    /// Nonaktifkan ekstensi
+    Disable { names: Vec<String> },
+}
+
+#[derive(Subcommand)]
+enum IniCommand {
+    /// Nilai aktif sebuah key, mis. `memory_limit`
+    Get { key: String },
+    /// Set nilai, mis. `devlock php ini set memory_limit 1G`
+    Set { key: String, value: String },
+    /// Lokasi php.ini
+    Path,
 }
 
 #[derive(Subcommand)]
@@ -244,6 +292,27 @@ fn main() {
                 DbCommand::Drop { name, yes } => db::drop(&name, instance, yes),
                 DbCommand::Dump { name, output } => db::dump(&name, instance, output),
                 DbCommand::Restore { name, file } => db::restore(&name, &file, instance),
+            }
+        }
+        Command::Php { command, version } => {
+            let v = version.as_deref();
+            match command {
+                PhpCommand::Ext { command } => match command {
+                    ExtCommand::List => php::ext_list(v),
+                    ExtCommand::Enable { names } => php::ext_set(&names, true, v),
+                    ExtCommand::Disable { names } => php::ext_set(&names, false, v),
+                },
+                PhpCommand::Xdebug { action } => match action.as_str() {
+                    "install" => php::xdebug_install(v),
+                    "on" => php::xdebug_set(true, v),
+                    "off" => php::xdebug_set(false, v),
+                    _ => php::xdebug_status(v),
+                },
+                PhpCommand::Ini { command } => match command {
+                    IniCommand::Get { key } => php::ini_get(&key, v),
+                    IniCommand::Set { key, value } => php::ini_set(&key, &value, v),
+                    IniCommand::Path => php::ini_path(v),
+                },
             }
         }
         Command::Ssl { command } => match command {

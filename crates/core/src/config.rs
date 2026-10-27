@@ -42,6 +42,10 @@ max_requests = 500
 [daemon]
 port = 7433
 
+[gui]
+# Jalankan semua service saat aplikasi DevLock (GUI) dibuka
+autostart_services = false
+
 # Override port instance database, contoh:
 # [ports]
 # "mysql@8.4" = 3306
@@ -60,6 +64,7 @@ pub struct Config {
     pub https: HttpsConfig,
     pub php: PhpConfig,
     pub daemon: DaemonConfig,
+    pub gui: GuiConfig,
     /// Override port per instance, mis. `"mysql@8.4" = 3306`.
     pub ports: BTreeMap<String, u16>,
 }
@@ -112,6 +117,7 @@ impl Default for Config {
             https: HttpsConfig::default(),
             php: PhpConfig::default(),
             daemon: DaemonConfig::default(),
+            gui: GuiConfig::default(),
             ports: BTreeMap::new(),
         }
     }
@@ -133,6 +139,13 @@ impl Default for PhpConfig {
             max_requests: 500,
         }
     }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct GuiConfig {
+    /// Jalankan semua service saat GUI dibuka.
+    pub autostart_services: bool,
 }
 
 impl Default for DaemonConfig {
@@ -193,6 +206,18 @@ impl Config {
             doc[table] = toml_edit::table();
         }
         doc[table][key] = value;
+        std::fs::write(&file, doc.to_string())
+            .with_context(|| format!("gagal menulis {}", file.display()))
+    }
+
+    /// Ubah nilai top-level (mis. `www`, `tld`) tanpa menghilangkan komentar di file.
+    pub fn set_top_level(paths: &Paths, key: &str, value: toml_edit::Item) -> Result<()> {
+        let file = paths.config_file();
+        let text = std::fs::read_to_string(&file).unwrap_or_else(|_| DEFAULT_CONFIG.to_string());
+        let mut doc: toml_edit::DocumentMut = text
+            .parse()
+            .with_context(|| format!("format {} tidak valid", file.display()))?;
+        doc[key] = value;
         std::fs::write(&file, doc.to_string())
             .with_context(|| format!("gagal menulis {}", file.display()))
     }
