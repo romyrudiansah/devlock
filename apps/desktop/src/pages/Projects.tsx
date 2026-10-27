@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { api, errorText, type Overview, type SiteInfo } from "../api";
+import NewProject from "./NewProject";
 
 export default function Projects() {
   const [sites, setSites] = useState<SiteInfo[] | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const refresh = async () => {
     setError(null);
@@ -35,6 +37,9 @@ export default function Projects() {
           </p>
         </div>
         <div className="actions">
+          <button className="primary" onClick={() => setCreating(true)}>
+            Project baru
+          </button>
           {overview && <button onClick={() => act(api.openFolder(overview.www))}>Buka folder www</button>}
           <button onClick={refresh}>Muat ulang</button>
         </div>
@@ -98,6 +103,7 @@ export default function Projects() {
           </article>
         ))}
       </div>
+      {creating && <NewProject onClose={() => setCreating(false)} onCreated={refresh} />}
     </section>
   );
 }

@@ -1,5 +1,6 @@
 mod commands;
 mod db;
+mod new;
 mod php;
 mod runtimes;
 mod services;
@@ -119,6 +120,25 @@ enum Command {
         /// Instance, mis. `mysql@8.4` atau `postgresql@18`; default dari .devlock.toml / global
         #[arg(short, long, global = true)]
         instance: Option<String>,
+    },
+    /// Buat project baru di www dari template (Laravel, WordPress, Next.js, …)
+    New {
+        /// laravel, wordpress, symfony, codeigniter, next, nuxt, vite-react, vite-vue, static
+        template: Option<String>,
+        /// Nama project = nama folder & domain (`<nama>.test`)
+        name: Option<String>,
+        /// Versi PHP, mis. `8.3` (default dari devlock.toml)
+        #[arg(long)]
+        php: Option<String>,
+        /// Versi Node, mis. `22`
+        #[arg(long)]
+        node: Option<String>,
+        /// Instance database, mis. `mysql@8.4` / `postgresql@18`
+        #[arg(long)]
+        db: Option<String>,
+        /// Tampilkan daftar template
+        #[arg(long)]
+        list: bool,
     },
     /// Alat PHP: ekstensi, Xdebug, dan php.ini per versi
     Php {
@@ -292,6 +312,20 @@ fn main() {
                 DbCommand::Drop { name, yes } => db::drop(&name, instance, yes),
                 DbCommand::Dump { name, output } => db::dump(&name, instance, output),
                 DbCommand::Restore { name, file } => db::restore(&name, &file, instance),
+            }
+        }
+        Command::New {
+            template,
+            name,
+            php,
+            node,
+            db,
+            list,
+        } => {
+            if list {
+                new::list()
+            } else {
+                new::create(template.as_deref(), name.as_deref(), php, node, db)
             }
         }
         Command::Php { command, version } => {

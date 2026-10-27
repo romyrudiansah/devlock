@@ -200,6 +200,28 @@ fn lookup_shasum(text: &str, file: &str) -> Option<String> {
     (hash.len() == 64 && hash.chars().all(|c| c.is_ascii_hexdigit())).then(|| hash.to_lowercase())
 }
 
+/// SHA1 file (dipakai untuk verifikasi zip WordPress yang hanya menerbitkan `.sha1`).
+pub fn sha1_file(path: &Path) -> Result<String> {
+    use sha1::Sha1;
+    let mut file = File::open(path).with_context(|| format!("gagal membuka {}", path.display()))?;
+    let mut hasher = Sha1::new();
+    let mut buf = vec![0u8; 64 * 1024];
+    loop {
+        let n = file.read(&mut buf)?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Ok(hex(&hasher.finalize()))
+}
+
+/// Ekstrak seluruh isi zip ke `dest`.
+pub fn extract_zip_to(archive: &Path, dest: &Path) -> Result<()> {
+    std::fs::create_dir_all(dest)?;
+    extract_zip(archive, dest, &[])
+}
+
 pub fn sha256_file(path: &Path) -> Result<String> {
     let mut file = File::open(path).with_context(|| format!("gagal membuka {}", path.display()))?;
     let mut hasher = Sha256::new();

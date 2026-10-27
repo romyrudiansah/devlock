@@ -164,7 +164,7 @@ fn is_php_project(dir: &Path, docroot: &Path) -> bool {
 }
 
 /// Nama folder harus valid sebagai label DNS.
-fn is_valid_label(name: &str) -> bool {
+pub fn is_valid_label(name: &str) -> bool {
     !name.is_empty()
         && name.len() <= 63
         && !name.starts_with('-')

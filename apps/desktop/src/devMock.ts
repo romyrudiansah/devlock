@@ -164,6 +164,30 @@ const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
     Object.assign(mockSettings, settings as object);
     return "Pengaturan disimpan dan diterapkan.";
   },
+  list_templates: () => [
+    { id: "laravel", label: "Laravel", uses_php: true, uses_node: false, needs_database: true },
+    { id: "wordpress", label: "WordPress", uses_php: true, uses_node: false, needs_database: true },
+    { id: "symfony", label: "Symfony", uses_php: true, uses_node: false, needs_database: false },
+    { id: "codeigniter", label: "CodeIgniter 4", uses_php: true, uses_node: false, needs_database: false },
+    { id: "next", label: "Next.js", uses_php: false, uses_node: true, needs_database: false },
+    { id: "nuxt", label: "Nuxt", uses_php: false, uses_node: true, needs_database: false },
+    { id: "vite-react", label: "Vite + React", uses_php: false, uses_node: true, needs_database: false },
+    { id: "vite-vue", label: "Vite + Vue", uses_php: false, uses_node: true, needs_database: false },
+    { id: "static", label: "HTML statis", uses_php: false, uses_node: false, needs_database: false },
+  ],
+  create_project: ({ name, database }) =>
+    new Promise((resolve) =>
+      setTimeout(
+        () =>
+          resolve({
+            dir: ["D:", "DevLock", "www", String(name)].join("\\"),
+            url: `http://${name}.test`,
+            database: database ? `${String(name).replace(/-/g, "_")} @ ${database}` : null,
+            notes: ["Jalankan `php artisan migrate` di folder project untuk membuat tabel."],
+          }),
+        900,
+      ),
+    ),
   read_log: ({ service }) => `[contoh] log ${service}\n2026-10-26 12:56:15 0 [Note] Server ready for connections.`,
 };
 

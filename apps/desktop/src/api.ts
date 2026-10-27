@@ -82,6 +82,21 @@ export interface Settings {
   start_with_windows: boolean;
 }
 
+export interface TemplateInfo {
+  id: string;
+  label: string;
+  uses_php: boolean;
+  uses_node: boolean;
+  needs_database: boolean;
+}
+
+export interface CreatedProject {
+  dir: string;
+  url: string;
+  database: string | null;
+  notes: string[];
+}
+
 export type ServiceAction = "start" | "stop" | "restart" | "reload" | "shutdown";
 
 export const api = {
@@ -110,6 +125,9 @@ export const api = {
   phpSetIni: (version: string, values: [string, string][]) =>
     invoke<PhpInfo>("php_set_ini", { version, values }),
   openPhpIni: (version: string) => invoke<void>("open_php_ini", { version }),
+  listTemplates: () => invoke<TemplateInfo[]>("list_templates"),
+  createProject: (p: { template: string; name: string; php?: string; node?: string; database?: string }) =>
+    invoke<CreatedProject>("create_project", p),
   getSettings: () => invoke<Settings>("get_settings"),
   saveSettings: (settings: Settings) => invoke<string>("save_settings", { settings }),
 };
