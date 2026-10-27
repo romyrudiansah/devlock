@@ -18,17 +18,19 @@ pub enum Kind {
     Node,
     Composer,
     Nginx,
+    Apache,
     Mysql,
     Mariadb,
     Postgresql,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 7] = [
+    pub const ALL: [Kind; 8] = [
         Kind::Php,
         Kind::Node,
         Kind::Composer,
         Kind::Nginx,
+        Kind::Apache,
         Kind::Mysql,
         Kind::Mariadb,
         Kind::Postgresql,
@@ -40,6 +42,7 @@ impl Kind {
             Kind::Node => "node",
             Kind::Composer => "composer",
             Kind::Nginx => "nginx",
+            Kind::Apache => "apache",
             Kind::Mysql => "mysql",
             Kind::Mariadb => "mariadb",
             Kind::Postgresql => "postgresql",
@@ -48,6 +51,11 @@ impl Kind {
 
     pub fn is_database(self) -> bool {
         matches!(self, Kind::Mysql | Kind::Mariadb | Kind::Postgresql)
+    }
+
+    /// Web server: dipakai lewat konfigurasi, bukan lewat shim/versi default project.
+    pub fn is_webserver(self) -> bool {
+        matches!(self, Kind::Nginx | Kind::Apache)
     }
 }
 
@@ -66,6 +74,7 @@ impl FromStr for Kind {
             "node" | "nodejs" => Kind::Node,
             "composer" => Kind::Composer,
             "nginx" => Kind::Nginx,
+            "apache" | "httpd" => Kind::Apache,
             "mysql" => Kind::Mysql,
             "mariadb" => Kind::Mariadb,
             "postgresql" | "postgres" | "pgsql" | "pg" => Kind::Postgresql,

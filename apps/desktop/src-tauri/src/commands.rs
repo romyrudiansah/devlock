@@ -187,6 +187,11 @@ pub async fn list_sites() -> CmdResult<Vec<SiteInfo>> {
                     SiteKind::Proxy { port } => ("proxy", format!("dev server :{port}")),
                     SiteKind::Static => ("static", "Static".to_string()),
                 };
+                let detail = if site.apache {
+                    format!("{detail} · Apache")
+                } else {
+                    detail
+                };
                 SiteInfo {
                     name: site.name.clone(),
                     url: site.url(&config),
@@ -302,7 +307,7 @@ pub async fn install_runtime(app: AppHandle, kind: String, version: String) -> C
         // Sama seperti CLI: install pertama suatu runtime menjadi default.
         if !config.defaults.contains_key(kind.as_str())
             && !kind.is_database()
-            && kind != Kind::Nginx
+            && !kind.is_webserver()
         {
             Config::set_default(&paths, kind.as_str(), &release.version).map_err(err)?;
         }

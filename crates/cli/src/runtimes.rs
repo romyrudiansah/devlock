@@ -38,7 +38,7 @@ pub fn list(kind: Kind, available: bool, all: bool, refresh: bool) -> Result<()>
     for release in shown {
         let mut tags = Vec::new();
         if release.lts {
-            tags.push(if kind == Kind::Nginx { "stable" } else { "lts" });
+            tags.push(if kind.is_webserver() { "stable" } else { "lts" });
         }
         if installed.contains(&release.version) {
             tags.push("terinstall");
@@ -91,7 +91,7 @@ pub fn install(kind: Kind, spec: &str) -> Result<()> {
         target.display()
     );
     let config = Config::load(&paths)?;
-    if !config.defaults.contains_key(kind.as_str()) && !kind.is_database() && kind != Kind::Nginx {
+    if !config.defaults.contains_key(kind.as_str()) && !kind.is_database() && !kind.is_webserver() {
         Config::set_default(&paths, kind.as_str(), &release.version)?;
         println!(
             "Dijadikan versi default {kind} (ubah dengan `devlock use {kind} <versi> --global`)."

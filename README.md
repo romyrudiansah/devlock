@@ -38,6 +38,25 @@ database = "mysql@8.4"
   `mysql@8.4` (3384), `mariadb@11.4` (3424), `postgresql@16` (5416). Shim `mysql`/`psql`
   otomatis terhubung ke instance milik project.
 
+## Apache (per project)
+
+```
+devlock install apache          # build Win64 dari Apache Lounge, diverifikasi SHA256
+```
+
+```toml
+# www/legacy/.devlock.toml
+webserver = "apache"
+```
+
+nginx tetap menerima semua request (port 80/443, HTTPS) dan meneruskan site
+`webserver = "apache"` ke Apache di `127.0.0.1:8180` (`[apache] port`). Apache memproses
+`.htaccess` (`AllowOverride All`, mod_rewrite, headers, expires, auth basic) dan menjalankan
+PHP lewat pool php-cgi yang sama (mod_proxy_fcgi), jadi versi PHP per project tetap berlaku.
+`webserver = "apache"` di `devlock.toml` menjadikan Apache default untuk semua site. Bila
+Apache belum terinstall, site tetap dilayani nginx dengan peringatan. Build Apache Lounge
+membutuhkan Visual C++ Redistributable terbaru.
+
 ## CLI
 
 ```

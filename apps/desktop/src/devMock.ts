@@ -80,6 +80,7 @@ const runtimes: RuntimeInfo[] = [
   { kind: "node", installed: ["22.23.4", "20.20.2"], default_spec: "22.23.4", default_version: "22.23.4" },
   { kind: "composer", installed: ["2.10.3"], default_spec: "2.10.3", default_version: "2.10.3" },
   { kind: "nginx", installed: ["1.28.3"], default_spec: null, default_version: null },
+  { kind: "apache", installed: [], default_spec: null, default_version: null },
   { kind: "mysql", installed: [], default_spec: null, default_version: null },
   { kind: "mariadb", installed: ["11.4.13"], default_spec: null, default_version: null },
   { kind: "postgresql", installed: ["18.6"], default_spec: null, default_version: null },

@@ -16,7 +16,9 @@ pub const DEFAULT_CONFIG: &str = r#"# Konfigurasi global DevLock.
 www = "www"
 tld = "test"
 
-# Web server default: "nginx"
+# Web server default untuk site: "nginx", atau "apache" (Apache di belakang nginx,
+# mendukung .htaccess; butuh `devlock install apache`). Bisa per project: `webserver`
+# di .devlock.toml.
 webserver = "nginx"
 
 # Versi default bila project tidak menentukan sendiri.
@@ -32,6 +34,11 @@ port = 80
 [https]
 enabled = false
 port = 443
+
+# Apache untuk site dengan webserver = "apache": hanya di 127.0.0.1, nginx meneruskan
+# request site itu ke port ini.
+[apache]
+port = 8180
 
 # DNS lokal untuk wildcard *.<tld>: semua subdomain langsung mengarah ke 127.0.0.1
 # tanpa menulis file hosts per project. Aktifkan dengan `devlock dns enable` (UAC sekali).
@@ -67,6 +74,7 @@ pub struct Config {
     pub defaults: BTreeMap<String, String>,
     pub http: HttpConfig,
     pub https: HttpsConfig,
+    pub apache: ApacheConfig,
     pub dns: DnsConfig,
     pub php: PhpConfig,
     pub daemon: DaemonConfig,
@@ -99,6 +107,19 @@ impl Default for HttpsConfig {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ApacheConfig {
+    /// Port internal Apache (`127.0.0.1`), di belakang nginx.
+    pub port: u16,
+}
+
+impl Default for ApacheConfig {
+    fn default() -> Self {
+        Self { port: 8180 }
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct DnsConfig {
@@ -128,6 +149,7 @@ impl Default for Config {
             defaults: BTreeMap::new(),
             http: HttpConfig::default(),
             https: HttpsConfig::default(),
+            apache: ApacheConfig::default(),
             dns: DnsConfig::default(),
             php: PhpConfig::default(),
             daemon: DaemonConfig::default(),

@@ -15,6 +15,8 @@ use crate::version::{self, Version};
 const PHP_RELEASES: &str = "https://downloads.php.net/~windows/releases/";
 const NODE_DIST: &str = "https://nodejs.org/dist/";
 const NGINX_DOWNLOAD: &str = "https://nginx.org/download/";
+/// Build Apache httpd Windows (Win64, VS) dari Apache Lounge; hanya rilis terbaru yang tersedia.
+const APACHE_LOUNGE: &str = "https://www.apachelounge.com";
 const MARIADB_API: &str = "https://downloads.mariadb.org/rest-api/mariadb/";
 const COMPOSER: &str = "https://getcomposer.org";
 const POSTGRES_VERSIONS: &str = "https://www.postgresql.org/versions.json";
@@ -138,6 +140,7 @@ pub fn available(kind: Kind) -> Result<Vec<Release>> {
         Kind::Node => node_releases()?,
         Kind::Composer => composer_releases()?,
         Kind::Nginx => nginx_releases()?,
+        Kind::Apache => apache_releases()?,
         Kind::Mysql => mysql_releases(),
         Kind::Mariadb => mariadb_releases(None)?,
         Kind::Postgresql => postgresql_releases()?,
@@ -343,6 +346,69 @@ fn nginx_releases() -> Result<Vec<Release>> {
         .collect())
 }
 
+// --- Apache ------------------------------------------------------------------
+
+fn apache_releases() -> Result<Vec<Release>> {
+    let html = http::get_string(&format!("{APACHE_LOUNGE}/download/"))?;
+    let mut releases = Vec::new();
+    for path in apache_zip_paths(&html) {
+        let Some(version) = apache_version(&path) else {
+            continue;
+        };
+        let url = format!("{APACHE_LOUNGE}{path}");
+        let sums = http::get_string(&format!("{url}.txt"))?;
+        let file = path.rsplit('/').next().unwrap_or_default();
+        let Some(sha256) = apache_sha256(&sums, file) else {
+            bail!("SHA256 untuk {file} tidak ditemukan di {url}.txt");
+        };
+        releases.push(Release {
+            kind: Kind::Apache,
+            version,
+            url,
+            checksum: Checksum::Sha256(sha256),
+            lts: true,
+        });
+    }
+    if releases.is_empty() {
+        bail!("tidak ada build Apache Win64 di {APACHE_LOUNGE}/download/");
+    }
+    Ok(releases)
+}
+
+/// `/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip` dari halaman unduhan.
+fn apache_zip_paths(html: &str) -> Vec<String> {
+    let mut paths: Vec<String> = html
+        .split("href=\"")
+        .skip(1)
+        .filter_map(|rest| rest.split_once('"').map(|(href, _)| href))
+        .filter(|href| {
+            href.contains("/binaries/httpd-") && href.contains("-Win64-") && href.ends_with(".zip")
+        })
+        .map(String::from)
+        .collect();
+    paths.dedup();
+    paths
+}
+
+fn apache_version(path: &str) -> Option<String> {
+    let file = path.rsplit('/').next()?;
+    let version = file.strip_prefix("httpd-")?.split('-').next()?;
+    Version::parse(version).map(|_| version.to_string())
+}
+
+/// File `.zip.txt` Apache Lounge: baris `SHA256-Checksum for: <file>:` lalu hash di baris berikutnya.
+fn apache_sha256(text: &str, file: &str) -> Option<String> {
+    let mut lines = text.lines().map(str::trim);
+    while let Some(line) = lines.next() {
+        if line.starts_with("SHA256-Checksum for:") && line.contains(file) {
+            let hash = lines.next()?.to_ascii_lowercase();
+            return (hash.len() == 64 && hash.chars().all(|c| c.is_ascii_hexdigit()))
+                .then_some(hash);
+        }
+    }
+    None
+}
+
 // --- MySQL / MariaDB ---------------------------------------------------------
 
 fn mysql_releases() -> Vec<Release> {
@@ -495,6 +561,28 @@ mod tests {
             postgresql_zip_url("16.15", 2),
             "https://get.enterprisedb.com/postgresql/postgresql-16.15-2-windows-x64-binaries.zip"
         );
+    }
+
+    #[test]
+    fn apache_lounge_parsing() {
+        let html = r#"<a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip">x</a>
+            <a href="/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip.asc">sig</a>
+            <a href="/download/VS18/modules/mod_foo-Win64-VS18.zip">m</a>"#;
+        let paths = apache_zip_paths(html);
+        assert_eq!(
+            paths,
+            ["/download/VS18/binaries/httpd-2.4.69-261002-Win64-VS18.zip"]
+        );
+        assert_eq!(apache_version(&paths[0]).as_deref(), Some("2.4.69"));
+
+        let sums = "SHA1-Checksum for: httpd-2.4.69-261002-Win64-VS18.zip:\r\nB737\r\n\r\n\
+                    SHA256-Checksum for: httpd-2.4.69-261002-Win64-VS18.zip:\r\n\
+                    77D715D0D9CEE731E2251E7DDC2090A7A8E6D41FEDEF2E9827CD918593C5A652\r\n";
+        assert_eq!(
+            apache_sha256(sums, "httpd-2.4.69-261002-Win64-VS18.zip").as_deref(),
+            Some("77d715d0d9cee731e2251e7ddc2090a7a8e6d41fedef2e9827cd918593c5a652")
+        );
+        assert!(apache_sha256(sums, "other.zip").is_none());
     }
 
     #[test]
