@@ -94,8 +94,80 @@ pub fn install(
     if release.kind == Kind::Php {
         on_event(Event::Configuring("php.ini"));
         php::write_default_ini(&target)?;
+        // Tanpa bundle CA, curl/openssl PHP di Windows gagal memverifikasi HTTPS. Kegagalan
+        // mengunduh bundle tidak membatalkan install; bisa diulang lewat `devlock ssl bundle`.
+        match ensure_ca_bundle(paths) {
+            Ok(bundle) => set_php_ca_bundle(&target, &bundle)?,
+            Err(err) => tracing::warn!("bundle CA untuk PHP belum dipasang: {err:#}"),
+        }
     }
     Ok(target)
+}
+
+/// Bundle CA Mozilla yang dikurasi proyek curl.
+const CURL_CA_BUNDLE: &str = "https://curl.se/ca/cacert.pem";
+/// Bundle Mozilla diperbarui bila lebih tua dari ini.
+const CA_BUNDLE_MAX_AGE_DAYS: u64 = 30;
+
+/// `ssl\ca-bundle.pem`: bundle CA Mozilla ditambah CA DevLock (bila sudah dibuat), dipakai
+/// `curl.cainfo` / `openssl.cafile` PHP.
+pub fn ca_bundle_path(paths: &Paths) -> PathBuf {
+    paths.ssl().join("ca-bundle.pem")
+}
+
+/// Unduh bundle CA Mozilla (diverifikasi dengan `.sha256` dari curl.se) bila belum ada atau
+/// sudah tua, lalu tulis ulang `ssl\ca-bundle.pem` beserta CA DevLock.
+pub fn ensure_ca_bundle(paths: &Paths) -> Result<PathBuf> {
+    std::fs::create_dir_all(paths.ssl())?;
+    let mozilla = paths.ssl().join("cacert.pem");
+    let stale = std::fs::metadata(&mozilla)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.elapsed().ok())
+        .map_or(true, |age| age.as_secs() > CA_BUNDLE_MAX_AGE_DAYS * 86_400);
+    if stale {
+        std::fs::create_dir_all(paths.downloads())?;
+        let tmp = paths.downloads().join("cacert.pem");
+        http::download(CURL_CA_BUNDLE, &tmp, &mut |_, _| {})?;
+        let sums = http::get_string(&format!("{CURL_CA_BUNDLE}.sha256"))?;
+        let expected = lookup_shasum(&sums, "cacert.pem")
+            .context("checksum cacert.pem dari curl.se tidak terbaca")?;
+        if sha256_file(&tmp)? != expected {
+            let _ = std::fs::remove_file(&tmp);
+            bail!("checksum cacert.pem tidak cocok");
+        }
+        std::fs::rename(&tmp, &mozilla)?;
+    }
+
+    let mut bundle = std::fs::read_to_string(&mozilla)?;
+    let devlock_ca = crate::ssl::ca_cert_path(paths);
+    if let Ok(ca) = std::fs::read_to_string(&devlock_ca) {
+        bundle.push_str("\n# DevLock Local CA\n");
+        bundle.push_str(&ca);
+    }
+    let out = ca_bundle_path(paths);
+    std::fs::write(&out, bundle).with_context(|| format!("gagal menulis {}", out.display()))?;
+    Ok(out)
+}
+
+fn set_php_ca_bundle(php_dir: &Path, bundle: &Path) -> Result<()> {
+    let value = bundle.to_string_lossy();
+    php::set_ini_value(php_dir, "curl.cainfo", &value)?;
+    php::set_ini_value(php_dir, "openssl.cafile", &value)
+}
+
+/// Pasang ulang bundle CA ke semua PHP terinstall (mis. setelah CA DevLock dibuat).
+/// Mengembalikan jumlah versi PHP yang diperbarui.
+pub fn apply_ca_bundle_to_php(paths: &Paths) -> Result<usize> {
+    let bundle = ensure_ca_bundle(paths)?;
+    let versions = crate::runtime::installed_versions(paths, Kind::Php)?;
+    for version in &versions {
+        let dir = paths.runtime_dir("php", version);
+        if dir.join("php.ini").is_file() {
+            set_php_ca_bundle(&dir, &bundle)?;
+        }
+    }
+    Ok(versions.len())
 }
 
 fn expected_sha256(release: &Release) -> Result<Option<String>> {

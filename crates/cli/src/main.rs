@@ -36,7 +36,7 @@ enum Command {
     Doctor,
     /// Daftar versi runtime terinstall (atau yang tersedia dengan --available)
     List {
-        /// php, node, composer, nginx, mysql, mariadb
+        /// php, node, composer, nginx, mysql, mariadb, postgresql
         kind: Kind,
         /// Tampilkan versi yang bisa diinstall
         #[arg(short, long)]
@@ -44,6 +44,9 @@ enum Command {
         /// Dengan --available: tampilkan semua patch, bukan hanya terbaru per cabang
         #[arg(long, requires = "available")]
         all: bool,
+        /// Dengan --available: abaikan cache katalog (6 jam) dan ambil ulang dari sumber resmi
+        #[arg(long, requires = "available")]
+        refresh: bool,
     },
     /// Install runtime, mis. `devlock install php 8.3` atau `devlock install node lts`
     Install {
@@ -170,6 +173,8 @@ enum SslCommand {
     Enable,
     /// Nonaktifkan HTTPS global
     Disable,
+    /// Perbarui bundle CA (Mozilla + CA DevLock) dan pasang ke php.ini semua versi PHP
+    Bundle,
 }
 
 #[derive(Subcommand)]
@@ -195,7 +200,8 @@ fn main() {
             kind,
             available,
             all,
-        } => runtimes::list(kind, available, all),
+            refresh,
+        } => runtimes::list(kind, available, all, refresh),
         Command::Install { kind, version } => runtimes::install(kind, &version),
         Command::Uninstall { kind, version } => runtimes::uninstall(kind, &version),
         Command::Use {
@@ -246,6 +252,7 @@ fn main() {
             SslCommand::Untrust => ssl::untrust(),
             SslCommand::Enable => ssl::set_enabled(true),
             SslCommand::Disable => ssl::set_enabled(false),
+            SslCommand::Bundle => ssl::bundle(),
         },
         Command::Daemon => services::run_daemon(),
     };

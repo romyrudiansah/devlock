@@ -7,6 +7,12 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 ## [Unreleased]
 
 ### Added
+- Unduhan runtime yang terputus dilanjutkan otomatis (HTTP `Range`) saat perintah install diulang; server tanpa dukungan resume diunduh ulang dari awal.
+- Cache katalog versi di `tmp\catalog\<runtime>.json` (6 jam) untuk `devlock list --available`, `devlock install`, dan GUI; bila sumber resmi tidak bisa dihubungi, cache lama tetap dipakai. `devlock list <runtime> --available --refresh` memaksa ambil ulang.
+- Bundle CA untuk PHP: `ssl\ca-bundle.pem` (bundle Mozilla dari curl.se, diverifikasi SHA256, ditambah CA DevLock) dipasang ke `curl.cainfo` dan `openssl.cafile` saat install PHP, `devlock ssl trust/enable`, dan perintah baru `devlock ssl bundle`. Request HTTPS dari PHP (curl, `file_get_contents`, Composer) tidak lagi gagal "unable to get local issuer certificate", termasuk ke site HTTPS lokal DevLock.
+- Folder `dist\` ikut dideteksi sebagai document root (setelah `public`, `web`, `public_html`).
+
+### Added
 - DevLock kini open source di bawah **MIT OR Apache-2.0** (`LICENSE-MIT`, `LICENSE-APACHE`, ikut di zip rilis).
 - Metadata versi Windows (ProductName "DevLock", versi, deskripsi, copyright, ikon) untuk `devlock.exe` dan `devlock-shim.exe`; GUI mendapat publisher & copyright yang sama.
 - `devlock hosts --clear` menghapus blok DevLock dari file hosts (untuk uninstall).

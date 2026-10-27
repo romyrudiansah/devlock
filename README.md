@@ -42,7 +42,7 @@ database = "mysql@8.4"
 
 ```
 devlock init                       siapkan struktur folder + devlock.toml
-devlock list php --available       lihat versi yang bisa diinstall
+devlock list php --available       lihat versi yang bisa diinstall (cache 6 jam; --refresh)
 devlock install php 8.3            install runtime (php, node, composer, nginx, mysql, mariadb, postgresql)
 devlock use php 8.2 [--global]     pilih versi (per project / global)
 devlock which php                  versi & path yang dipakai di folder ini
@@ -81,6 +81,10 @@ devlock reload
 Sertifikat per site dibuat otomatis di `ssl\sites\`. Chrome/Edge memakai store Windows;
 Firefox perlu mengimpor `ssl\devlock-ca.crt` sendiri. `curl.exe` bawaan Windows perlu
 `--ssl-no-revoke` karena sertifikat lokal tidak punya daftar pencabutan (CRL).
+
+PHP memakai `ssl\ca-bundle.pem` (bundle CA Mozilla + CA DevLock) untuk `curl.cainfo` dan
+`openssl.cafile`, jadi request HTTPS dari PHP dan Composer langsung jalan. Perbarui dengan
+`devlock ssl bundle`.
 
 ## GUI
 

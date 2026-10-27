@@ -5,7 +5,7 @@ use devlock_core::runtime;
 use devlock_core::{Config, Kind, Paths};
 use indicatif::{ProgressBar, ProgressStyle};
 
-pub fn list(kind: Kind, available: bool, all: bool) -> Result<()> {
+pub fn list(kind: Kind, available: bool, all: bool, refresh: bool) -> Result<()> {
     let paths = Paths::discover()?;
     let installed = runtime::installed_versions(&paths, kind)?;
 
@@ -29,7 +29,7 @@ pub fn list(kind: Kind, available: bool, all: bool) -> Result<()> {
         return Ok(());
     }
 
-    let releases = catalog::available(kind)?;
+    let releases = catalog::available_cached(&paths, kind, refresh)?;
     let shown: Vec<&Release> = if all {
         releases.iter().collect()
     } else {
@@ -59,7 +59,7 @@ pub fn list(kind: Kind, available: bool, all: bool) -> Result<()> {
 pub fn install(kind: Kind, spec: &str) -> Result<()> {
     let paths = Paths::discover()?;
     paths.ensure_layout()?;
-    let release = catalog::find(kind, spec)?;
+    let release = catalog::find_cached(&paths, kind, spec)?;
     println!("Install {kind} {} dari {}", release.version, release.url);
 
     let bar = ProgressBar::new(0);

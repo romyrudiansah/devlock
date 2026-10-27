@@ -80,6 +80,43 @@ pub fn configure_ini(template: &str, ext_dir: &str) -> String {
     out
 }
 
+/// Set `key = "value"` di `php.ini` folder PHP: baris aktif atau baris komentar (`;key =`)
+/// pertama diganti; bila tidak ada, ditambahkan di akhir.
+pub fn set_ini_value(php_dir: &Path, key: &str, value: &str) -> Result<()> {
+    let ini = php_dir.join("php.ini");
+    let text = std::fs::read_to_string(&ini)
+        .with_context(|| format!("gagal membaca {}", ini.display()))?;
+    std::fs::write(&ini, with_ini_value(&text, key, value))
+        .with_context(|| format!("gagal menulis {}", ini.display()))
+}
+
+/// Versi murni dari [`set_ini_value`] untuk isi file.
+pub fn with_ini_value(text: &str, key: &str, value: &str) -> String {
+    let wanted = format!("{key} = \"{value}\"");
+    let mut done = false;
+    let mut out: Vec<String> = text
+        .lines()
+        .map(|line| {
+            let bare = line.trim().trim_start_matches(';').trim_start();
+            let matches = bare
+                .strip_prefix(key)
+                .is_some_and(|rest| rest.trim_start().starts_with('='));
+            if !done && matches {
+                done = true;
+                wanted.clone()
+            } else {
+                line.to_string()
+            }
+        })
+        .collect();
+    if !done {
+        out.push(wanted);
+    }
+    let mut joined = out.join("\n");
+    joined.push('\n');
+    joined
+}
+
 /// `extension=php_curl.dll` / `extension=curl` → `curl`
 fn extension_name(line: &str) -> &str {
     let value = line.trim_start_matches("extension=");
@@ -112,6 +149,21 @@ memory_limit = 128M
 ;extension=php_mbstring.dll
 ;extension=pdo_mysql
 ";
+
+    #[test]
+    fn sets_ini_values() {
+        let text = ";curl.cainfo =\n; comment\n;openssl.cafile=\nmemory_limit = 128M\n";
+        let out = with_ini_value(text, "curl.cainfo", r"D:\DevLock\ssl\ca-bundle.pem");
+        assert!(out.starts_with("curl.cainfo = \"D:\\DevLock\\ssl\\ca-bundle.pem\"\n"));
+        let out = with_ini_value(&out, "openssl.cafile", "x.pem");
+        assert!(out.contains("\nopenssl.cafile = \"x.pem\"\n"));
+        let out = with_ini_value(&out, "curl.cainfo", "y.pem");
+        assert_eq!(out.matches("curl.cainfo").count(), 1);
+        let out = with_ini_value(&out, "xdebug.mode", "debug");
+        assert!(out.ends_with("xdebug.mode = \"debug\"\n"));
+        // `memory_limit` tidak boleh tersentuh oleh key lain yang berawalan sama.
+        assert!(with_ini_value(&out, "memory", "1").contains("memory_limit = 128M"));
+    }
 
     #[test]
     fn enables_defaults() {

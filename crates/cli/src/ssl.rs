@@ -1,5 +1,5 @@
 use anyhow::Result;
-use devlock_core::{sites, ssl, Config, Paths};
+use devlock_core::{install, sites, ssl, Config, Paths};
 
 pub fn status() -> Result<()> {
     let paths = Paths::discover()?;
@@ -58,7 +58,28 @@ pub fn trust() -> Result<()> {
         "Firefox memakai store sendiri: impor {} secara manual bila perlu.",
         ssl::ca_cert_path(&paths).display()
     );
+    refresh_php_bundle(&paths);
     Ok(())
+}
+
+/// `devlock ssl bundle`: unduh/perbarui bundle CA dan pasang ke semua PHP terinstall.
+pub fn bundle() -> Result<()> {
+    let paths = Paths::discover()?;
+    let count = install::apply_ca_bundle_to_php(&paths)?;
+    println!(
+        "Bundle CA {} dipasang ke {count} versi PHP (curl.cainfo, openssl.cafile).",
+        install::ca_bundle_path(&paths).display()
+    );
+    Ok(())
+}
+
+/// PHP perlu percaya CA DevLock juga (mis. request HTTPS antar site lokal).
+fn refresh_php_bundle(paths: &Paths) {
+    match install::apply_ca_bundle_to_php(paths) {
+        Ok(0) => {}
+        Ok(count) => println!("Bundle CA PHP diperbarui untuk {count} versi PHP."),
+        Err(err) => println!("peringatan: bundle CA PHP belum diperbarui ({err:#}); ulangi dengan `devlock ssl bundle`"),
+    }
 }
 
 pub fn untrust() -> Result<()> {
@@ -72,6 +93,7 @@ pub fn set_enabled(enabled: bool) -> Result<()> {
     Config::set_value(&paths, "https", "enabled", toml_edit::value(enabled))?;
     if enabled {
         ssl::ensure_ca(&paths)?;
+        refresh_php_bundle(&paths);
         println!("HTTPS aktif untuk semua site (project bisa menimpa dengan `https = false`).");
         if !ssl::is_trusted() {
             println!("Jalankan `devlock ssl trust` agar browser percaya sertifikatnya.");

@@ -141,9 +141,10 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
     })
 }
 
-/// `public\` (Laravel), `web\` (Symfony/Craft), `public_html\`, atau folder project.
+/// `public\` (Laravel), `web\` (Symfony/Craft), `public_html\`, `dist\` (hasil build
+/// front-end), atau folder project.
 pub fn detect_docroot(dir: &Path) -> PathBuf {
-    ["public", "web", "public_html"]
+    ["public", "web", "public_html", "dist"]
         .iter()
         .map(|sub| dir.join(sub))
         .find(|p| p.is_dir())
