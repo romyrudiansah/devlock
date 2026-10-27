@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Changed
+- README dan CONTRIBUTING: rilis dinyatakan belum ditandatangani karena pendaftaran SignPath Foundation belum disetujui (bisa diajukan ulang nanti), disertai cara menangani peringatan SmartScreen / Smart App Control. Tanda tangan lewat SignPath di workflow rilis tetap opsional.
+
 ## [0.8.1] - 2026-10-27
 
 ### Fixed

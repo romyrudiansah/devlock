@@ -40,11 +40,14 @@ untuk fitur/fase baru dan PATCH untuk perbaikan.
 3. Tag: `git tag -a v0.2.0 -m "v0.2.0"` lalu `git push origin v0.2.0`.
 4. Workflow `release` membangun binary Windows dan membuat GitHub Release otomatis.
 
-### Tanda tangan kode (SignPath)
+### Tanda tangan kode (SignPath, opsional)
 
 Workflow `release` menandatangani `devlock.exe`, `devlock-shim.exe`, dan `devlock-gui.exe`
-lewat [SignPath Foundation](https://signpath.org/) bila secret `SIGNPATH_API_TOKEN` diisi;
-tanpa secret itu rilis tetap jalan tanpa tanda tangan. Setelah pendaftaran diterima:
+lewat [SignPath](https://about.signpath.io/) bila secret `SIGNPATH_API_TOKEN` diisi; tanpa
+secret itu rilis tetap jalan tanpa tanda tangan (kondisi saat ini). Pendaftaran SignPath
+Foundation pertama belum disetujui (proyek dinilai belum cukup dikenal publik) dan bisa
+diajukan ulang nanti; langganan SignPath berbayar memakai langkah yang sama. Setelah akses
+SignPath tersedia:
 
 1. Di SignPath: buat project `devlock` yang terhubung ke repository ini, signing policy
    `release-signing` (wajib persetujuan manual), dan artifact configuration dari
@@ -70,7 +73,8 @@ CI menjalankan perintah yang sama di `windows-latest`.
 
 ## Peran & keamanan akun
 
-Mengikuti [syarat SignPath Foundation](https://signpath.org/terms) untuk code signing:
+Disiapkan mengikuti [syarat SignPath Foundation](https://signpath.org/terms) agar siap saat
+pendaftaran diajukan ulang:
 
 - **Committers**: boleh mengubah source tanpa review tambahan.
 - **Reviewers**: meninjau setiap perubahan dari non-committer (pull request).
