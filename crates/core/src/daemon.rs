@@ -1,7 +1,7 @@
 //! Daemon DevLock: mengawasi service (start/stop/restart otomatis) dan menerima perintah
 //! dari CLI (dan nanti GUI) lewat JSON per baris di `127.0.0.1:<daemon.port>`.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{IpAddr, Ipv4Addr, TcpListener, TcpStream};
 use std::path::PathBuf;
@@ -135,7 +135,8 @@ impl Managed {
                 }
             }
         }
-        if let Some(port) = self.spec.port {
+        let mut warnings = Vec::new();
+        for port in self.spec.port.iter().chain(&self.spec.extra_ports).copied() {
             let check = ports::check(port, IpAddr::V4(Ipv4Addr::LOCALHOST), &self.root);
             if !check.blocking.is_empty() {
                 bail!(
@@ -146,14 +147,15 @@ impl Managed {
             if TcpListener::bind(("127.0.0.1", port)).is_err() {
                 bail!("port {port} sudah dipakai proses lain");
             }
-            self.warning = (!check.shadowing.is_empty()).then(|| {
-                format!(
+            if !check.shadowing.is_empty() {
+                warnings.push(format!(
                     "{}: port {port} juga dipakai {} (Laragon/XAMPP/IIS?); akses lewat IPv6/LAN ke port ini masuk ke program itu, bukan DevLock",
                     self.spec.name,
                     Summary(&check.shadowing)
-                )
-            });
+                ));
+            }
         }
+        self.warning = (!warnings.is_empty()).then(|| warnings.join("\n"));
         let process = Process::spawn(&self.spec.command, &self.spec.log)?;
         tracing::info!(service = %self.spec.name, pid = process.pid(), "start");
         self.process = Some(process);
@@ -268,6 +270,51 @@ pub struct Supervisor {
     /// Urutan start: php-cgi & database dulu, nginx & dev server setelahnya.
     order: Vec<String>,
     warnings: Vec<String>,
+    /// Semua domain site terakhir (untuk cek file hosts).
+    sites: Vec<String>,
+    /// Sidik jari daftar site & konfigurasi; berubah → reload otomatis.
+    fingerprint: Option<String>,
+    /// Grup service yang dibutuhkan tiap site (`php@8.3`, `mysql@8.4`, `dev:<site>`).
+    site_needs: BTreeMap<String, BTreeSet<String>>,
+}
+
+/// Grup service yang dibutuhkan sebuah site.
+fn needs_of(site: &crate::sites::Site) -> BTreeSet<String> {
+    let mut needs = BTreeSet::new();
+    if let crate::sites::SiteKind::Php { line } = &site.kind {
+        needs.insert(format!("php@{line}"));
+    }
+    if let Some(db) = &site.database {
+        needs.insert(db.name());
+    }
+    if site.dev.is_some() {
+        needs.insert(format!("dev:{}", site.name));
+    }
+    needs
+}
+
+/// Interval pemeriksaan perubahan folder www & konfigurasi.
+const WATCH_INTERVAL: Duration = Duration::from_secs(3);
+
+/// Ringkasan semua hal yang memengaruhi rencana service: `devlock.toml` dan isi setiap site
+/// (nama, domain, tipe, versi PHP, database, dev server, HTTPS, docroot).
+fn site_fingerprint(paths: &Paths) -> String {
+    let mut fingerprint = std::fs::read_to_string(paths.config_file()).unwrap_or_default();
+    if let Ok(config) = Config::load(paths) {
+        if let Ok(sites) = crate::sites::discover(paths, &config) {
+            fingerprint.push_str(&format!("{sites:?}"));
+        }
+    }
+    fingerprint
+}
+
+/// `nginx -s reload` dengan prefix & konfigurasi yang sama dengan proses yang berjalan.
+fn graceful_reload(spec: &ServiceSpec) -> bool {
+    let mut command = spec.command.clone();
+    command
+        .args
+        .extend(["-s".to_string(), "reload".to_string()]);
+    process::run_with_timeout(&command, &spec.log, Duration::from_secs(15)).unwrap_or(false)
 }
 
 fn matches_target(target: &str, spec: &ServiceSpec) -> bool {
@@ -290,11 +337,16 @@ impl Supervisor {
             services: BTreeMap::new(),
             order: Vec::new(),
             warnings: Vec::new(),
+            sites: Vec::new(),
+            fingerprint: None,
+            site_needs: BTreeMap::new(),
         }
     }
 
-    /// Bangun ulang rencana service; service yang konfigurasinya berubah di-restart.
-    pub fn reload(&mut self) -> Result<()> {
+    /// Bangun ulang rencana service; service yang konfigurasinya berubah di-restart
+    /// (nginx cukup di-reload bila hanya konfigurasinya yang berubah). Mengembalikan nama
+    /// service yang baru muncul.
+    pub fn reload(&mut self) -> Result<Vec<String>> {
         let config = Config::load(&self.paths)?;
         let plan = services::plan(&self.paths, &config)?;
         self.warnings = plan.warnings;
@@ -329,12 +381,21 @@ impl Supervisor {
             }
         }
 
+        let mut added = Vec::new();
         for spec in plan.services {
             match self.services.get_mut(&spec.name) {
                 Some(managed) => {
+                    let running = managed.process.is_some();
+                    // Hanya nginx.conf yang berubah: muat ulang tanpa memutus koneksi.
+                    if managed.spec == spec && changed_files && spec.name == "nginx" && running {
+                        if graceful_reload(&spec) {
+                            continue;
+                        }
+                        tracing::warn!("nginx -s reload gagal; nginx di-restart");
+                    }
                     let restart = managed.spec != spec || (changed_files && spec.name == "nginx");
                     let was_wanted = managed.wanted;
-                    if restart && managed.process.is_some() {
+                    if restart && running {
                         managed.stop();
                         managed.spec = spec;
                         managed.wanted = was_wanted;
@@ -344,6 +405,7 @@ impl Supervisor {
                     }
                 }
                 None => {
+                    added.push(spec.name.clone());
                     self.services.insert(
                         spec.name.clone(),
                         Managed::new(spec, self.paths.root().to_path_buf()),
@@ -352,7 +414,71 @@ impl Supervisor {
             }
         }
         self.order = new_names;
-        Ok(())
+        self.sites = plan.sites.iter().flat_map(|s| s.domains.clone()).collect();
+        self.site_needs = plan
+            .sites
+            .iter()
+            .map(|s| (s.name.clone(), needs_of(s)))
+            .collect();
+        Ok(added)
+    }
+
+    /// Dipanggil berkala: bila daftar site, `.devlock.toml`, atau `devlock.toml` berubah,
+    /// terapkan tanpa menunggu `devlock reload`. Service baru (mis. pool PHP versi baru)
+    /// ikut dijalankan bila service lain sedang berjalan.
+    pub fn watch(&mut self) {
+        let fingerprint = site_fingerprint(&self.paths);
+        let previous = self.fingerprint.replace(fingerprint.clone());
+        if previous.is_none() || previous.as_deref() == Some(fingerprint.as_str()) {
+            return;
+        }
+        tracing::info!("perubahan site/konfigurasi terdeteksi; memuat ulang");
+        let active = self.services.values().any(|m| m.wanted);
+        let before = self.site_needs.clone();
+        if let Err(err) = self.reload() {
+            tracing::error!("reload otomatis gagal: {err:#}");
+            return;
+        }
+        if !active {
+            return;
+        }
+        // Jalankan kebutuhan site yang baru atau berubah (pool PHP, database, dev server).
+        let groups: BTreeSet<String> = self
+            .site_needs
+            .iter()
+            .filter(|(site, needs)| before.get(*site) != Some(*needs))
+            .flat_map(|(_, needs)| needs.iter().cloned())
+            .collect();
+        let mut started = Vec::new();
+        for name in &self.order {
+            let Some(managed) = self.services.get_mut(name) else {
+                continue;
+            };
+            if groups.contains(&managed.spec.group) && managed.process.is_none() {
+                managed.wanted = true;
+                managed.failures = 0;
+                managed.start();
+                started.push(name.clone());
+            }
+        }
+        if !started.is_empty() {
+            tracing::info!(
+                "service dijalankan untuk site baru/berubah: {}",
+                started.join(", ")
+            );
+        }
+    }
+
+    /// Domain site yang belum ada di file hosts (perlu `devlock hosts`, butuh UAC).
+    fn missing_hosts(&self) -> Option<String> {
+        let content = std::fs::read_to_string(crate::hosts::hosts_file()).ok()?;
+        let missing = crate::hosts::missing(&content, &self.sites);
+        (!missing.is_empty()).then(|| {
+            format!(
+                "domain belum ada di file hosts: {}; jalankan `devlock hosts` (atau Start di GUI)",
+                missing.join(", ")
+            )
+        })
     }
 
     pub fn start(&mut self, target: &str) -> Vec<String> {
@@ -456,6 +582,7 @@ impl Supervisor {
             Err(err) => (false, format!("{err:#}")),
         };
         let mut warnings = self.warnings.clone();
+        warnings.extend(self.missing_hosts());
         warnings.extend(
             self.order
                 .iter()
@@ -491,14 +618,26 @@ pub fn serve(paths: Paths) -> Result<()> {
     )?;
 
     let supervisor = Arc::new(Mutex::new(Supervisor::new(paths.clone())));
-    if let Err(err) = supervisor.lock().unwrap().reload() {
-        tracing::error!("{err:#}");
+    {
+        let mut sup = supervisor.lock().unwrap();
+        if let Err(err) = sup.reload() {
+            tracing::error!("{err:#}");
+        }
+        sup.fingerprint = Some(site_fingerprint(&paths));
     }
 
     let ticker = Arc::clone(&supervisor);
-    std::thread::spawn(move || loop {
-        std::thread::sleep(Duration::from_millis(500));
-        ticker.lock().unwrap().tick();
+    std::thread::spawn(move || {
+        let mut last_watch = Instant::now();
+        loop {
+            std::thread::sleep(Duration::from_millis(500));
+            let mut sup = ticker.lock().unwrap();
+            sup.tick();
+            if last_watch.elapsed() >= WATCH_INTERVAL {
+                last_watch = Instant::now();
+                sup.watch();
+            }
+        }
     });
 
     for stream in listener.incoming() {
@@ -566,6 +705,7 @@ mod tests {
             init: None,
             init_marker: None,
             port: None,
+            extra_ports: vec![],
             log: "x.log".into(),
         }
     }

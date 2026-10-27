@@ -15,6 +15,21 @@ pub const DETACHED_PROCESS: u32 = 0x0000_0008;
 pub const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
 pub const CREATE_BREAKAWAY_FROM_JOB: u32 = 0x0100_0000;
 
+/// Log service lebih besar dari ini diputar saat service (re)start.
+pub const MAX_LOG_BYTES: u64 = 10 * 1024 * 1024;
+
+/// Bila `log` melebihi `max` byte, ganti namanya menjadi `<log>.1` (menimpa `.1` lama).
+/// Dilakukan sebelum file dibuka, karena log yang sedang dipakai proses tidak bisa
+/// di-rename di Windows. Kegagalan diabaikan agar service tetap bisa start.
+pub fn rotate_log(log: &std::path::Path, max: u64) {
+    if std::fs::metadata(log).is_ok_and(|m| m.len() > max) {
+        let mut rotated = log.as_os_str().to_owned();
+        rotated.push(".1");
+        let _ = std::fs::remove_file(&rotated);
+        let _ = std::fs::rename(log, &rotated);
+    }
+}
+
 pub struct Process {
     pub child: Child,
     job: Job,
@@ -25,6 +40,7 @@ impl Process {
         if let Some(dir) = log.parent() {
             std::fs::create_dir_all(dir)?;
         }
+        rotate_log(log, MAX_LOG_BYTES);
         let out = OpenOptions::new()
             .create(true)
             .append(true)
@@ -348,6 +364,32 @@ impl Job {
         Ok(())
     }
     fn terminate(&self) {}
+}
+
+#[cfg(test)]
+mod rotate_tests {
+    use super::rotate_log;
+
+    #[test]
+    fn rotates_large_logs_only() {
+        let tmp = tempfile::tempdir().unwrap();
+        let log = tmp.path().join("nginx.log");
+        std::fs::write(&log, vec![b'x'; 20]).unwrap();
+        rotate_log(&log, 100);
+        assert!(log.is_file());
+        rotate_log(&log, 10);
+        assert!(!log.exists());
+        assert_eq!(
+            std::fs::read(tmp.path().join("nginx.log.1")).unwrap().len(),
+            20
+        );
+        std::fs::write(&log, vec![b'y'; 30]).unwrap();
+        rotate_log(&log, 10);
+        assert_eq!(
+            std::fs::read(tmp.path().join("nginx.log.1")).unwrap().len(),
+            30
+        );
+    }
 }
 
 #[cfg(all(test, windows))]

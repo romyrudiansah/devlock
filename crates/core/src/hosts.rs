@@ -10,6 +10,25 @@ pub fn hosts_file() -> PathBuf {
     PathBuf::from(root).join("System32\\drivers\\etc\\hosts")
 }
 
+/// Domain yang belum diarahkan ke `127.0.0.1` di isi file hosts (di dalam atau di luar blok
+/// DevLock; baris komentar diabaikan).
+pub fn missing(content: &str, domains: &[String]) -> Vec<String> {
+    let mapped: Vec<&str> = content
+        .lines()
+        .map(|line| line.split('#').next().unwrap_or_default())
+        .filter_map(|line| {
+            let mut parts = line.split_whitespace();
+            (parts.next() == Some("127.0.0.1")).then_some(parts)
+        })
+        .flatten()
+        .collect();
+    domains
+        .iter()
+        .filter(|d| !mapped.iter().any(|m| m.eq_ignore_ascii_case(d)))
+        .cloned()
+        .collect()
+}
+
 /// Ganti (atau tambahkan) blok DevLock di isi file hosts. Domain kosong = blok dihapus.
 pub fn apply(content: &str, domains: &[String]) -> String {
     let newline = if content.contains("\r\n") {
@@ -53,6 +72,21 @@ pub fn apply(content: &str, domains: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn finds_missing_domains() {
+        let content =
+            "127.0.0.1 localhost\r\n# 127.0.0.1 old.test\r\n127.0.0.1 blog.test shop.test\r\n";
+        let domains = vec![
+            "blog.test".to_string(),
+            "SHOP.test".to_string(),
+            "old.test".to_string(),
+            "new.test".to_string(),
+        ];
+        assert_eq!(missing(content, &domains), ["old.test", "new.test"]);
+        let synced = apply(content, &domains);
+        assert!(missing(&synced, &domains).is_empty());
+    }
 
     #[test]
     fn replaces_block_and_keeps_rest() {

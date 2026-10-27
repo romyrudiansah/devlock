@@ -37,6 +37,9 @@ pub struct ServiceSpec {
     pub init: Option<Command>,
     pub init_marker: Option<PathBuf>,
     pub port: Option<u16>,
+    /// Port lain yang juga dipakai (mis. 443 untuk nginx saat HTTPS aktif); ikut dicek bentrok.
+    #[serde(default)]
+    pub extra_ports: Vec<u16>,
     pub log: PathBuf,
 }
 
@@ -100,6 +103,7 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
                 init: None,
                 init_marker: None,
                 port: Some(port),
+                extra_ports: vec![],
                 log: paths.logs().join(format!("php@{line}.log")),
             });
         }
@@ -161,6 +165,11 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
                 init: None,
                 init_marker: None,
                 port: Some(config.http.port),
+                extra_ports: if certs.is_empty() {
+                    vec![]
+                } else {
+                    vec![config.https.port]
+                },
                 log: paths.logs().join("nginx.log"),
             });
         }
@@ -229,6 +238,7 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
             init: None,
             init_marker: None,
             port: Some(*port),
+            extra_ports: vec![],
             log: paths.logs().join(format!("dev-{}.log", site.name)),
         });
     }
@@ -324,6 +334,7 @@ fn database_service(
         // Folder `mysql` (tabel sistem) ada setelah data dir terinisialisasi.
         init_marker: Some(data.join("mysql")),
         port: Some(port),
+        extra_ports: vec![],
         log: paths.logs().join(format!("{}.log", instance.name())),
     };
     (spec, Some((ini_path, ini)))
@@ -387,6 +398,7 @@ fn postgresql_service(
         // PG_VERSION ditulis initdb setelah data dir siap.
         init_marker: Some(data.join("PG_VERSION")),
         port: Some(port),
+        extra_ports: vec![],
         log: paths.logs().join(format!("{}.log", instance.name())),
     }
 }
