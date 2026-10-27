@@ -16,11 +16,16 @@ checksum-nya dengan file `.sha256` di rilis yang sama, lalu:
 2. Jalankan `D:\DevLock\bin\devlock.exe init`, lalu `devlock path add` agar shim masuk PATH.
 3. Buka `devlock-gui.exe` untuk dashboard dan ikon tray, atau lanjut lewat CLI di bawah.
 
-**Code signing:** binary rilis DevLock ditandatangani lewat
-[SignPath.io](https://about.signpath.io/) dengan sertifikat dari
-[SignPath Foundation](https://signpath.org/) (free code signing for open source), setelah
-pendaftaran proyek ini diterima. Rilis yang dibuat sebelumnya belum bertanda tangan sehingga
-bisa diblokir Smart App Control / SmartScreen. Detail: [Code signing policy](#code-signing-policy).
+**Code signing:** binary rilis DevLock **belum ditandatangani**. Pastikan zip berasal dari
+halaman Releases di atas dan checksum-nya cocok. Windows bisa menampilkan peringatan:
+
+- **SmartScreen** ("Windows protected your PC"): pilih *More info* → *Run anyway*, atau
+  sebelum mengekstrak buka *Properties* zip → centang *Unblock*.
+- **Smart App Control** bisa memblokir exe yang belum bertanda tangan sepenuhnya, tanpa
+  tombol pengecualian. Bila terjadi, coba rilis lain atau build dari source
+  ([Build dari source](#build-dari-source)).
+
+Detail: [Code signing policy](#code-signing-policy).
 
 ## Konsep singkat
 
@@ -217,15 +222,21 @@ service hanya mendengarkan di `127.0.0.1`.
 
 ## Code signing policy
 
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
-[SignPath Foundation](https://signpath.org/).
+**Status: rilis belum ditandatangani.** Pendaftaran ke
+[SignPath Foundation](https://signpath.org/) (code signing gratis untuk open source) belum
+disetujui karena proyek ini dinilai belum cukup dikenal publik; pendaftaran akan diajukan lagi
+setelah DevLock lebih banyak dipakai. Workflow rilis sudah siap menandatangani lewat
+[SignPath.io](https://about.signpath.io/) begitu sertifikat tersedia.
 
-- Hanya binary DevLock sendiri (`devlock.exe`, `devlock-shim.exe`, `devlock-gui.exe`) yang
-  ditandatangani, dan selalu dibangun otomatis oleh [GitHub Actions](.github/workflows/release.yml)
-  dari source di repository ini. Runtime yang diunduh DevLock (PHP, Node, dll.) tetap memakai
-  tanda tangan atau checksum dari penerbit aslinya.
-- Setiap rilis yang ditandatangani disetujui manual oleh approver di bawah.
-- Rilis yang dibuat sebelum pendaftaran SignPath diterima belum ditandatangani.
+Kebijakan yang berlaku sekarang dan saat tanda tangan diaktifkan:
+
+- Binary DevLock sendiri (`devlock.exe`, `devlock-shim.exe`, `devlock-gui.exe`) selalu
+  dibangun otomatis oleh [GitHub Actions](.github/workflows/release.yml) dari source di
+  repository ini, dengan checksum SHA256 di setiap rilis. Runtime yang diunduh DevLock (PHP,
+  Node, dll.) tetap memakai tanda tangan atau checksum dari penerbit aslinya.
+- Bila tanda tangan aktif, hanya binary DevLock sendiri yang ditandatangani, dan setiap rilis
+  disetujui manual oleh approver di bawah. Catatan rilis menyebut apakah rilis itu bertanda
+  tangan.
 
 Peran tim:
 
