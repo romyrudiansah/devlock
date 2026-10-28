@@ -6,7 +6,14 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-28
+
 ### Added
+- MongoDB sebagai instance database: `devlock install mongodb 8.0` (Community resmi dari `downloads.mongodb.org`, SHA256) dan `database = "mongodb@8.0"` menjalankan `mongod` per major.minor di `127.0.0.1` (port `27000 + major*10 + minor`, 8.0 → 27080; data di `data\mongodb\<versi>`). `devlock install mongosh` (GitHub Releases) menyediakan shim `mongosh` yang langsung terhubung ke instance project dan dipakai untuk shutdown yang rapi. `devlock start db` mencakup MongoDB; `devlock db`, Adminer, dan isian `.env` scaffold tetap khusus database SQL.
+- Port dev server Node dideteksi otomatis: cukup `dev = "pnpm dev"` tanpa `proxy_port`. Dev server menerima `PORT` tetap per site (3100–3899), daemon membaca URL loopback terakhir dari log-nya (Vite, Next.js, Nuxt, Astro, Angular, …) lalu nginx di-reload ke port itu tanpa me-restart dev server. `proxy_port` tetap mengunci port.
+- Profil Windows Terminal "DevLock" (`devlock terminal install|remove|status`): PowerShell di folder www dengan shim di depan PATH, dipasang sebagai JSON fragment tanpa mengubah `settings.json`. Profil yang sudah dipasang diperbarui saat GUI dibuka, `devlock init`, dan `devlock shims`.
+- Tombol **Editor** di halaman Projects dan menu tray per project: memakai `[gui] editor` (juga di Settings) atau mendeteksi VS Code, Cursor, Windsurf, Zed, Sublime Text, atau PhpStorm.
+- `devlock ssl trust --machine` / `untrust --machine`: CA DevLock di store Root komputer lewat UAC, karena Firefox hanya mengimpor root dari store komputer. `devlock ssl status` menampilkan kedua store.
 - Redirect HTTP→HTTPS opsional: `[https] redirect = true` (atau `devlock ssl redirect on`, atau toggle di Settings GUI) untuk semua site ber-HTTPS, dan `https_redirect = true/false` per project di `.devlock.toml`. Port HTTP site itu hanya membalas `301` ke `https://` (port ditulis bila bukan 443). `devlock ssl status` menandai site yang dialihkan.
 
 ## [0.9.2] - 2026-10-28
@@ -140,7 +147,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.9.2...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/romyrudiansah/devlock/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/romyrudiansah/devlock/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/romyrudiansah/devlock/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/romyrudiansah/devlock/compare/v0.8.1...v0.9.0
