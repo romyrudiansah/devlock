@@ -82,6 +82,10 @@ pub fn install(kind: Kind, spec: &str) -> Result<()> {
         }
         Event::Extracting => bar.set_message("ekstrak"),
         Event::Configuring(what) => bar.set_message(format!("konfigurasi {what}")),
+        Event::Mirror(url) => {
+            bar.println(format!("sumber asli gagal, mencoba mirror {url}"));
+            bar.set_message("mirror");
+        }
     })?;
     bar.finish_and_clear();
 

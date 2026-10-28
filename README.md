@@ -157,6 +157,21 @@ Shim `go`, `gofmt`, `python`, dan `pip` (`python -m pip`) memakai versi project,
 PHP/Node. Selain `.devlock.toml`, versi dibaca dari `go.mod` (`toolchain`, lalu `go`) dan
 `.python-version`.
 
+## Mirror unduhan
+
+Bila unduhan runtime dari sumber asli gagal, DevLock mencoba mirror: bawaan `windows.php.net`
+(PHP) dan `npmmirror.com` (Node), ditambah mirror sendiri di `devlock.toml`:
+
+```toml
+[mirrors]
+"https://nodejs.org/dist/" = ["https://mirror.kantor.local/node/"]
+
+[download]
+builtin_mirrors = false   # hanya sumber asli + [mirrors]
+```
+
+Checksum selalu dari sumber asli atau katalog resmi, jadi file dari mirror tetap diverifikasi.
+
 ## Database
 
 ```

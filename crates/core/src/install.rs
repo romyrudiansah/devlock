@@ -23,6 +23,8 @@ pub enum Event<'a> {
     Unverified,
     Extracting,
     Configuring(&'a str),
+    /// Sumber asli gagal; unduhan dicoba dari mirror ini.
+    Mirror(&'a str),
 }
 
 pub fn install(
@@ -66,9 +68,7 @@ pub fn install(
             .as_deref()
             .is_some_and(|sum| sha256_file(&archive).ok().as_deref() == Some(sum));
     if !cached_ok {
-        http::download(&release.url, &archive, &mut |downloaded, total| {
-            on_event(Event::Downloading { downloaded, total })
-        })?;
+        download_with_mirrors(paths, &release.url, &archive, on_event)?;
     }
 
     match &expected {
@@ -151,6 +151,35 @@ pub fn install(
         }
     }
     Ok(target)
+}
+
+/// Unduh `url`, lalu mirror-nya bila gagal. Sisa unduhan dari sumber yang gagal dibuang agar
+/// tidak dilanjutkan dari file lain.
+fn download_with_mirrors(
+    paths: &Paths,
+    url: &str,
+    archive: &Path,
+    on_event: &mut dyn FnMut(Event),
+) -> Result<()> {
+    let config = crate::config::Config::load(paths).unwrap_or_default();
+    let candidates = crate::mirror::candidates(url, &config);
+    let mut last_err = None;
+    for (i, candidate) in candidates.iter().enumerate() {
+        if i > 0 {
+            let _ = std::fs::remove_file(archive);
+            on_event(Event::Mirror(candidate));
+        }
+        match http::download(candidate, archive, &mut |downloaded, total| {
+            on_event(Event::Downloading { downloaded, total })
+        }) {
+            Ok(()) => return Ok(()),
+            Err(err) => {
+                tracing::warn!("unduhan {candidate} gagal: {err:#}");
+                last_err = Some(err);
+            }
+        }
+    }
+    Err(last_err.unwrap_or_else(|| anyhow::anyhow!("tidak ada sumber unduhan")))
 }
 
 /// Folder runtime .NET portable di dalam folder Garnet (`DOTNET_ROOT` service-nya).

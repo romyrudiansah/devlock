@@ -68,6 +68,15 @@ autostart_services = false
 # VS Code, Cursor, Windsurf, Zed, Sublime Text, PhpStorm.
 editor = ""
 
+# Unduhan runtime: bila sumber asli gagal, arsip dicoba dari mirror (checksum tetap dari
+# sumber asli). Mirror bawaan: windows.php.net untuk PHP, npmmirror.com untuk Node.
+[download]
+builtin_mirrors = true
+
+# Mirror tambahan: awalan URL asli = daftar awalan mirror, contoh:
+# [mirrors]
+# "https://nodejs.org/dist/" = ["https://mirror.kantor.local/node/"]
+
 # Override port instance database, contoh:
 # [ports]
 # "mysql@8.4" = 3306
@@ -94,6 +103,24 @@ pub struct Config {
     pub ports: BTreeMap<String, u16>,
     /// Profil stack: grup service yang dijalankan bersama (`devlock profile use <nama>`).
     pub profiles: BTreeMap<String, Vec<String>>,
+    pub download: DownloadConfig,
+    /// Mirror unduhan tambahan: awalan URL asli → awalan mirror.
+    pub mirrors: BTreeMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DownloadConfig {
+    /// Coba mirror bawaan (lihat `mirror::BUILTIN`) bila sumber asli gagal.
+    pub builtin_mirrors: bool,
+}
+
+impl Default for DownloadConfig {
+    fn default() -> Self {
+        Self {
+            builtin_mirrors: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -192,6 +219,8 @@ impl Default for Config {
             gui: GuiConfig::default(),
             ports: BTreeMap::new(),
             profiles: BTreeMap::new(),
+            download: DownloadConfig::default(),
+            mirrors: BTreeMap::new(),
         }
     }
 }
