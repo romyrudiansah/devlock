@@ -10,6 +10,7 @@ pub mod export;
 pub mod hosts;
 pub mod import;
 pub mod launcher;
+pub mod mirror;
 pub mod paths;
 pub mod php;
 pub mod ports;

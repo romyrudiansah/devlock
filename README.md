@@ -160,6 +160,21 @@ project, sama seperti PHP/Node; shim Java juga mengisi `JAVA_HOME` untuk Maven/G
 `.java-version` (`21`, `temurin-21.0.5`, `1.8`). Katalog Java berisi versi LTS (8, 11, 17, 21,
 25, …) ditambah versi fitur terbaru.
 
+## Mirror unduhan
+
+Bila unduhan runtime dari sumber asli gagal, DevLock mencoba mirror: bawaan `windows.php.net`
+(PHP) dan `npmmirror.com` (Node), ditambah mirror sendiri di `devlock.toml`:
+
+```toml
+[mirrors]
+"https://nodejs.org/dist/" = ["https://mirror.kantor.local/node/"]
+
+[download]
+builtin_mirrors = false   # hanya sumber asli + [mirrors]
+```
+
+Checksum selalu dari sumber asli atau katalog resmi, jadi file dari mirror tetap diverifikasi.
+
 ## Database
 
 ```

@@ -301,6 +301,7 @@ pub async fn install_runtime(app: AppHandle, kind: String, version: String) -> C
             Event::Unverified => emit("tanpa checksum", 0, None),
             Event::Extracting => emit("ekstrak", 0, None),
             Event::Configuring(what) => emit(&format!("konfigurasi {what}"), 0, None),
+            Event::Mirror(_) => emit("mirror", 0, None),
         })
         .map_err(err)?;
         emit("selesai", 0, None);
