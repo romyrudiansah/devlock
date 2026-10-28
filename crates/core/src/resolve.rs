@@ -74,6 +74,8 @@ fn spec_in_dir(kind: Kind, dir: &Path) -> Option<(String, Source)> {
             let spec = match kind {
                 Kind::Php => project.php,
                 Kind::Node => project.node,
+                Kind::Go => project.go,
+                Kind::Python => project.python,
                 _ => None,
             };
             if let Some(spec) = spec {
@@ -108,8 +110,34 @@ fn spec_in_dir(kind: Kind, dir: &Path) -> Option<(String, Source)> {
                 .and_then(|json| json.pointer("/volta/node")?.as_str().map(str::to_string))?;
             Some((spec, Source::File(file)))
         }
+        Kind::Go => {
+            let file = dir.join("go.mod");
+            let text = std::fs::read_to_string(&file).ok()?;
+            Some((go_mod_spec(&text)?, Source::File(file)))
+        }
+        Kind::Python => {
+            let file = dir.join(".python-version");
+            let text = std::fs::read_to_string(&file).ok()?;
+            let line = text
+                .lines()
+                .map(str::trim)
+                .find(|l| !l.is_empty() && !l.starts_with('#'))?;
+            Some((line.to_string(), Source::File(file)))
+        }
         _ => None,
     }
+}
+
+/// Versi Go dari `go.mod`: `toolchain go1.23.4` bila ada, selain itu direktif `go 1.23`.
+pub fn go_mod_spec(text: &str) -> Option<String> {
+    let directive = |name: &str| {
+        text.lines().find_map(|line| {
+            let rest = line.trim().strip_prefix(name)?.trim();
+            let version = rest.trim_start_matches("go");
+            Version::parse(version).map(|_| version.to_string())
+        })
+    };
+    directive("toolchain ").or_else(|| directive("go "))
 }
 
 fn read_json(file: &Path) -> Option<serde_json::Value> {
@@ -418,6 +446,15 @@ mod tests {
             "postgresql@18"
         );
         assert!(DbInstance::parse("postgresql").is_err());
+        assert_eq!(
+            go_mod_spec("module x\n\ngo 1.23\n").as_deref(),
+            Some("1.23")
+        );
+        assert_eq!(
+            go_mod_spec("module x\ngo 1.23.0\ntoolchain go1.24.2\n").as_deref(),
+            Some("1.24.2")
+        );
+        assert_eq!(go_mod_spec("module x\n"), None);
         let mongo = DbInstance::parse("mongo@8.0").unwrap();
         assert_eq!(
             (mongo.name(), mongo.port(&config), mongo.is_sql()),

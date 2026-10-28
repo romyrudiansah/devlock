@@ -12,6 +12,10 @@ pub const PROJECT_FILE: &str = ".devlock.toml";
 pub struct ProjectConfig {
     pub php: Option<String>,
     pub node: Option<String>,
+    /// Versi Go, mis. `1.23`.
+    pub go: Option<String>,
+    /// Versi Python, mis. `3.13`.
+    pub python: Option<String>,
     /// Instance database, mis. `mysql@8.4` atau `mariadb@11.4`.
     pub database: Option<String>,
     /// Instance cache, mis. `redis@8` atau `garnet@2`.

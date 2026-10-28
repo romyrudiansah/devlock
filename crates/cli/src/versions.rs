@@ -35,8 +35,8 @@ pub fn use_version(target: &str, spec: &str, global: bool) -> Result<()> {
             ("cache", instance.name())
         } else {
             let kind: Kind = target.parse()?;
-            if !matches!(kind, Kind::Php | Kind::Node | Kind::Composer) {
-                bail!("`use` untuk php, node, composer, database, atau cache");
+            if !kind.has_default_version() {
+                bail!("`use` untuk php, node, composer, go, python, database, atau cache");
             }
             match runtime::resolve_installed(&paths, kind, spec)? {
                 Some(version) => println!("{kind} {spec} → {version}"),
@@ -88,7 +88,18 @@ pub fn current() -> Result<()> {
     let config = Config::load(&paths)?;
     let cwd = std::env::current_dir()?;
 
-    for kind in [Kind::Php, Kind::Node, Kind::Composer] {
+    for kind in [
+        Kind::Php,
+        Kind::Node,
+        Kind::Composer,
+        Kind::Go,
+        Kind::Python,
+    ] {
+        // Go & Python hanya ditampilkan bila terinstall, agar ringkasan tetap pendek.
+        let optional = matches!(kind, Kind::Go | Kind::Python);
+        if optional && runtime::installed_versions(&paths, kind)?.is_empty() {
+            continue;
+        }
         match resolve::resolve(&paths, &config, kind, &cwd) {
             Ok(r) => println!("{:<9} {:<10} ← {}", kind.as_str(), r.version, r.source),
             Err(err) => println!("{:<9} -          ({err})", kind.as_str()),
