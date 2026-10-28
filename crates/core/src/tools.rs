@@ -37,6 +37,9 @@ const TOOLS: &[(&str, Kind, Launch)] = &[
     ("gofmt", Kind::Go, Launch::Exe(&["bin/gofmt.exe"])),
     ("python", Kind::Python, Launch::Exe(&["python.exe"])),
     ("pip", Kind::Python, Launch::PythonModule("pip")),
+    ("java", Kind::Java, Launch::Exe(&["bin/java.exe"])),
+    ("javac", Kind::Java, Launch::Exe(&["bin/javac.exe"])),
+    ("jar", Kind::Java, Launch::Exe(&["bin/jar.exe"])),
     ("node", Kind::Node, Launch::Exe(&["node.exe"])),
     (
         "npm",
@@ -180,6 +183,11 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
                 // `go` memanggil `gofmt` dkk. dari bin; skrip pip (`Scripts\`) ikut di PATH.
                 Kind::Go => plan.path_prepend.push(r.dir.join("bin")),
                 Kind::Python => plan.path_prepend.push(r.dir.join("Scripts")),
+                // Maven/Gradle membaca JAVA_HOME, bukan PATH.
+                Kind::Java => {
+                    plan.path_prepend.push(r.dir.join("bin"));
+                    plan.env.push(("JAVA_HOME".into(), r.dir.clone().into()));
+                }
                 _ => {}
             }
             if *kind == Kind::Node {
@@ -443,6 +451,23 @@ mod tests {
         let args: Vec<_> = p.prefix_args.iter().map(|a| a.to_string_lossy()).collect();
         assert_eq!(args, ["-m", "pip"]);
         assert_eq!(p.resolved[0].1, "3.13.18");
+    }
+
+    #[test]
+    fn java_shim_sets_java_home() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        let jdk = paths.runtime_dir("java", "21.0.12");
+        std::fs::create_dir_all(jdk.join("bin")).unwrap();
+        std::fs::write(jdk.join("bin/javac.exe"), b"").unwrap();
+        let project = tmp.path().join("app");
+        std::fs::create_dir_all(&project).unwrap();
+        std::fs::write(project.join(".java-version"), "temurin-21\n").unwrap();
+
+        let p = plan(&paths, &Config::default(), &project, "javac").unwrap();
+        assert_eq!(p.program, jdk.join("bin/javac.exe"));
+        assert!(p.env.contains(&("JAVA_HOME".into(), jdk.clone().into())));
+        assert!(p.path_prepend.contains(&jdk.join("bin")));
     }
 
     #[test]

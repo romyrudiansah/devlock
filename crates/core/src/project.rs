@@ -16,6 +16,8 @@ pub struct ProjectConfig {
     pub go: Option<String>,
     /// Versi Python, mis. `3.13`.
     pub python: Option<String>,
+    /// Versi Java (JDK Temurin), mis. `21`.
+    pub java: Option<String>,
     /// Instance database, mis. `mysql@8.4` atau `mariadb@11.4`.
     pub database: Option<String>,
     /// Instance cache, mis. `redis@8` atau `garnet@2`.

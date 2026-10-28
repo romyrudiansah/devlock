@@ -145,17 +145,20 @@ Perubahan langsung diterapkan ke pool php-cgi yang sedang berjalan. Xdebug aktif
 `debug,develop`, mulai saat ada trigger `XDEBUG_SESSION`, dan terhubung ke `127.0.0.1:9003`.
 Semua ini juga tersedia di tab **PHP** pada GUI.
 
-## Go & Python
+## Go, Python & Java
 
 ```
 devlock install go 1.27        # zip resmi go.dev (SHA256 dari go.dev/dl)
 devlock install python 3.13    # build portable python-build-standalone (SHA256 dari GitHub)
-devlock use python 3.13        # atau `python = "3.13"` / `go = "1.27"` di .devlock.toml
+devlock install java 21        # JDK Eclipse Temurin (SHA256 dari api.adoptium.net)
+devlock use python 3.13        # atau `python = "3.13"` / `go = "1.27"` / `java = "21"` di .devlock.toml
 ```
 
-Shim `go`, `gofmt`, `python`, dan `pip` (`python -m pip`) memakai versi project, sama seperti
-PHP/Node. Selain `.devlock.toml`, versi dibaca dari `go.mod` (`toolchain`, lalu `go`) dan
-`.python-version`.
+Shim `go`, `gofmt`, `python`, `pip` (`python -m pip`), `java`, `javac`, dan `jar` memakai versi
+project, sama seperti PHP/Node; shim Java juga mengisi `JAVA_HOME` untuk Maven/Gradle. Selain
+`.devlock.toml`, versi dibaca dari `go.mod` (`toolchain`, lalu `go`), `.python-version`, dan
+`.java-version` (`21`, `temurin-21.0.5`, `1.8`). Katalog Java berisi versi LTS (8, 11, 17, 21,
+25, …) ditambah versi fitur terbaru.
 
 ## Database
 

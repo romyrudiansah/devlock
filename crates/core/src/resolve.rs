@@ -76,6 +76,7 @@ fn spec_in_dir(kind: Kind, dir: &Path) -> Option<(String, Source)> {
                 Kind::Node => project.node,
                 Kind::Go => project.go,
                 Kind::Python => project.python,
+                Kind::Java => project.java,
                 _ => None,
             };
             if let Some(spec) = spec {
@@ -115,6 +116,15 @@ fn spec_in_dir(kind: Kind, dir: &Path) -> Option<(String, Source)> {
             let text = std::fs::read_to_string(&file).ok()?;
             Some((go_mod_spec(&text)?, Source::File(file)))
         }
+        Kind::Java => {
+            let file = dir.join(".java-version");
+            let text = std::fs::read_to_string(&file).ok()?;
+            let line = text
+                .lines()
+                .map(str::trim)
+                .find(|l| !l.is_empty() && !l.starts_with('#'))?;
+            Some((java_version_spec(line)?, Source::File(file)))
+        }
         Kind::Python => {
             let file = dir.join(".python-version");
             let text = std::fs::read_to_string(&file).ok()?;
@@ -126,6 +136,16 @@ fn spec_in_dir(kind: Kind, dir: &Path) -> Option<(String, Source)> {
         }
         _ => None,
     }
+}
+
+/// `.java-version` (jEnv/SDKMAN): `21`, `21.0.5`, `temurin-21.0.5`, atau `1.8` (Java 8).
+pub fn java_version_spec(line: &str) -> Option<String> {
+    let version = line.rsplit('-').next()?.trim();
+    let version = version
+        .strip_prefix("1.")
+        .filter(|v| v.starts_with('8'))
+        .unwrap_or(version);
+    Version::parse(version).map(|_| version.to_string())
 }
 
 /// Versi Go dari `go.mod`: `toolchain go1.23.4` bila ada, selain itu direktif `go 1.23`.
@@ -455,6 +475,13 @@ mod tests {
             Some("1.24.2")
         );
         assert_eq!(go_mod_spec("module x\n"), None);
+        assert_eq!(java_version_spec("21").as_deref(), Some("21"));
+        assert_eq!(
+            java_version_spec("temurin-21.0.5").as_deref(),
+            Some("21.0.5")
+        );
+        assert_eq!(java_version_spec("1.8").as_deref(), Some("8"));
+        assert_eq!(java_version_spec("zulu"), None);
         let mongo = DbInstance::parse("mongo@8.0").unwrap();
         assert_eq!(
             (mongo.name(), mongo.port(&config), mongo.is_sql()),
