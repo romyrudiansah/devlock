@@ -84,6 +84,19 @@ devlock hosts                      samakan file hosts dengan daftar site
 devlock doctor                     diagnosa PATH, port, dependency
 ```
 
+## Pindah dari Laragon / XAMPP
+
+```
+devlock import --dry-run      # lihat dulu: C:\laragon\www dan C:\xampp\htdocs (juga D:)
+devlock import                # tiap subfolder → www\<nama> sebagai junction
+devlock import D:\proyek --copy
+```
+
+Junction membuat project tetap di folder asal (tanpa hak admin), jadi Laragon/XAMPP dan
+DevLock melihat file yang sama; `--copy` menyalinnya. Nama site dibuat aman untuk domain
+(`My_Shop` → `my-shop.test`). Matikan Laragon/XAMPP sebelum `devlock start` agar port 80 dan
+3306 tidak bentrok.
+
 ## Project baru
 
 ```

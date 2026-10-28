@@ -1,6 +1,7 @@
 mod commands;
 mod db;
 mod dns;
+mod import;
 mod new;
 mod php;
 mod runtimes;
@@ -114,6 +115,17 @@ enum Command {
     Site {
         #[command(subcommand)]
         command: SiteCommand,
+    },
+    /// Impor project dari Laragon (www) atau XAMPP (htdocs) ke folder www DevLock
+    Import {
+        /// Folder sumber; tanpa ini dicari C:\laragon\www dan C:\xampp\htdocs (juga di D:)
+        source: Option<PathBuf>,
+        /// Salin isi project, bukan junction ke folder asal
+        #[arg(long)]
+        copy: bool,
+        /// Tampilkan yang akan diimpor tanpa mengubah apa pun
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Aksi cepat database: list, create, drop, dump, restore (instance harus berjalan)
     Db {
@@ -350,6 +362,11 @@ fn main() {
         Command::Site {
             command: SiteCommand::List,
         } => services::site_list(),
+        Command::Import {
+            source,
+            copy,
+            dry_run,
+        } => import::run(source, copy, dry_run),
         Command::Hosts {
             clear,
             elevated,
