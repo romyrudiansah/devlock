@@ -49,6 +49,8 @@ database = "mysql@8.4"
 - Project Node cukup diberi `dev = "pnpm dev"`: DevLock menjalankan dev server itu sebagai
   service, membaca port dari output-nya (Vite, Next.js, Nuxt, Astro, Angular, …), dan
   mengarahkan `<project>.test` ke port tersebut. `proxy_port = 5173` mengunci port secara manual.
+- Di project PHP (mis. Laravel + Vite), `dev = "npm run dev"` hanya menjalankan dev server di
+  samping PHP: `<project>.test` tetap dilayani PHP, dan aset Vite dimuat dari dev server-nya.
 
 ## Apache (per project)
 
