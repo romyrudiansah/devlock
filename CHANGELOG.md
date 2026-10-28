@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-28
+
 ### Fixed
 - `devlock update` kini juga memperbarui salinan shim di `shims\` (sebelumnya shim tetap versi lama dan shim baru, mis. `java`, baru muncul setelah `devlock shims`).
 
@@ -168,7 +170,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/romyrudiansah/devlock/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/romyrudiansah/devlock/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/romyrudiansah/devlock/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/romyrudiansah/devlock/compare/v0.9.2...v0.10.0
