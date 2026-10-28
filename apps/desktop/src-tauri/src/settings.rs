@@ -34,7 +34,7 @@ pub async fn get_settings() -> CmdResult<Settings> {
             https_redirect: config.https.redirect,
             php_workers: config.php.workers,
             autostart_services: config.gui.autostart_services,
-            editor: config.gui.editor,
+            editor: config.gui.editor.clone(),
             language: if config.gui.english() { "en" } else { "id" }.into(),
             start_with_windows: startup::is_enabled(),
         })
