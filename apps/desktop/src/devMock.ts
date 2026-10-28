@@ -127,8 +127,10 @@ const mockSettings = {
   http_port: 80,
   https_enabled: false,
   https_port: 443,
+  https_redirect: false,
   php_workers: 4,
   autostart_services: false,
+  editor: "",
   start_with_windows: false,
 };
 

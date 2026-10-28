@@ -77,8 +77,10 @@ export interface Settings {
   http_port: number;
   https_enabled: boolean;
   https_port: number;
+  https_redirect: boolean;
   php_workers: number;
   autostart_services: boolean;
+  editor: string;
   start_with_windows: boolean;
 }
 
@@ -116,6 +118,7 @@ export const api = {
   openUrl: (url: string) => invoke<void>("open_url", { url }),
   openFolder: (path: string) => invoke<void>("open_folder", { path }),
   openTerminal: (dir: string) => invoke<void>("open_terminal", { dir }),
+  openEditor: (dir: string) => invoke<void>("open_editor", { dir }),
   createSiteDatabase: (site: string) => invoke<string>("create_site_database", { site }),
   phpInfo: (version: string) => invoke<PhpInfo>("php_info", { version }),
   phpSetExtension: (version: string, name: string, enabled: boolean) =>

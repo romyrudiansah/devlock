@@ -83,6 +83,7 @@ fn build_menu(app: &AppHandle, snap: &Snapshot) -> tauri::Result<Menu<Wry>> {
             &[
                 &item(&format!("site-open:{name}"), &format!("Buka {url}"))?,
                 &item(&format!("site-dir:{name}"), "Buka folder")?,
+                &item(&format!("site-editor:{name}"), "Buka di editor")?,
                 &item(&format!("site-term:{name}"), "Terminal di folder ini")?,
             ],
         )?);
@@ -178,6 +179,9 @@ fn site_action(action: &str, name: &str) {
         }
         "site-dir" => {
             let _ = tauri_plugin_opener::open_path(&site.dir, None::<&str>);
+        }
+        "site-editor" => {
+            let _ = crate::commands::open_editor(site.dir.display().to_string());
         }
         "site-term" => {
             let _ = crate::commands::open_terminal(site.dir.display().to_string());

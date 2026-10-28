@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- Redirect HTTP→HTTPS opsional: `[https] redirect = true` (atau `devlock ssl redirect on`, atau toggle di Settings GUI) untuk semua site ber-HTTPS, dan `https_redirect = true/false` per project di `.devlock.toml`. Port HTTP site itu hanya membalas `301` ke `https://` (port ditulis bila bukan 443). `devlock ssl status` menandai site yang dialihkan.
+
 ## [0.9.2] - 2026-10-28
 
 ### Fixed

@@ -85,6 +85,14 @@ export default function Settings() {
               />
               HTTPS untuk semua site (butuh <code>devlock ssl trust</code> sekali)
             </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={form.https_redirect}
+                onChange={(e) => set("https_redirect", e.target.checked)}
+              />
+              Alihkan HTTP ke HTTPS untuk site ber-HTTPS (per project: <code>https_redirect</code>)
+            </label>
             <label className="field">
               <span className="small muted">Port HTTPS</span>
               <input type="number" value={form.https_port} onChange={(e) => set("https_port", num(e.target.value))} />
@@ -120,6 +128,14 @@ export default function Settings() {
                 onChange={(e) => set("start_with_windows", e.target.checked)}
               />
               Buka DevLock (di tray) saat login Windows
+            </label>
+            <label className="field">
+              <span className="small muted">Editor (kosong = deteksi VS Code, Cursor, Windsurf, Zed, Sublime, PhpStorm)</span>
+              <input
+                value={form.editor}
+                placeholder="code"
+                onChange={(e) => set("editor", e.target.value)}
+              />
             </label>
           </div>
         </article>

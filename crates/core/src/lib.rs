@@ -5,6 +5,7 @@ pub mod daemon;
 pub mod db;
 pub mod devport;
 pub mod dns;
+pub mod editor;
 pub mod hosts;
 pub mod launcher;
 pub mod paths;
@@ -17,6 +18,7 @@ pub mod runtime;
 pub mod services;
 pub mod sites;
 pub mod ssl;
+pub mod terminal;
 pub mod tools;
 pub mod version;
 

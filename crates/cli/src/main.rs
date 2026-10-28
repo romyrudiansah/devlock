@@ -6,6 +6,7 @@ mod php;
 mod runtimes;
 mod services;
 mod ssl;
+mod terminal;
 mod user_path;
 mod versions;
 
@@ -171,6 +172,11 @@ enum Command {
         #[arg(long, hide = true, global = true)]
         root: Option<PathBuf>,
     },
+    /// Profil Windows Terminal "DevLock" (PowerShell di folder www dengan shims di PATH)
+    Terminal {
+        #[arg(value_parser = ["status", "install", "remove"], default_value = "status")]
+        action: String,
+    },
     /// Proses latar yang mengawasi service (dijalankan otomatis oleh `start`)
     #[command(hide = true)]
     Daemon,
@@ -269,6 +275,12 @@ enum SslCommand {
     Enable,
     /// Nonaktifkan HTTPS global
     Disable,
+    /// Alihkan HTTP ke HTTPS (301) untuk site ber-HTTPS secara default ([https] redirect);
+    /// per project: `https_redirect = true/false` di .devlock.toml
+    Redirect {
+        #[arg(value_parser = ["on", "off"])]
+        state: String,
+    },
     /// Perbarui bundle CA (Mozilla + CA DevLock) dan pasang ke php.ini semua versi PHP
     Bundle,
 }
@@ -391,8 +403,10 @@ fn main() {
             SslCommand::Untrust => ssl::untrust(),
             SslCommand::Enable => ssl::set_enabled(true),
             SslCommand::Disable => ssl::set_enabled(false),
+            SslCommand::Redirect { state } => ssl::set_redirect(state == "on"),
             SslCommand::Bundle => ssl::bundle(),
         },
+        Command::Terminal { action } => terminal::run(&action),
         Command::Dns { command, root } => {
             if let Some(root) = root {
                 std::env::set_var(devlock_core::paths::HOME_ENV, root);

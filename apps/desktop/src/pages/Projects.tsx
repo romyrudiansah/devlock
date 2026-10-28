@@ -85,6 +85,7 @@ export default function Projects() {
                 Buka
               </button>
               <button onClick={() => act(api.openFolder(site.dir))}>Folder</button>
+              <button onClick={() => act(api.openEditor(site.dir))}>Editor</button>
               <button onClick={() => act(api.openTerminal(site.dir))}>Terminal</button>
               {site.database && (
                 <button

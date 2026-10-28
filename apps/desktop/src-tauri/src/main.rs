@@ -31,9 +31,15 @@ fn main() {
                     let _ = window.hide();
                 }
             }
-            let autostart = devlock_core::Paths::discover()
-                .and_then(|paths| devlock_core::Config::load(&paths))
-                .is_ok_and(|config| config.gui.autostart_services);
+            let loaded = devlock_core::Paths::discover().and_then(|paths| {
+                let config = devlock_core::Config::load(&paths)?;
+                Ok((paths, config))
+            });
+            // Profil Windows Terminal "DevLock" (bila dipasang) mengikuti lokasi www/shims terkini.
+            if let Ok((paths, config)) = &loaded {
+                let _ = devlock_core::terminal::sync(paths, config);
+            }
+            let autostart = loaded.is_ok_and(|(_, config)| config.gui.autostart_services);
             if autostart {
                 tray::run_in_background(app.handle(), "start");
             }
@@ -59,6 +65,7 @@ fn main() {
             commands::open_url,
             commands::open_folder,
             commands::open_terminal,
+            commands::open_editor,
             commands::create_site_database,
             php_page::php_info,
             php_page::php_set_extension,

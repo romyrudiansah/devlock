@@ -41,6 +41,8 @@ pub struct Site {
     pub dev_port_auto: bool,
     /// Dilayani juga lewat HTTPS dengan sertifikat dari CA DevLock.
     pub https: bool,
+    /// Request HTTP dialihkan (301) ke HTTPS; hanya berlaku bila `https`.
+    pub https_redirect: bool,
     /// Dilayani Apache (di belakang nginx) karena `webserver = "apache"`.
     pub apache: bool,
     /// Masalah konfigurasi yang membuat site tidak bisa dilayani sepenuhnya.
@@ -134,6 +136,7 @@ fn adminer_site(paths: &Paths, config: &Config) -> Result<Option<Site>> {
         dev: None,
         dev_port_auto: false,
         https: config.https.enabled,
+        https_redirect: config.https.enabled && config.https.redirect,
         apache: false,
         warning,
     }))
@@ -152,6 +155,7 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
         Some(rel) => dir.join(rel),
         None => detect_docroot(dir),
     };
+    let https = project.https.unwrap_or(config.https.enabled);
     let mut domains = vec![format!("{}.{}", name.to_lowercase(), config.tld)];
     domains.extend(project.aliases.iter().cloned());
 
@@ -230,7 +234,8 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
         cache,
         dev: project.dev,
         dev_port_auto,
-        https: project.https.unwrap_or(config.https.enabled),
+        https,
+        https_redirect: https && project.https_redirect.unwrap_or(config.https.redirect),
         apache,
         warning,
     })
