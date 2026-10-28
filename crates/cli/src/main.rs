@@ -268,9 +268,17 @@ enum SslCommand {
     /// Status CA, kepercayaan Windows, dan site yang memakai HTTPS
     Status,
     /// Pasang CA DevLock ke store Root user (Windows meminta konfirmasi)
-    Trust,
+    Trust {
+        /// Pasang ke store Root komputer (UAC) agar Firefox ikut percaya
+        #[arg(long)]
+        machine: bool,
+    },
     /// Cabut CA DevLock dari store Root user
-    Untrust,
+    Untrust {
+        /// Cabut dari store Root komputer (UAC)
+        #[arg(long)]
+        machine: bool,
+    },
     /// Aktifkan HTTPS untuk semua site ([https] enabled = true)
     Enable,
     /// Nonaktifkan HTTPS global
@@ -399,8 +407,8 @@ fn main() {
         }
         Command::Ssl { command } => match command {
             SslCommand::Status => ssl::status(),
-            SslCommand::Trust => ssl::trust(),
-            SslCommand::Untrust => ssl::untrust(),
+            SslCommand::Trust { machine } => ssl::trust(machine),
+            SslCommand::Untrust { machine } => ssl::untrust(machine),
             SslCommand::Enable => ssl::set_enabled(true),
             SslCommand::Disable => ssl::set_enabled(false),
             SslCommand::Redirect { state } => ssl::set_redirect(state == "on"),

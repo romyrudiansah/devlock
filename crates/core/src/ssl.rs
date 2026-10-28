@@ -132,9 +132,74 @@ fn needs_renewal(out: &SiteCert, domains_file: &Path, wanted: &str, ca: &Path) -
     }
 }
 
-/// `true` bila CA DevLock ada di store Root milik user.
+/// `true` bila CA DevLock ada di store Root milik user atau komputer.
 pub fn is_trusted() -> bool {
+    is_trusted_user() || is_trusted_machine()
+}
+
+/// CA DevLock di store Root milik user (Chrome, Edge, curl.exe).
+pub fn is_trusted_user() -> bool {
     certutil(&["-user", "-store", "Root", CA_NAME]).is_ok_and(|out| out.contains(CA_NAME))
+}
+
+/// CA DevLock di store Root komputer (LocalMachine). Firefox hanya mengimpor root dari
+/// store komputer, jadi ini yang membuat Firefox ikut percaya tanpa impor manual.
+pub fn is_trusted_machine() -> bool {
+    certutil(&["-store", "Root", CA_NAME]).is_ok_and(|out| out.contains(CA_NAME))
+}
+
+/// Pasang CA ke store Root komputer lewat UAC (untuk Firefox dan semua user di komputer ini).
+pub fn trust_machine(paths: &Paths) -> Result<()> {
+    ensure_ca(paths)?;
+    let cert = ca_cert_path(paths);
+    certutil_elevated(&["-addstore", "Root", &cert.to_string_lossy()])?;
+    if !is_trusted_machine() {
+        bail!("CA belum terpasang di store Root komputer");
+    }
+    Ok(())
+}
+
+/// Cabut CA DevLock dari store Root komputer (UAC).
+pub fn untrust_machine() -> Result<()> {
+    certutil_elevated(&["-delstore", "Root", CA_NAME])?;
+    if is_trusted_machine() {
+        bail!("CA masih ada di store Root komputer");
+    }
+    Ok(())
+}
+
+/// Skrip PowerShell yang menjalankan `certutil <args>` lewat `Start-Process -Verb RunAs`.
+fn elevated_certutil_script(args: &[&str]) -> String {
+    let quoted: Vec<String> = args
+        .iter()
+        // Kutip ganda di dalam string PowerShell agar path berspasi tetap satu argumen certutil.
+        .map(|a| format!("'\"{}\"'", a.replace('\'', "''")))
+        .collect();
+    format!(
+        "$p = Start-Process -FilePath certutil.exe -ArgumentList @({}) -Verb RunAs -Wait -PassThru -WindowStyle Hidden; exit $p.ExitCode",
+        quoted.join(",")
+    )
+}
+
+/// Jalankan certutil sebagai administrator (dialog UAC) dan tunggu hasilnya.
+fn certutil_elevated(args: &[&str]) -> Result<()> {
+    let script = elevated_certutil_script(args);
+    let mut command = Command::new("powershell.exe");
+    command.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(crate::process::CREATE_NO_WINDOW);
+    }
+    let output = command.output().context("gagal menjalankan powershell")?;
+    if !output.status.success() {
+        bail!(
+            "certutil {} gagal atau UAC dibatalkan: {}",
+            args.first().unwrap_or(&""),
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    Ok(())
 }
 
 /// Pasang CA ke store Root user. Windows menampilkan dialog konfirmasi ke pengguna.
@@ -143,7 +208,7 @@ pub fn trust(paths: &Paths) -> Result<()> {
     let cert = ca_cert_path(paths);
     certutil(&["-user", "-addstore", "Root", &cert.to_string_lossy()])
         .context("gagal memasang CA (dialog konfirmasi Windows ditolak?)")?;
-    if !is_trusted() {
+    if !is_trusted_user() {
         bail!("CA belum terpasang di store Root (dialog konfirmasi Windows ditolak?)");
     }
     Ok(())
@@ -174,6 +239,16 @@ fn certutil(args: &[&str]) -> Result<String> {
 mod tests {
     use super::*;
     use x509_parser::prelude::*;
+
+    #[test]
+    fn elevated_certutil_quotes_each_argument() {
+        let script =
+            elevated_certutil_script(&["-addstore", "Root", r"D:\Dev Lock\O'Brien\ca.crt"]);
+        assert!(script.contains(
+            r#"-ArgumentList @('"-addstore"','"Root"','"D:\Dev Lock\O''Brien\ca.crt"') -Verb RunAs"#
+        ));
+        assert!(script.ends_with("exit $p.ExitCode"));
+    }
 
     #[test]
     fn site_cert_is_signed_by_ca() {
