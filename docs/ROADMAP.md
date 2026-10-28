@@ -222,7 +222,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [ ] Export/import konfigurasi ke mesin lain
 
 ### M. GUI (Tauri) — **P0 dasar / P1 lengkap**
-- [ ] Tray icon: status service, Start All / Stop All, buka `www`, menu cepat per project _(sebagian: Start/Stop All, buka `www`, keluar; status & menu per project belum)_
+- [x] Tray icon: status service, Start All / Stop All, buka `www`, menu cepat per project _(status & menu per project (buka, folder, terminal), v0.7.0)_
 - [x] Dashboard: daftar service (status, port, versi, tombol aksi)
 - [x] Halaman Runtimes: daftar versi tersedia vs terinstall, install/uninstall, set default
 - [ ] Halaman Projects: daftar project, versi yang dipakai, buka di browser/editor/terminal _(sebagian: browser, folder, terminal; editor belum)_
@@ -258,7 +258,9 @@ devlock doctor                   (cek PATH, port, VC++ redist, CA trust)
 | MariaDB | `3400 + (major-10)*20 + minor` (11.4 → 3424, 10.11 → 3411) |
 | Override | `[ports]` di `devlock.toml`, mis. `"mysql@8.4" = 3306` |
 | PostgreSQL | `5400 + major` (16 → 5416, 18 → 5418) |
-| Redis | 6379 |
+| Redis | `6309 + major*10` (7 → 6379, 8 → 6389) |
+| Garnet | `6400 + major` (2 → 6402) |
+| Apache (di belakang nginx) | 8180 |
 | Mailpit SMTP / UI | 1025 / 8025 |
 | DNS lokal | 127.0.0.1:53 |
 | DevLock API internal (GUI↔core) | 127.0.0.1:7433 atau named pipe |
@@ -281,8 +283,8 @@ devlock doctor                   (cek PATH, port, VC++ redist, CA trust)
  └──────┬───────────────────┬──────────┘
         │ spawn (Job Object) │ UAC (sekali)
         ▼                    ▼
-  nginx/apache, php-cgi    devlock-helper.exe
-  mysql, pg, redis, node   (hosts, cert store)
+  nginx/apache, php-cgi    devlock … --elevated
+  mysql, pg, redis, node   (hosts, NRPT DNS)
 ```
 
 Workspace Rust yang disarankan:
@@ -291,7 +293,6 @@ crates/
   core/      logika utama (library)
   cli/       binary devlock
   shim/      binary shim (sekecil mungkin, tanpa tokio)
-  helper/    binary elevated
 apps/
   desktop/   Tauri + React
 catalog/     manifest JSON runtime
@@ -309,7 +310,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 | **0. Fondasi** | Workspace Rust, config `devlock.toml`, struktur folder, logging | Kerangka jalan | ✅ v0.1.0 |
 | **1. MVP CLI** | Runtime Manager (PHP, Node, Nginx, MariaDB), shim + resolver, service manager, auto vhost + hosts | Bisa dev Laravel & Node via CLI dengan multi-versi | ✅ v0.2.0 |
 | **2. GUI dasar** | Tray + dashboard service + halaman runtimes & projects | Pengalaman setara Laragon | ✅ v0.3.0–v0.3.1 |
-| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (v0.8.x), Redis/Garnet + Adminer (berikutnya) |
+| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (v0.8.x), Redis/Garnet + Adminer (v0.9.x). Sisa: redirect HTTP→HTTPS, profil Windows Terminal, buka di editor, deteksi port dev server, trust CA Firefox, MongoDB |
 | **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ⏳ |
 
 ---
@@ -321,6 +322,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 - **php-cgi di Windows** tidak punya FPM → wajib supervisor + beberapa proses per versi.
 - **Varian PHP**: pakai NTS untuk FastCGI; TS hanya untuk Apache mod_php (hindari, pakai fcgid/proxy_fcgi).
 - **Antivirus/Defender** bisa memperlambat extract & menghapus shim → tanda tangani binary (code signing) saat rilis.
+- **Smart App Control / SmartScreen**: rilis saat ini belum ditandatangani (pendaftaran SignPath Foundation ditolak), sehingga Smart App Control kadang memblokir exe rilis tertentu (mis. GUI v0.7.0, shim v0.9.2) secara acak per build. Solusi permanen: code signing; sementara itu pakai build sebelumnya yang diizinkan.
 - **PATH**: shim harus di depan PATH user; beri peringatan jika ada PHP/Node lain sebelum shim.
 - **Data DB antar versi major** tidak kompatibel → data dir dipisah per versi major + fitur dump/restore saat migrasi.
 - **Lisensi**: redistribusi binary MySQL (GPL) / Redis — lebih aman download dari sumber resmi saat install, bukan dibundel.
