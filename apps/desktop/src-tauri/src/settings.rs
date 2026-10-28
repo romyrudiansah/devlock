@@ -65,7 +65,11 @@ pub async fn save_settings(settings: Settings) -> CmdResult<String> {
             toml_edit::value(i64::from(settings.http_port)),
         )?;
         set("https", "enabled", toml_edit::value(settings.https_enabled))?;
-        set("https", "redirect", toml_edit::value(settings.https_redirect))?;
+        set(
+            "https",
+            "redirect",
+            toml_edit::value(settings.https_redirect),
+        )?;
         set(
             "https",
             "port",
