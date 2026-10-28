@@ -215,11 +215,11 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [x] Profil Windows Terminal "DevLock" otomatis _(`devlock terminal install`, v0.10.0)_
 
 ### L. Tools Tambahan — **P2**
-- [ ] Mail catcher (Mailpit) — SMTP `127.0.0.1:1025`, UI `mail.test`
-- [ ] Share/tunnel project ke publik (cloudflared / ngrok)
-- [ ] Python / Go / Java runtime (pola shim yang sama)
-- [ ] Profil/stack: simpan kombinasi service, ganti cepat
-- [ ] Export/import konfigurasi ke mesin lain
+- [x] Mail catcher (Mailpit) — SMTP `127.0.0.1:1025`, UI `mail.test` _(v0.11.0)_
+- [x] Share/tunnel project ke publik (cloudflared / ngrok) _(`devlock share`, Cloudflare Quick Tunnel, v0.11.0)_
+- [ ] Python / Go / Java runtime (pola shim yang sama) _(sebagian: Go & Python v0.11.0; Java belum)_
+- [x] Profil/stack: simpan kombinasi service, ganti cepat _(`devlock profile`, v0.11.0)_
+- [x] Export/import konfigurasi ke mesin lain _(`devlock config export/import`, v0.11.0)_
 
 ### M. GUI (Tauri) — **P0 dasar / P1 lengkap**
 - [x] Tray icon: status service, Start All / Stop All, buka `www`, menu cepat per project _(status & menu per project (buka, folder, terminal), v0.7.0)_
@@ -241,10 +241,10 @@ devlock doctor                   (cek PATH, port, VC++ redist, CA trust)
 ```
 
 ### O. Sistem & Distribusi — **P1**
-- [ ] Installer (Tauri bundler → MSI/NSIS) + versi portable zip _(sebagian: zip portable di GitHub Releases; installer belum)_
-- [ ] Auto-update aplikasi & katalog
+- [x] Installer (Tauri bundler → MSI/NSIS) + versi portable zip _(installer NSIS per user + zip portable, v0.11.0)_
+- [x] Auto-update aplikasi & katalog _(`devlock update`, v0.11.0; katalog runtime di-cache 6 jam)_
 - [x] `devlock doctor` untuk diagnosa
-- [ ] Import project dari Laragon/XAMPP (baca folder `www`/`htdocs`)
+- [x] Import project dari Laragon/XAMPP (baca folder `www`/`htdocs`) _(`devlock import`, v0.11.0)_
 
 ---
 
@@ -263,7 +263,7 @@ devlock doctor                   (cek PATH, port, VC++ redist, CA trust)
 | Dev server Node (port otomatis) | `PORT` 3100–3899 per site, port sebenarnya dibaca dari output |
 | Garnet | `6400 + major` (2 → 6402) |
 | Apache (di belakang nginx) | 8180 |
-| Mailpit SMTP / UI | 1025 / 8025 |
+| Mailpit SMTP / UI | 1025 / 8025 (`[mail]`) |
 | DNS lokal | 127.0.0.1:53 |
 | DevLock API internal (GUI↔core) | 127.0.0.1:7433 atau named pipe |
 
@@ -313,7 +313,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 | **1. MVP CLI** | Runtime Manager (PHP, Node, Nginx, MariaDB), shim + resolver, service manager, auto vhost + hosts | Bisa dev Laravel & Node via CLI dengan multi-versi | ✅ v0.2.0 |
 | **2. GUI dasar** | Tray + dashboard service + halaman runtimes & projects | Pengalaman setara Laragon | ✅ v0.3.0–v0.3.1 |
 | **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | ✅ PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (v0.8.x), Redis/Garnet + Adminer (v0.9.x), redirect HTTPS + Windows Terminal + editor + port dev otomatis + Firefox + MongoDB (v0.10.0) |
-| **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ⏳ |
+| **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ✅ v0.11.0 (sisa opsional: Java, mirror fallback, GUI bahasa Inggris) |
 
 ---
 

@@ -6,6 +6,17 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-28
+
+### Added
+- Mailpit sebagai penangkap email lokal: `devlock install mailpit` (axllent/mailpit, SHA256 dari GitHub) menjalankan service `mailpit` (SMTP `127.0.0.1:1025`, UI `8025`, data di `data\mailpit`, ubah lewat `[mail]`) dan site bawaan `mail.<tld>`. `mail()` PHP semua versi diarahkan ke Mailpit (`SMTP`/`smtp_port` di `php.ini`), dan project Laravel baru mendapat `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`. Target `devlock start/stop mail`.
+- `devlock share <site>`: membagikan site lewat Cloudflare Quick Tunnel (`devlock install cloudflared`, tanpa akun) ke URL acak `*.trycloudflare.com` sampai Ctrl+C. Site dengan redirect HTTPS memakai origin TLS yang diverifikasi dengan CA DevLock.
+- Runtime Go (`devlock install go`, zip resmi go.dev) dan Python (`devlock install python`, build portable python-build-standalone) multi-versi: versi per project lewat `go`/`python` di `.devlock.toml`, `go.mod` (`toolchain`, lalu `go`), dan `.python-version`; shim `go`, `gofmt`, `python`, dan `pip` (`python -m pip`). Installer kini bisa mengekstrak `.tar.gz`.
+- `devlock import [folder] [--copy] [--dry-run]`: impor project dari Laragon (`www`) atau XAMPP (`htdocs`) sebagai directory junction (tanpa admin) atau salinan; nama site dibuat aman untuk DNS.
+- `devlock config export|import`: pindah komputer lewat satu file TOML berisi `devlock.toml` dan daftar runtime terinstall (impor mencadangkan `devlock.toml` lama dan menginstall runtime yang kurang). `devlock profile save|use|list|delete`: simpan grup service yang sedang berjalan ke `[profiles]` dan ganti cepat antar kombinasi.
+- `devlock update [--check]`: update dari GitHub Releases dengan verifikasi SHA256; binary lama disimpan sebagai `.old` dan otomatis dipulihkan bila Smart App Control memblokir binary baru.
+- Installer NSIS `devlock-vX.Y.Z-windows-x64-setup.exe` (per user di `%LOCALAPPDATA%\DevLock`, tanpa admin, shortcut Start Menu, uninstall dari *Apps & features* tanpa menghapus runtime, data, dan project), diterbitkan bersama zip portable.
+
 ## [0.10.0] - 2026-10-28
 
 ### Added
@@ -147,7 +158,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/romyrudiansah/devlock/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/romyrudiansah/devlock/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/romyrudiansah/devlock/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/romyrudiansah/devlock/compare/v0.9.0...v0.9.1
