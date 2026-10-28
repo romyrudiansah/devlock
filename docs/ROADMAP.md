@@ -180,7 +180,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [x] P1: DNS resolver lokal untuk wildcard `*.test` (tanpa edit hosts tiap project) _(`devlock dns enable`: service `dns` di 127.0.0.1:53 + aturan NRPT; butuh port 53 bebas dari ICS)_
 
 ### F. SSL Lokal — **P1**
-- [ ] Generate root CA sekali, trust ke Windows Cert Store (helper + UAC) — juga NSS Firefox (opsional) _(sebagian: CA + trust store user, v0.5.0; Firefox belum)_
+- [x] Generate root CA sekali, trust ke Windows Cert Store (helper + UAC) — juga NSS Firefox (opsional) _(store user v0.5.0; store komputer untuk Firefox `--machine`, v0.10.0)_
 - [x] Sertifikat per host / wildcard otomatis saat vhost dibuat _(per site + alias, v0.5.0)_
 - [x] Toggle HTTPS per project, redirect HTTP→HTTPS opsional _(`https_redirect` / `[https] redirect`)_
 - [x] Set `NODE_EXTRA_CA_CERTS` dan `curl.cainfo` agar runtime percaya CA lokal _(v0.5.0 / v0.6.0)_
@@ -189,7 +189,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [x] MySQL & MariaDB multi-versi berjalan bersamaan, port per versi, data dir terpisah (lihat 4.5)
 - [x] Inisialisasi data dir otomatis (`mysqld --initialize-insecure` / `mariadb-install-db`)
 - [x] PostgreSQL (`initdb`) _(v0.4.0)_
-- [ ] Redis, MongoDB (P2) _(sebagian: Redis (redis-windows) & Garnet sebagai `cache` per project; MongoDB belum)_
+- [x] Redis, MongoDB (P2) _(Redis & Garnet sebagai `cache` (v0.9.x); MongoDB + mongosh (v0.10.0))_
 - [x] Quick action: buat database untuk project _(`devlock db create`, tombol "Buat DB", v0.5.0; user khusus belum)_
 - [x] Backup / restore (dump) per database _(`devlock db dump/restore`, v0.5.0)_
 - [x] Panel DB web bawaan (Adminer — 1 file PHP, ringan) di `adminer.test` _(`devlock install adminer`)_
@@ -203,7 +203,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 ### I. Node Tools — **P1**
 - [x] Corepack (pnpm/yarn) per versi Node _(shim `corepack`/`pnpm`/`yarn` memakai Node milik project)_
 - [x] Jalankan dev server project (`npm run dev`) sebagai service + reverse proxy ke `<project>.test`
-- [ ] Deteksi port dev server otomatis dari output
+- [x] Deteksi port dev server otomatis dari output _(v0.10.0)_
 
 ### J. Quick Create Project — **P1**
 - [x] Template: Laravel, WordPress, Symfony, CodeIgniter, Next.js, Nuxt, Vite (React/Vue), static HTML _(v0.6.0)_
@@ -212,7 +212,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 
 ### K. Terminal Terintegrasi — **P1**
 - [x] "Open Terminal" di folder project dengan env yang sudah benar (Windows Terminal / PowerShell / cmd) _(tombol di GUI; belum diuji manual)_
-- [ ] Profil Windows Terminal "DevLock" otomatis
+- [x] Profil Windows Terminal "DevLock" otomatis _(`devlock terminal install`, v0.10.0)_
 
 ### L. Tools Tambahan — **P2**
 - [ ] Mail catcher (Mailpit) — SMTP `127.0.0.1:1025`, UI `mail.test`
@@ -225,7 +225,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [x] Tray icon: status service, Start All / Stop All, buka `www`, menu cepat per project _(status & menu per project (buka, folder, terminal), v0.7.0)_
 - [x] Dashboard: daftar service (status, port, versi, tombol aksi)
 - [x] Halaman Runtimes: daftar versi tersedia vs terinstall, install/uninstall, set default
-- [ ] Halaman Projects: daftar project, versi yang dipakai, buka di browser/editor/terminal _(sebagian: browser, folder, terminal; editor belum)_
+- [x] Halaman Projects: daftar project, versi yang dipakai, buka di browser/editor/terminal _(editor v0.10.0)_
 - [x] Log viewer realtime per service
 - [ ] Settings: lokasi `www`, TLD (`.test`), port, autostart Windows, bahasa (ID/EN) _(sebagian: semua kecuali bahasa, v0.6.0)_
 
@@ -259,6 +259,8 @@ devlock doctor                   (cek PATH, port, VC++ redist, CA trust)
 | Override | `[ports]` di `devlock.toml`, mis. `"mysql@8.4" = 3306` |
 | PostgreSQL | `5400 + major` (16 → 5416, 18 → 5418) |
 | Redis | `6309 + major*10` (7 → 6379, 8 → 6389) |
+| MongoDB | `27000 + major*10 + minor` (8.0 → 27080) |
+| Dev server Node (port otomatis) | `PORT` 3100–3899 per site, port sebenarnya dibaca dari output |
 | Garnet | `6400 + major` (2 → 6402) |
 | Apache (di belakang nginx) | 8180 |
 | Mailpit SMTP / UI | 1025 / 8025 |
@@ -310,7 +312,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 | **0. Fondasi** | Workspace Rust, config `devlock.toml`, struktur folder, logging | Kerangka jalan | ✅ v0.1.0 |
 | **1. MVP CLI** | Runtime Manager (PHP, Node, Nginx, MariaDB), shim + resolver, service manager, auto vhost + hosts | Bisa dev Laravel & Node via CLI dengan multi-versi | ✅ v0.2.0 |
 | **2. GUI dasar** | Tray + dashboard service + halaman runtimes & projects | Pengalaman setara Laragon | ✅ v0.3.0–v0.3.1 |
-| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | 🟡 berjalan: PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (v0.8.x), Redis/Garnet + Adminer (v0.9.x). Sisa: redirect HTTP→HTTPS, profil Windows Terminal, buka di editor, deteksi port dev server, trust CA Firefox, MongoDB |
+| **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | ✅ PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (v0.8.x), Redis/Garnet + Adminer (v0.9.x), redirect HTTPS + Windows Terminal + editor + port dev otomatis + Firefox + MongoDB (v0.10.0) |
 | **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ⏳ |
 
 ---
