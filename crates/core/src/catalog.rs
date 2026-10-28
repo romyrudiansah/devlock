@@ -22,6 +22,14 @@ const REDIS_WINDOWS: &str =
 const GARNET: &str = "https://api.github.com/repos/microsoft/garnet/releases?per_page=30";
 /// Adminer resmi: satu file PHP per rilis.
 const ADMINER: &str = "https://api.github.com/repos/vrana/adminer/releases?per_page=30";
+/// Semua rilis Go beserta SHA256 per file.
+const GO_DL: &str = "https://go.dev/dl/?mode=json&include=all";
+/// Build CPython portable (dipakai juga oleh `uv`); tiap rilis memuat semua cabang Python.
+const PYTHON_STANDALONE: &str =
+    "https://api.github.com/repos/astral-sh/python-build-standalone/releases?per_page=3";
+const CLOUDFLARED: &str =
+    "https://api.github.com/repos/cloudflare/cloudflared/releases?per_page=30";
+const MAILPIT: &str = "https://api.github.com/repos/axllent/mailpit/releases?per_page=30";
 /// Rilis MongoDB yang masih didukung (satu per cabang), lengkap dengan SHA256 per arsip.
 const MONGODB_CURRENT: &str = "https://downloads.mongodb.org/current.json";
 const MONGOSH: &str = "https://api.github.com/repos/mongodb-js/mongosh/releases?per_page=30";
@@ -161,6 +169,14 @@ pub fn available(kind: Kind) -> Result<Vec<Release>> {
             "win-x64-based-readytorun.zip".to_string()
         })?,
         Kind::Adminer => github_releases(ADMINER, Kind::Adminer, |v| format!("adminer-{v}.php"))?,
+        Kind::Go => go_from(http::get_json(GO_DL)?),
+        Kind::Python => python_from(http::get_json(PYTHON_STANDALONE)?),
+        Kind::Cloudflared => github_releases(CLOUDFLARED, Kind::Cloudflared, |_| {
+            "cloudflared-windows-amd64.exe".to_string()
+        })?,
+        Kind::Mailpit => github_releases(MAILPIT, Kind::Mailpit, |_| {
+            "mailpit-windows-amd64.zip".to_string()
+        })?,
         Kind::Mongodb => mongodb_from(http::get_json(MONGODB_CURRENT)?),
         Kind::Mongosh => github_releases(MONGOSH, Kind::Mongosh, |v| {
             format!("mongosh-{v}-win32-x64.zip")
@@ -422,6 +438,95 @@ fn releases_from_github(
             })
         })
         .collect()
+}
+
+// --- Go ----------------------------------------------------------------------
+
+#[derive(Deserialize)]
+struct GoRelease {
+    version: String,
+    stable: bool,
+    files: Vec<GoFile>,
+}
+
+#[derive(Deserialize)]
+struct GoFile {
+    filename: String,
+    os: String,
+    arch: String,
+    kind: String,
+    sha256: String,
+}
+
+/// Zip Windows amd64 dari rilis stabil `go.dev/dl` (`go1.23.4` → `1.23.4`).
+fn go_from(releases: Vec<GoRelease>) -> Vec<Release> {
+    releases
+        .into_iter()
+        .filter(|r| r.stable)
+        .filter_map(|r| {
+            let version = r.version.strip_prefix("go")?.to_string();
+            Version::parse(&version)?;
+            let file = r.files.into_iter().find(|f| {
+                f.os == "windows"
+                    && f.arch == "amd64"
+                    && f.kind == "archive"
+                    && !f.sha256.is_empty()
+            })?;
+            Some(Release {
+                kind: Kind::Go,
+                version,
+                url: format!("https://go.dev/dl/{}", file.filename),
+                checksum: Checksum::Sha256(file.sha256.to_lowercase()),
+                lts: false,
+            })
+        })
+        .collect()
+}
+
+// --- Python --------------------------------------------------------------------
+
+/// `cpython-3.13.9+20251014-x86_64-pc-windows-msvc-install_only.tar.gz` dari rilis
+/// python-build-standalone; versi pra-rilis (`3.16.0a1`) dan varian lain dilewati. Rilis
+/// terbaru dibaca dulu, jadi build terbaru per versi Python yang dipakai.
+fn python_from(releases: Vec<GithubRelease>) -> Vec<Release> {
+    const SUFFIX: &str = "-x86_64-pc-windows-msvc-install_only.tar.gz";
+    let mut seen = std::collections::BTreeSet::new();
+    let mut out = Vec::new();
+    for release in releases.into_iter().filter(|r| !r.prerelease && !r.draft) {
+        for asset in release.assets {
+            let Some(rest) = asset
+                .name
+                .strip_prefix("cpython-")
+                .and_then(|n| n.strip_suffix(SUFFIX))
+            else {
+                continue;
+            };
+            let Some((version, _build)) = rest.split_once('+') else {
+                continue;
+            };
+            let numeric = version
+                .split('.')
+                .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()));
+            let Some(sha256) = asset
+                .digest
+                .as_deref()
+                .and_then(|d| d.strip_prefix("sha256:"))
+            else {
+                continue;
+            };
+            if !numeric || !seen.insert(version.to_string()) {
+                continue;
+            }
+            out.push(Release {
+                kind: Kind::Python,
+                version: version.to_string(),
+                url: asset.browser_download_url,
+                checksum: Checksum::Sha256(sha256.to_string()),
+                lts: false,
+            });
+        }
+    }
+    out
 }
 
 // --- MongoDB -----------------------------------------------------------------
@@ -762,6 +867,81 @@ mod tests {
             postgresql_zip_url("16.15", 2),
             "https://get.enterprisedb.com/postgresql/postgresql-16.15-2-windows-x64-binaries.zip"
         );
+    }
+
+    #[test]
+    fn go_catalog() {
+        let json = r#"[
+            {"version": "go1.27.3", "stable": true, "files": [
+                {"filename": "go1.27.3.windows-386.zip", "os": "windows", "arch": "386", "kind": "archive", "sha256": "11"},
+                {"filename": "go1.27.3.windows-amd64.msi", "os": "windows", "arch": "amd64", "kind": "installer", "sha256": "22"},
+                {"filename": "go1.27.3.windows-amd64.zip", "os": "windows", "arch": "amd64", "kind": "archive", "sha256": "AA"}
+            ]},
+            {"version": "go1.28rc1", "stable": false, "files": []}
+        ]"#;
+        let releases = go_from(serde_json::from_str(json).unwrap());
+        assert_eq!(releases.len(), 1);
+        assert_eq!(releases[0].version, "1.27.3");
+        assert_eq!(
+            releases[0].url,
+            "https://go.dev/dl/go1.27.3.windows-amd64.zip"
+        );
+        assert!(matches!(&releases[0].checksum, Checksum::Sha256(s) if s == "aa"));
+    }
+
+    #[test]
+    fn python_standalone_catalog() {
+        let asset = |name: &str, digest: Option<&str>| GithubAsset {
+            name: name.into(),
+            browser_download_url: format!("https://x/{name}"),
+            digest: digest.map(str::to_string),
+        };
+        let release = |assets| GithubRelease {
+            tag_name: "20261026".into(),
+            prerelease: false,
+            draft: false,
+            assets,
+        };
+        let releases = vec![
+            release(vec![
+                asset(
+                    "cpython-3.13.18+20261026-x86_64-pc-windows-msvc-install_only.tar.gz",
+                    Some("sha256:aa"),
+                ),
+                asset(
+                    "cpython-3.13.18+20261026-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+                    Some("sha256:bb"),
+                ),
+                asset(
+                    "cpython-3.13.18+20261026-x86_64-unknown-linux-gnu-install_only.tar.gz",
+                    Some("sha256:cc"),
+                ),
+                asset(
+                    "cpython-3.16.0a1+20261026-x86_64-pc-windows-msvc-install_only.tar.gz",
+                    Some("sha256:dd"),
+                ),
+                asset(
+                    "cpython-3.12.16+20261026-x86_64-pc-windows-msvc-install_only.tar.gz",
+                    None,
+                ),
+            ]),
+            release(vec![
+                asset(
+                    "cpython-3.13.18+20261021-x86_64-pc-windows-msvc-install_only.tar.gz",
+                    Some("sha256:ee"),
+                ),
+                asset(
+                    "cpython-3.13.17+20261021-x86_64-pc-windows-msvc-install_only.tar.gz",
+                    Some("sha256:ff"),
+                ),
+            ]),
+        ];
+        let out = python_from(releases);
+        let got: Vec<_> = out
+            .iter()
+            .map(|r| (r.version.as_str(), r.url.contains("20261026")))
+            .collect();
+        assert_eq!(got, [("3.13.18", true), ("3.13.17", false)]);
     }
 
     #[test]

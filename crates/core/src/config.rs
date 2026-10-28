@@ -42,6 +42,11 @@ redirect = false
 [apache]
 port = 8180
 
+# Mailpit (`devlock install mailpit`): SMTP lokal penangkap email, UI di mail.<tld>.
+[mail]
+smtp_port = 1025
+ui_port = 8025
+
 # DNS lokal untuk wildcard *.<tld>: semua subdomain langsung mengarah ke 127.0.0.1
 # tanpa menulis file hosts per project. Aktifkan dengan `devlock dns enable` (UAC sekali).
 [dns]
@@ -81,6 +86,7 @@ pub struct Config {
     pub https: HttpsConfig,
     pub apache: ApacheConfig,
     pub dns: DnsConfig,
+    pub mail: MailConfig,
     pub php: PhpConfig,
     pub daemon: DaemonConfig,
     pub gui: GuiConfig,
@@ -131,6 +137,24 @@ impl Default for ApacheConfig {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct MailConfig {
+    /// Port SMTP Mailpit di `127.0.0.1` (PHP `mail()` dan `.env` Laravel diarahkan ke sini).
+    pub smtp_port: u16,
+    /// Port UI web Mailpit di `127.0.0.1`, dilayani lewat `mail.<tld>`.
+    pub ui_port: u16,
+}
+
+impl Default for MailConfig {
+    fn default() -> Self {
+        Self {
+            smtp_port: 1025,
+            ui_port: 8025,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct DnsConfig {
@@ -162,6 +186,7 @@ impl Default for Config {
             https: HttpsConfig::default(),
             apache: ApacheConfig::default(),
             dns: DnsConfig::default(),
+            mail: MailConfig::default(),
             php: PhpConfig::default(),
             daemon: DaemonConfig::default(),
             gui: GuiConfig::default(),

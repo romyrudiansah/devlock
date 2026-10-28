@@ -11,7 +11,7 @@ authors.workspace = true
 [features]
 default = ["net"]
 # Download katalog & runtime. Dimatikan untuk shim agar binary tetap kecil.
-net = ["dep:ureq", "dep:sha2", "dep:sha1", "dep:zip", "dep:getrandom"]
+net = ["dep:ureq", "dep:sha2", "dep:sha1", "dep:zip", "dep:getrandom", "dep:flate2", "dep:tar"]
 
 [dependencies]
 anyhow.workspace = true
@@ -25,6 +25,9 @@ sha2 = { version = "0.10", optional = true }
 sha1 = { version = "0.10", optional = true }
 getrandom = { version = "0.3", optional = true }
 zip = { version = "2", optional = true, default-features = false, features = ["deflate"] }
+# Arsip .tar.gz (build Python portable).
+flate2 = { version = "1", optional = true }
+tar = { version = "0.4", optional = true }
 # Sertifikat HTTPS lokal (CA DevLock + sertifikat per site).
 rcgen = { version = "0.13", features = ["x509-parser"] }
 time = { version = "0.3", features = ["macros", "formatting", "local-offset"] }

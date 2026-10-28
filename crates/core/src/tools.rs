@@ -17,6 +17,8 @@ enum Launch {
     NodeScript(&'static [&'static str]),
     /// `composer.phar` dijalankan dengan `php.exe` milik project.
     Composer,
+    /// `python.exe -m <modul>` milik project (mis. `pip`).
+    PythonModule(&'static str),
     /// Client database di `bin\` instance milik project. `Kind` pada tabel menyatakan
     /// keluarganya: `Mysql` (MySQL/MariaDB) atau `Postgresql`.
     DbClient(&'static [&'static str]),
@@ -31,6 +33,10 @@ const TOOLS: &[(&str, Kind, Launch)] = &[
     ("php", Kind::Php, Launch::Exe(&["php.exe"])),
     ("php-cgi", Kind::Php, Launch::Exe(&["php-cgi.exe"])),
     ("composer", Kind::Composer, Launch::Composer),
+    ("go", Kind::Go, Launch::Exe(&["bin/go.exe"])),
+    ("gofmt", Kind::Go, Launch::Exe(&["bin/gofmt.exe"])),
+    ("python", Kind::Python, Launch::Exe(&["python.exe"])),
+    ("pip", Kind::Python, Launch::PythonModule("pip")),
     ("node", Kind::Node, Launch::Exe(&["node.exe"])),
     (
         "npm",
@@ -170,6 +176,12 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
             let r = resolve::resolve(paths, config, *kind, cwd)?;
             let mut plan = Plan::new(first_existing(&r.dir, candidates, tool)?);
             plan.path_prepend.push(r.dir.clone());
+            match kind {
+                // `go` memanggil `gofmt` dkk. dari bin; skrip pip (`Scripts\`) ikut di PATH.
+                Kind::Go => plan.path_prepend.push(r.dir.join("bin")),
+                Kind::Python => plan.path_prepend.push(r.dir.join("Scripts")),
+                _ => {}
+            }
             if *kind == Kind::Node {
                 plan.env
                     .push(("NPM_CONFIG_PREFIX".into(), r.dir.clone().into()));
@@ -192,6 +204,16 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
             plan.env
                 .push(("NPM_CONFIG_PREFIX".into(), r.dir.clone().into()));
             plan.env.extend(node_ca_env(paths));
+            plan.record(&r);
+            Ok(plan)
+        }
+        Launch::PythonModule(module) => {
+            let r = resolve::resolve(paths, config, Kind::Python, cwd)?;
+            let mut plan = Plan::new(first_existing(&r.dir, &["python.exe"], tool)?);
+            plan.prefix_args
+                .extend(["-m".into(), OsString::from(*module)]);
+            plan.path_prepend.push(r.dir.clone());
+            plan.path_prepend.push(r.dir.join("Scripts"));
             plan.record(&r);
             Ok(plan)
         }
@@ -395,6 +417,32 @@ mod tests {
         let p = plan(&paths, &config, tmp.path(), "redis-cli").unwrap();
         assert_eq!(p.program, redis.join("redis-cli.exe"));
         assert_eq!(p.prefix_args[3].to_string_lossy(), "6402");
+    }
+
+    #[test]
+    fn go_and_python_shims_use_project_version() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        let go = paths.runtime_dir("go", "1.27.3");
+        std::fs::create_dir_all(go.join("bin")).unwrap();
+        std::fs::write(go.join("bin/go.exe"), b"").unwrap();
+        let py = paths.runtime_dir("python", "3.13.18");
+        std::fs::create_dir_all(&py).unwrap();
+        std::fs::write(py.join("python.exe"), b"").unwrap();
+        let project = tmp.path().join("app");
+        std::fs::create_dir_all(&project).unwrap();
+        std::fs::write(project.join("go.mod"), "module x\n\ngo 1.27\n").unwrap();
+        std::fs::write(project.join(".python-version"), "3.13\n").unwrap();
+        let config = Config::default();
+
+        let p = plan(&paths, &config, &project, "go").unwrap();
+        assert_eq!(p.program, go.join("bin/go.exe"));
+        assert!(p.path_prepend.contains(&go.join("bin")));
+        let p = plan(&paths, &config, &project, "pip").unwrap();
+        assert_eq!(p.program, py.join("python.exe"));
+        let args: Vec<_> = p.prefix_args.iter().map(|a| a.to_string_lossy()).collect();
+        assert_eq!(args, ["-m", "pip"]);
+        assert_eq!(p.resolved[0].1, "3.13.18");
     }
 
     #[test]

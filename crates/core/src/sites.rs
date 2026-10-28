@@ -99,6 +99,9 @@ pub fn discover(paths: &Paths, config: &Config) -> Result<Vec<Site>> {
     {
         sites.extend(adminer_site(paths, config)?);
     }
+    if !sites.iter().any(|s| s.name.eq_ignore_ascii_case(MAIL_SITE)) {
+        sites.extend(mail_site(paths, config)?);
+    }
     sites.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(sites)
 }
@@ -139,6 +142,34 @@ fn adminer_site(paths: &Paths, config: &Config) -> Result<Option<Site>> {
         https_redirect: config.https.enabled && config.https.redirect,
         apache: false,
         warning,
+    }))
+}
+
+/// Nama site bawaan UI Mailpit (`mail.<tld>`); folder `www\mail` milik pengguna menang.
+pub const MAIL_SITE: &str = "mail";
+
+/// Site bawaan untuk Mailpit terinstall: reverse proxy ke UI web Mailpit.
+fn mail_site(paths: &Paths, config: &Config) -> Result<Option<Site>> {
+    let Some(version) = crate::runtime::resolve_installed(paths, Kind::Mailpit, "latest")? else {
+        return Ok(None);
+    };
+    let dir = paths.runtime_dir(Kind::Mailpit.as_str(), &version);
+    Ok(Some(Site {
+        name: MAIL_SITE.into(),
+        docroot: dir.clone(),
+        dir,
+        domains: vec![format!("{MAIL_SITE}.{}", config.tld)],
+        kind: SiteKind::Proxy {
+            port: config.mail.ui_port,
+        },
+        database: None,
+        cache: None,
+        dev: None,
+        dev_port_auto: false,
+        https: config.https.enabled,
+        https_redirect: config.https.enabled && config.https.redirect,
+        apache: false,
+        warning: None,
     }))
 }
 

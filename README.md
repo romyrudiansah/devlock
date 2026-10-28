@@ -141,6 +141,18 @@ Perubahan langsung diterapkan ke pool php-cgi yang sedang berjalan. Xdebug aktif
 `debug,develop`, mulai saat ada trigger `XDEBUG_SESSION`, dan terhubung ke `127.0.0.1:9003`.
 Semua ini juga tersedia di tab **PHP** pada GUI.
 
+## Go & Python
+
+```
+devlock install go 1.27        # zip resmi go.dev (SHA256 dari go.dev/dl)
+devlock install python 3.13    # build portable python-build-standalone (SHA256 dari GitHub)
+devlock use python 3.13        # atau `python = "3.13"` / `go = "1.27"` di .devlock.toml
+```
+
+Shim `go`, `gofmt`, `python`, dan `pip` (`python -m pip`) memakai versi project, sama seperti
+PHP/Node. Selain `.devlock.toml`, versi dibaca dari `go.mod` (`toolchain`, lalu `go`) dan
+`.python-version`.
+
 ## Database
 
 ```
@@ -178,6 +190,31 @@ MySQL, MariaDB, dan PostgreSQL. Field server menawarkan instance DevLock (mis.
 `127.0.0.1:3384`), dan login tanpa password diizinkan karena user lokal DevLock (`root`,
 `postgres`) memang tanpa password dan site ini hanya terjangkau dari `127.0.0.1`. Folder
 `www\adminer` milik Anda sendiri menggantikan site bawaan ini.
+
+## Mailpit (email lokal)
+
+```
+devlock install mailpit      # rilis resmi axllent/mailpit (SHA256 dari GitHub)
+devlock start mail
+```
+
+Semua email dari project ditangkap [Mailpit](https://mailpit.axllent.org/) dan bisa dibaca di
+`http://mail.test`. SMTP ada di `127.0.0.1:1025` (UI di `8025`; ubah lewat `[mail]` di
+`devlock.toml`). Saat install, `mail()` PHP di semua versi diarahkan ke Mailpit (`SMTP` /
+`smtp_port` di `php.ini`), dan project Laravel baru mendapat `MAIL_MAILER=smtp`,
+`MAIL_HOST=127.0.0.1`, `MAIL_PORT=1025`. Pesan disimpan di `data\mailpit`.
+
+## Bagikan site ke publik
+
+```
+devlock install cloudflared   # rilis resmi cloudflare/cloudflared (SHA256 dari GitHub)
+devlock share blog            # → https://<acak>.trycloudflare.com, tutup dengan Ctrl+C
+```
+
+Memakai [Cloudflare Quick Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/)
+tanpa akun: request dari URL publik diteruskan ke nginx DevLock dengan header `Host` site
+itu. Siapa pun yang tahu URL-nya bisa membuka site selama tunnel aktif. Aplikasi yang
+membuat URL absolut dari konfigurasi (mis. `APP_URL` Laravel) tetap menulis `blog.test`.
 
 ## Redis / Garnet (cache)
 

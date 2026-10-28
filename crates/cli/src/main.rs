@@ -7,6 +7,7 @@ mod php;
 mod profile;
 mod runtimes;
 mod services;
+mod share;
 mod ssl;
 mod terminal;
 mod update;
@@ -199,6 +200,12 @@ enum Command {
         command: Option<DnsCommand>,
         #[arg(long, hide = true, global = true)]
         root: Option<PathBuf>,
+    },
+    /// Bagikan site ke publik lewat Cloudflare Quick Tunnel (URL *.trycloudflare.com acak,
+    /// aktif sampai Ctrl+C). Butuh `devlock install cloudflared`
+    Share {
+        /// Nama site (folder di www)
+        site: String,
     },
     /// Profil Windows Terminal "DevLock" (PowerShell di folder www dengan shims di PATH)
     Terminal {
@@ -491,6 +498,7 @@ fn main() {
             SslCommand::Bundle => ssl::bundle(),
         },
         Command::Terminal { action } => terminal::run(&action),
+        Command::Share { site } => share::run(&site),
         Command::Dns { command, root } => {
             if let Some(root) = root {
                 std::env::set_var(devlock_core::paths::HOME_ENV, root);

@@ -98,6 +98,8 @@ pub fn install(
     let result = (|| -> Result<()> {
         if release.file_name().ends_with(".zip") {
             extract_zip(&archive, &staging, skipped_dirs(release.kind))?;
+        } else if release.file_name().ends_with(".tar.gz") {
+            extract_tar_gz(&archive, &staging)?;
         } else {
             std::fs::copy(&archive, staging.join(release.file_name()))?;
         }
@@ -123,9 +125,24 @@ pub fn install(
         std::fs::rename(target.join(release.file_name()), target.join("adminer.php"))
             .context("gagal menyiapkan adminer.php")?;
     }
+    if release.kind == Kind::Cloudflared {
+        // `cloudflared-windows-amd64.exe` → `cloudflared.exe`.
+        std::fs::rename(
+            target.join(release.file_name()),
+            target.join("cloudflared.exe"),
+        )
+        .context("gagal menyiapkan cloudflared.exe")?;
+    }
+    if release.kind == Kind::Mailpit {
+        on_event(Event::Configuring("php.ini (mail)"));
+        apply_mail_to_php(paths)?;
+    }
     if release.kind == Kind::Php {
         on_event(Event::Configuring("php.ini"));
         php::write_default_ini(&target)?;
+        if crate::runtime::resolve_installed(paths, Kind::Mailpit, "latest")?.is_some() {
+            php::set_mail_smtp(&target, mail_smtp_port(paths))?;
+        }
         // Tanpa bundle CA, curl/openssl PHP di Windows gagal memverifikasi HTTPS. Kegagalan
         // mengunduh bundle tidak membatalkan install; bisa diulang lewat `devlock ssl bundle`.
         match ensure_ca_bundle(paths) {
@@ -251,6 +268,24 @@ fn set_php_ca_bundle(php_dir: &Path, bundle: &Path) -> Result<()> {
     php::set_ini_value(php_dir, "openssl.cafile", &value)
 }
 
+fn mail_smtp_port(paths: &Paths) -> u16 {
+    crate::config::Config::load(paths)
+        .map(|c| c.mail.smtp_port)
+        .unwrap_or(crate::config::MailConfig::default().smtp_port)
+}
+
+/// Arahkan `mail()` semua PHP terinstall ke SMTP Mailpit.
+fn apply_mail_to_php(paths: &Paths) -> Result<()> {
+    let port = mail_smtp_port(paths);
+    for version in crate::runtime::installed_versions(paths, Kind::Php)? {
+        let dir = paths.runtime_dir("php", &version);
+        if dir.join("php.ini").is_file() {
+            php::set_mail_smtp(&dir, port)?;
+        }
+    }
+    Ok(())
+}
+
 /// Pasang ulang bundle CA ke semua PHP terinstall (mis. setelah CA DevLock dibuat).
 /// Mengembalikan jumlah versi PHP yang diperbarui.
 pub fn apply_ca_bundle_to_php(paths: &Paths) -> Result<usize> {
@@ -309,6 +344,15 @@ pub fn sha1_file(path: &Path) -> Result<String> {
         hasher.update(&buf[..n]);
     }
     Ok(hex(&hasher.finalize()))
+}
+
+/// Ekstrak `.tar.gz` ke `dest`; `tar` menolak entri yang keluar dari `dest` (`..`, absolut).
+fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
+    let file =
+        File::open(archive).with_context(|| format!("gagal membuka {}", archive.display()))?;
+    tar::Archive::new(flate2::read::GzDecoder::new(file))
+        .unpack(dest)
+        .with_context(|| format!("gagal mengekstrak {}", archive.display()))
 }
 
 /// Ekstrak seluruh isi zip ke `dest`.
