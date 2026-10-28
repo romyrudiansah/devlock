@@ -162,8 +162,10 @@ devlock ssl enable     # HTTPS untuk semua site, atau `https = true` di .devlock
 devlock reload
 ```
 
-Sertifikat per site dibuat otomatis di `ssl\sites\`. Chrome/Edge memakai store Windows;
-Firefox perlu mengimpor `ssl\devlock-ca.crt` sendiri. `curl.exe` bawaan Windows perlu
+Sertifikat per site dibuat otomatis di `ssl\sites\`. Chrome/Edge memakai store Windows milik
+user. Firefox hanya mengimpor root dari store **komputer**, jadi pengguna Firefox menjalankan
+`devlock ssl trust --machine` (UAC sekali; cabut dengan `devlock ssl untrust --machine`).
+`curl.exe` bawaan Windows perlu
 `--ssl-no-revoke` karena sertifikat lokal tidak punya daftar pencabutan (CRL).
 
 PHP memakai `ssl\ca-bundle.pem` (bundle CA Mozilla + CA DevLock) untuk `curl.cainfo` dan
@@ -228,6 +230,7 @@ perintahnya**:
 | Blok `# devlock-start … # devlock-end` di file hosts Windows (lewat UAC) | `devlock hosts`, `devlock start` | `devlock hosts --clear` |
 | Folder `shims` di depan PATH user (registry `HKCU\Environment`) | `devlock path add` | `devlock path remove` |
 | CA "DevLock Local CA" di store sertifikat Root milik user (Windows meminta konfirmasi) | `devlock ssl trust` | `devlock ssl untrust` |
+| CA "DevLock Local CA" di store sertifikat Root komputer (lewat UAC, untuk Firefox) | `devlock ssl trust --machine` | `devlock ssl untrust --machine` |
 | Aturan DNS (NRPT) `.test` → `127.0.0.1` berkomentar "DevLock" (lewat UAC) | `devlock dns enable` | `devlock dns disable` |
 
 ## Uninstall
@@ -237,6 +240,7 @@ devlock stop
 devlock dns disable    # bila DNS wildcard pernah diaktifkan
 devlock hosts --clear
 devlock ssl untrust
+devlock ssl untrust --machine   # bila pernah `devlock ssl trust --machine`
 devlock path remove
 ```
 

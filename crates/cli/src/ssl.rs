@@ -14,11 +14,19 @@ pub fn status() -> Result<()> {
         }
     );
     println!(
-        "Dipercaya      : {}",
-        if ssl::is_trusted() {
-            "ya (store Root user)"
+        "Dipercaya user : {}",
+        if ssl::is_trusted_user() {
+            "ya (Chrome, Edge)"
         } else {
             "belum — `devlock ssl trust`"
+        }
+    );
+    println!(
+        "Dipercaya PC   : {}",
+        if ssl::is_trusted_machine() {
+            "ya (termasuk Firefox)"
+        } else {
+            "belum — `devlock ssl trust --machine` untuk Firefox (UAC)"
         }
     );
     println!(
@@ -43,7 +51,7 @@ pub fn status() -> Result<()> {
     Ok(())
 }
 
-pub fn trust() -> Result<()> {
+pub fn trust(machine: bool) -> Result<()> {
     let paths = Paths::discover()?;
     if ssl::ensure_ca(&paths)? {
         println!(
@@ -51,13 +59,20 @@ pub fn trust() -> Result<()> {
             ssl::ca_cert_path(&paths).display()
         );
     }
-    println!("Windows akan menampilkan dialog konfirmasi pemasangan sertifikat; pilih Yes/Ya.");
-    ssl::trust(&paths)?;
-    println!("CA DevLock dipercaya untuk user ini (Chrome/Edge memakai store Windows).");
-    println!(
-        "Firefox memakai store sendiri: impor {} secara manual bila perlu.",
-        ssl::ca_cert_path(&paths).display()
-    );
+    if machine {
+        println!("Windows akan meminta izin administrator (UAC).");
+        ssl::trust_machine(&paths)?;
+        println!("CA DevLock dipercaya di store Root komputer (Chrome, Edge, dan Firefox).");
+    } else {
+        println!("Windows akan menampilkan dialog konfirmasi pemasangan sertifikat; pilih Yes/Ya.");
+        ssl::trust(&paths)?;
+        println!("CA DevLock dipercaya untuk user ini (Chrome/Edge memakai store Windows).");
+        if !ssl::is_trusted_machine() {
+            println!(
+                "Firefox hanya membaca store komputer: jalankan `devlock ssl trust --machine` (UAC) bila memakai Firefox."
+            );
+        }
+    }
     refresh_php_bundle(&paths);
     Ok(())
 }
@@ -82,9 +97,19 @@ fn refresh_php_bundle(paths: &Paths) {
     }
 }
 
-pub fn untrust() -> Result<()> {
-    ssl::untrust()?;
-    println!("CA DevLock dicabut dari store Root user.");
+pub fn untrust(machine: bool) -> Result<()> {
+    if machine {
+        ssl::untrust_machine()?;
+        println!("CA DevLock dicabut dari store Root komputer.");
+    } else {
+        ssl::untrust()?;
+        println!("CA DevLock dicabut dari store Root user.");
+        if ssl::is_trusted_machine() {
+            println!(
+                "CA masih ada di store komputer; cabut dengan `devlock ssl untrust --machine`."
+            );
+        }
+    }
     Ok(())
 }
 
