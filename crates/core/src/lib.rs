@@ -6,6 +6,7 @@ pub mod db;
 pub mod devport;
 pub mod dns;
 pub mod editor;
+pub mod export;
 pub mod hosts;
 pub mod import;
 pub mod launcher;

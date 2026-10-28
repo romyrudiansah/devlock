@@ -4,6 +4,7 @@ mod dns;
 mod import;
 mod new;
 mod php;
+mod profile;
 mod runtimes;
 mod services;
 mod share;
@@ -36,8 +37,16 @@ struct Cli {
 enum Command {
     /// Siapkan struktur folder dan devlock.toml di root DevLock
     Init,
-    /// Tampilkan lokasi dan isi konfigurasi global
-    Config,
+    /// Tampilkan konfigurasi global, atau ekspor/impor ke komputer lain
+    Config {
+        #[command(subcommand)]
+        command: Option<ConfigCommand>,
+    },
+    /// Profil stack: simpan service yang sedang berjalan, ganti cepat antar kombinasi
+    Profile {
+        #[command(subcommand)]
+        command: ProfileCommand,
+    },
     /// Diagnosa lingkungan (root, PATH, port, dependency)
     Doctor,
     /// Daftar versi runtime terinstall (atau yang tersedia dengan --available)
@@ -283,6 +292,36 @@ enum DbCommand {
 }
 
 #[derive(Subcommand)]
+enum ConfigCommand {
+    /// Lokasi dan isi devlock.toml (default)
+    Show,
+    /// Ekspor devlock.toml dan daftar runtime terinstall ke satu file TOML
+    Export {
+        /// File tujuan, mis. devlock-export.toml
+        file: PathBuf,
+    },
+    /// Pakai file ekspor: devlock.toml diganti (yang lama → .bak) dan runtime yang kurang diinstall
+    Import {
+        file: PathBuf,
+        /// Jangan install runtime; tampilkan perintahnya saja
+        #[arg(long)]
+        no_install: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum ProfileCommand {
+    /// Daftar profil
+    List,
+    /// Simpan grup service yang sedang berjalan sebagai profil
+    Save { name: String },
+    /// Hentikan semua service lalu jalankan service milik profil
+    Use { name: String },
+    /// Hapus profil
+    Delete { name: String },
+}
+
+#[derive(Subcommand)]
 enum SslCommand {
     /// Status CA, kepercayaan Windows, dan site yang memakai HTTPS
     Status,
@@ -337,7 +376,19 @@ fn main() {
 
     let result = match cli.command {
         Command::Init => commands::init(),
-        Command::Config => commands::config(),
+        Command::Config { command } => match command.unwrap_or(ConfigCommand::Show) {
+            ConfigCommand::Show => commands::config(),
+            ConfigCommand::Export { file } => profile::export_config(&file),
+            ConfigCommand::Import { file, no_install } => {
+                profile::import_config(&file, !no_install)
+            }
+        },
+        Command::Profile { command } => match command {
+            ProfileCommand::List => profile::list(),
+            ProfileCommand::Save { name } => profile::save(&name),
+            ProfileCommand::Use { name } => profile::use_profile(&name),
+            ProfileCommand::Delete { name } => profile::delete(&name),
+        },
         Command::Doctor => commands::doctor(),
         Command::List {
             kind,

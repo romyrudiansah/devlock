@@ -84,6 +84,21 @@ devlock hosts                      samakan file hosts dengan daftar site
 devlock doctor                     diagnosa PATH, port, dependency
 ```
 
+## Profil stack & pindah komputer
+
+```
+devlock start php@8.3; devlock start mysql@8.4; devlock start nginx
+devlock profile save laravel            # simpan grup yang sedang berjalan ke [profiles]
+devlock profile use legacy              # hentikan semua, jalankan grup profil lain
+devlock profile list
+
+devlock config export devlock-export.toml   # devlock.toml + daftar runtime terinstall
+devlock config import devlock-export.toml   # di komputer lain: pakai konfigurasi, install runtime
+```
+
+`config import` mencadangkan `devlock.toml` lama ke `devlock.toml.bak`; `--no-install` hanya
+menampilkan perintah install. Folder project dipindah sendiri (beserta `.devlock.toml`-nya).
+
 ## Pindah dari Laragon / XAMPP
 
 ```
