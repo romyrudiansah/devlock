@@ -20,6 +20,7 @@ pub mod sites;
 pub mod ssl;
 pub mod terminal;
 pub mod tools;
+pub mod tunnel;
 pub mod version;
 
 #[cfg(feature = "net")]

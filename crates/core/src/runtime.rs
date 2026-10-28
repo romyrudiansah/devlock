@@ -28,10 +28,11 @@ pub enum Kind {
     Garnet,
     Adminer,
     Mailpit,
+    Cloudflared,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 14] = [
+    pub const ALL: [Kind; 15] = [
         Kind::Php,
         Kind::Node,
         Kind::Composer,
@@ -46,6 +47,7 @@ impl Kind {
         Kind::Garnet,
         Kind::Adminer,
         Kind::Mailpit,
+        Kind::Cloudflared,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -64,6 +66,7 @@ impl Kind {
             Kind::Garnet => "garnet",
             Kind::Adminer => "adminer",
             Kind::Mailpit => "mailpit",
+            Kind::Cloudflared => "cloudflared",
         }
     }
 
@@ -116,6 +119,7 @@ impl FromStr for Kind {
             "garnet" => Kind::Garnet,
             "adminer" => Kind::Adminer,
             "mailpit" | "mail" => Kind::Mailpit,
+            "cloudflared" | "tunnel" => Kind::Cloudflared,
             other => bail!(
                 "runtime `{other}` tidak dikenal (pilihan: {})",
                 Kind::ALL.map(Kind::as_str).join(", ")
