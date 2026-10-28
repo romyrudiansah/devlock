@@ -16,6 +16,7 @@ const service = (name: string, group: string, port: number, state: ServiceStatus
 });
 
 let running = true;
+let caTrusted = false;
 
 const services = (): ServiceStatus[] => [
   ...[0, 1, 2, 3].map((i) => service(`php@7.4#${i}`, "php@7.4", 9740 + i)),
@@ -34,7 +35,14 @@ const overview = (message: string | null = null): Overview => ({
   http_port: 80,
   daemon_running: running,
   services: running ? services() : [],
-  warnings: running ? ["mysql@8.4 belum terinstall; jalankan `devlock install mysql 8.4`"] : [],
+  warnings: running
+    ? [
+        "mysql@8.4 belum terinstall; jalankan `devlock install mysql 8.4`",
+        ...(caTrusted
+          ? []
+          : ["CA DevLock belum dipercaya Windows; browser akan memperingatkan sertifikat HTTPS. Jalankan `devlock ssl trust`"]),
+      ]
+    : [],
   message,
   ok: true,
 });
@@ -156,6 +164,10 @@ const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
   list_runtimes: () => runtimes,
   available_runtimes: () => available,
   install_runtime: () => new Promise((resolve) => setTimeout(() => resolve("8.4.27"), 1500)),
+  ssl_trust: () => {
+    caTrusted = true;
+    return "CA DevLock dipercaya; muat ulang halaman HTTPS di browser.";
+  },
   create_site_database: ({ site }) => `Database \`${String(site).replace(/-/g, "_")}\` dibuat di postgresql@18 (port 5418).`,
   php_info: ({ version }) => phpInfo(String(version)),
   php_set_extension: ({ version, name, enabled }) => {

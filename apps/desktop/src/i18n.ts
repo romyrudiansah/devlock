@@ -47,6 +47,9 @@ const EN: Record<string, string> = {
   Status: "Status",
   "{running}/{total} worker": "{running}/{total} workers",
   "{h}j {m}m": "{h}h {m}m",
+  "Percayai CA DevLock": "Trust DevLock CA",
+  "Menunggu konfirmasi Windows…": "Waiting for Windows confirmation…",
+  "Tutup notifikasi": "Dismiss notification",
 
   // LogModal
   "Memuat…": "Loading…",

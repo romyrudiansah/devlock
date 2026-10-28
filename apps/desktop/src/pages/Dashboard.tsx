@@ -45,6 +45,36 @@ function formatUptime(secs: number) {
   return t("{h}j {m}m", { h: Math.floor(secs / 3600), m: Math.floor((secs % 3600) / 60) });
 }
 
+/** Peringatan "CA belum dipercaya" tidak bisa ditutup: ada tombol untuk menyelesaikannya. */
+const isCaWarning = (w: string) => w.includes("devlock ssl trust");
+
+/** Peringatan yang ditutup diingat per teks (per perangkat), agar tidak muncul lagi tiap refresh. */
+const DISMISSED_KEY = "dismissed-warnings";
+
+function loadDismissed(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveDismissed(list: string[]) {
+  try {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(list));
+  } catch {
+    // localStorage tidak tersedia: hanya berlaku sampai jendela ditutup.
+  }
+}
+
+function CloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button className="close" title={t("Tutup notifikasi")} aria-label={t("Tutup notifikasi")} onClick={onClick}>
+      ×
+    </button>
+  );
+}
+
 const STATE_LABEL: Record<string, string> = {
   running: "Berjalan",
   partial: "Sebagian",
@@ -59,6 +89,26 @@ export default function Dashboard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [logFor, setLogFor] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<string[]>(loadDismissed);
+  const [trusting, setTrusting] = useState(false);
+
+  const dismiss = (warning: string) => {
+    const next = [...dismissed, warning];
+    setDismissed(next);
+    saveDismissed(next);
+  };
+
+  const trustCa = async () => {
+    setTrusting(true);
+    try {
+      setNotice({ ok: true, text: await api.sslTrust() });
+      await refresh();
+    } catch (e) {
+      setNotice({ ok: false, text: errorText(e) });
+    } finally {
+      setTrusting(false);
+    }
+  };
 
   const refresh = useCallback(async () => {
     try {
@@ -96,6 +146,17 @@ export default function Dashboard() {
   };
 
   const groups = useMemo(() => groupServices(overview?.services ?? []), [overview]);
+  // Peringatan yang sudah tidak dikirim daemon dilupakan, agar bisa muncul lagi bila terulang.
+  const warnings = overview?.warnings ?? [];
+  const visibleWarnings = warnings.filter((w) => isCaWarning(w) || !dismissed.includes(w));
+  useEffect(() => {
+    if (!overview) return;
+    const still = dismissed.filter((w) => overview.warnings.includes(w));
+    if (still.length !== dismissed.length) {
+      setDismissed(still);
+      saveDismissed(still);
+    }
+  }, [overview, dismissed]);
   const runningCount = groups.filter((g) => g.state === "running").length;
 
   return (
@@ -125,10 +186,22 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {notice && <div className={`notice ${notice.ok ? "ok" : "error"}`}>{notice.text}</div>}
-      {overview?.warnings.map((w) => (
-        <div key={w} className="notice warn">
-          {w}
+      {notice && (
+        <div className={`notice with-actions ${notice.ok ? "ok" : "error"}`}>
+          <span>{notice.text}</span>
+          <CloseButton onClick={() => setNotice(null)} />
+        </div>
+      )}
+      {visibleWarnings.map((w) => (
+        <div key={w} className="notice warn with-actions">
+          <span>{w}</span>
+          {isCaWarning(w) ? (
+            <button disabled={trusting} onClick={trustCa}>
+              {trusting ? t("Menunggu konfirmasi Windows…") : t("Percayai CA DevLock")}
+            </button>
+          ) : (
+            <CloseButton onClick={() => dismiss(w)} />
+          )}
         </div>
       ))}
 

@@ -67,6 +67,7 @@ fn main() {
             commands::open_terminal,
             commands::open_editor,
             commands::create_site_database,
+            commands::ssl_trust,
             php_page::php_info,
             php_page::php_set_extension,
             php_page::php_xdebug,

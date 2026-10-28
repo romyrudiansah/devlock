@@ -143,6 +143,19 @@ pub struct SiteInfo {
     warning: Option<String>,
 }
 
+/// Pasang CA DevLock ke store Root user (Windows menampilkan dialog konfirmasi), lalu
+/// perbarui bundle CA PHP agar request HTTPS antar site lokal ikut dipercaya.
+#[tauri::command]
+pub async fn ssl_trust() -> CmdResult<String> {
+    blocking(|| {
+        let (paths, _) = context()?;
+        devlock_core::ssl::trust(&paths).map_err(err)?;
+        let _ = install::apply_ca_bundle_to_php(&paths);
+        Ok("CA DevLock dipercaya; muat ulang halaman HTTPS di browser.".into())
+    })
+    .await
+}
+
 /// Buat database bernama sesuai site (`my-shop` → `my_shop`) di instance database site itu.
 #[tauri::command]
 pub async fn create_site_database(site: String) -> CmdResult<String> {

@@ -121,6 +121,7 @@ export const api = {
   openTerminal: (dir: string) => invoke<void>("open_terminal", { dir }),
   openEditor: (dir: string) => invoke<void>("open_editor", { dir }),
   createSiteDatabase: (site: string) => invoke<string>("create_site_database", { site }),
+  sslTrust: () => invoke<string>("ssl_trust"),
   phpInfo: (version: string) => invoke<PhpInfo>("php_info", { version }),
   phpSetExtension: (version: string, name: string, enabled: boolean) =>
     invoke<PhpInfo>("php_set_extension", { version, name, enabled }),
