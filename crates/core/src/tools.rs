@@ -23,6 +23,8 @@ enum Launch {
     /// `redis-cli` dari Redis terinstall, diarahkan ke instance cache milik project
     /// (Redis atau Garnet).
     CacheClient,
+    /// `mongosh` terinstall, diarahkan ke instance MongoDB milik project.
+    MongoClient,
 }
 
 const TOOLS: &[(&str, Kind, Launch)] = &[
@@ -107,6 +109,7 @@ const TOOLS: &[(&str, Kind, Launch)] = &[
         Launch::DbClient(&["bin/dropdb.exe"]),
     ),
     ("redis-cli", Kind::Redis, Launch::CacheClient),
+    ("mongosh", Kind::Mongosh, Launch::MongoClient),
 ];
 
 /// Nama semua shim (tanpa `.exe`).
@@ -208,7 +211,8 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
                 bail!("belum ada database untuk folder ini; set `database = \"mysql@8.4\"` atau `\"postgresql@16\"` di .devlock.toml, atau `devlock use database <engine@versi> --global`");
             };
             let wants_postgres = *kind == Kind::Postgresql;
-            if wants_postgres != (instance.kind == Kind::Postgresql) {
+            let is_postgres = instance.kind == Kind::Postgresql;
+            if wants_postgres != is_postgres || !instance.is_sql() {
                 bail!(
                     "database folder ini {} (dari {source}); `{tool}` untuk {}",
                     instance.name(),
@@ -256,6 +260,26 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
                 "-p".into(),
                 instance.port(config).to_string().into(),
             ]);
+            plan.resolved.push((instance.name(), version, source));
+            Ok(plan)
+        }
+        Launch::MongoClient => {
+            let Some((instance, source)) = resolve::find_database(config, cwd)? else {
+                bail!("belum ada database untuk folder ini; set `database = \"mongodb@8.0\"` di .devlock.toml, atau `devlock use database mongodb@8.0 --global`");
+            };
+            if instance.kind != Kind::Mongodb {
+                bail!(
+                    "database folder ini {} (dari {source}); `mongosh` untuk MongoDB",
+                    instance.name()
+                );
+            }
+            let Some(version) = runtime::resolve_installed(paths, Kind::Mongosh, "latest")? else {
+                bail!("mongosh belum terinstall (`devlock install mongosh`)");
+            };
+            let dir = paths.runtime_dir(Kind::Mongosh.as_str(), &version);
+            let mut plan = Plan::new(first_existing(&dir, &["bin/mongosh.exe"], tool)?);
+            plan.prefix_args
+                .push(format!("mongodb://127.0.0.1:{}", instance.port(config)).into());
             plan.resolved.push((instance.name(), version, source));
             Ok(plan)
         }
@@ -371,5 +395,37 @@ mod tests {
         let p = plan(&paths, &config, tmp.path(), "redis-cli").unwrap();
         assert_eq!(p.program, redis.join("redis-cli.exe"));
         assert_eq!(p.prefix_args[3].to_string_lossy(), "6402");
+    }
+
+    #[test]
+    fn mongosh_targets_mongodb_instance() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        let mongosh = paths.runtime_dir("mongosh", "2.14.0");
+        std::fs::create_dir_all(mongosh.join("bin")).unwrap();
+        std::fs::write(mongosh.join("bin/mongosh.exe"), b"").unwrap();
+        let mysql = paths.runtime_dir("mysql", "8.4.3");
+        std::fs::create_dir_all(mysql.join("bin")).unwrap();
+        std::fs::write(mysql.join("bin/mysql.exe"), b"").unwrap();
+        let mut config = Config::default();
+        config
+            .defaults
+            .insert("database".into(), "mongodb@8.0".into());
+
+        let p = plan(&paths, &config, tmp.path(), "mongosh").unwrap();
+        assert_eq!(p.program, mongosh.join("bin/mongosh.exe"));
+        assert_eq!(
+            p.prefix_args[0].to_string_lossy(),
+            "mongodb://127.0.0.1:27080"
+        );
+        // Client SQL menolak instance MongoDB dengan pesan yang jelas.
+        let err = plan(&paths, &config, tmp.path(), "mysql").unwrap_err();
+        assert!(err.to_string().contains("mongodb@8.0"));
+
+        config
+            .defaults
+            .insert("database".into(), "mysql@8.4".into());
+        let err = plan(&paths, &config, tmp.path(), "mongosh").unwrap_err();
+        assert!(err.to_string().contains("untuk MongoDB"));
     }
 }

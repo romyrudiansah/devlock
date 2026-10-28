@@ -58,6 +58,12 @@ struct Target {
 }
 
 fn target(paths: &Paths, config: &Config, instance: &DbInstance) -> Result<Target> {
+    if !instance.is_sql() {
+        bail!(
+            "`devlock db` hanya untuk MySQL/MariaDB/PostgreSQL; untuk {} pakai `mongosh`",
+            instance.name()
+        );
+    }
     let (_, dir) = runtime::require_installed(paths, instance.kind, &instance.line)?;
     Ok(Target {
         kind: instance.kind,

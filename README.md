@@ -126,6 +126,19 @@ devlock db drop toko --yes
 Instance harus sedang berjalan (`devlock start db`). Login lokal: `root` (MySQL/MariaDB) atau
 `postgres` (PostgreSQL) tanpa password, hanya dari `127.0.0.1`.
 
+### MongoDB
+
+```
+devlock install mongodb 8.0     # MongoDB Community resmi (SHA256 dari downloads.mongodb.org)
+devlock install mongosh         # shell MongoDB, juga dipakai untuk shutdown yang rapi
+devlock use database mongodb@8.0
+mongosh                         # shim: langsung ke mongodb://127.0.0.1:27080
+```
+
+Instance per major.minor dengan port `27000 + major*10 + minor` (8.0 → 27080) dan data di
+`data\mongodb\<versi>`, hanya di `127.0.0.1` tanpa autentikasi. `devlock db`, Adminer, dan
+isian `.env` otomatis hanya untuk database SQL.
+
 ## Adminer (panel database)
 
 ```

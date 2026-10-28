@@ -22,6 +22,9 @@ const REDIS_WINDOWS: &str =
 const GARNET: &str = "https://api.github.com/repos/microsoft/garnet/releases?per_page=30";
 /// Adminer resmi: satu file PHP per rilis.
 const ADMINER: &str = "https://api.github.com/repos/vrana/adminer/releases?per_page=30";
+/// Rilis MongoDB yang masih didukung (satu per cabang), lengkap dengan SHA256 per arsip.
+const MONGODB_CURRENT: &str = "https://downloads.mongodb.org/current.json";
+const MONGOSH: &str = "https://api.github.com/repos/mongodb-js/mongosh/releases?per_page=30";
 /// Build Apache httpd Windows (Win64, VS) dari Apache Lounge; hanya rilis terbaru yang tersedia.
 const APACHE_LOUNGE: &str = "https://www.apachelounge.com";
 const MARIADB_API: &str = "https://downloads.mariadb.org/rest-api/mariadb/";
@@ -158,6 +161,10 @@ pub fn available(kind: Kind) -> Result<Vec<Release>> {
             "win-x64-based-readytorun.zip".to_string()
         })?,
         Kind::Adminer => github_releases(ADMINER, Kind::Adminer, |v| format!("adminer-{v}.php"))?,
+        Kind::Mongodb => mongodb_from(http::get_json(MONGODB_CURRENT)?),
+        Kind::Mongosh => github_releases(MONGOSH, Kind::Mongosh, |v| {
+            format!("mongosh-{v}-win32-x64.zip")
+        })?,
     };
     releases.sort_by(|a, b| {
         let a = Version::parse(&a.version);
@@ -411,6 +418,63 @@ fn releases_from_github(
                 version,
                 url: found.browser_download_url,
                 checksum: Checksum::Sha256(sha256),
+                lts: false,
+            })
+        })
+        .collect()
+}
+
+// --- MongoDB -----------------------------------------------------------------
+
+#[derive(Deserialize)]
+struct MongoCatalog {
+    versions: Vec<MongoVersion>,
+}
+
+#[derive(Deserialize)]
+struct MongoVersion {
+    version: String,
+    #[serde(default)]
+    production_release: bool,
+    #[serde(default)]
+    downloads: Vec<MongoDownload>,
+}
+
+#[derive(Deserialize)]
+struct MongoDownload {
+    #[serde(default)]
+    target: String,
+    #[serde(default)]
+    arch: String,
+    #[serde(default)]
+    edition: String,
+    archive: MongoArchive,
+}
+
+#[derive(Deserialize)]
+struct MongoArchive {
+    url: String,
+    #[serde(default)]
+    sha256: Option<String>,
+}
+
+/// Zip Community (`edition = base`) Windows x64 dari rilis produksi, wajib ber-SHA256.
+fn mongodb_from(catalog: MongoCatalog) -> Vec<Release> {
+    catalog
+        .versions
+        .into_iter()
+        .filter(|v| v.production_release && Version::parse(&v.version).is_some())
+        .filter_map(|v| {
+            let download = v
+                .downloads
+                .into_iter()
+                .find(|d| d.target == "windows" && d.arch == "x86_64" && d.edition == "base")?;
+            let sha256 = download.archive.sha256?;
+            download.archive.url.ends_with(".zip").then(|| Release {
+                kind: Kind::Mongodb,
+                version: v.version,
+                url: download.archive.url,
+                checksum: Checksum::Sha256(sha256.to_lowercase()),
                 lts: false,
             })
         })
@@ -698,6 +762,32 @@ mod tests {
             postgresql_zip_url("16.15", 2),
             "https://get.enterprisedb.com/postgresql/postgresql-16.15-2-windows-x64-binaries.zip"
         );
+    }
+
+    #[test]
+    fn mongodb_catalog() {
+        let json = r#"{"versions": [
+            {"version": "8.0.34", "production_release": true, "downloads": [
+                {"target": "windows", "arch": "x86_64", "edition": "enterprise",
+                 "archive": {"url": "https://x/mongodb-windows-x86_64-enterprise-8.0.34.zip", "sha256": "EE"}},
+                {"target": "windows", "arch": "x86_64", "edition": "base",
+                 "archive": {"url": "https://x/mongodb-windows-x86_64-8.0.34.zip", "sha256": "AB"}},
+                {"target": "ubuntu2404", "arch": "x86_64", "edition": "base",
+                 "archive": {"url": "https://x/linux.tgz", "sha256": "CD"}}
+            ]},
+            {"version": "8.1.0-rc0", "production_release": false, "downloads": []},
+            {"version": "7.0.45", "production_release": true, "downloads": [
+                {"target": "windows", "arch": "x86_64", "edition": "base",
+                 "archive": {"url": "https://x/mongodb-windows-x86_64-7.0.45.zip"}}
+            ]}
+        ]}"#;
+        let releases = mongodb_from(serde_json::from_str(json).unwrap());
+        assert_eq!(releases.len(), 1);
+        assert_eq!(releases[0].version, "8.0.34");
+        assert!(releases[0]
+            .url
+            .ends_with("mongodb-windows-x86_64-8.0.34.zip"));
+        assert!(matches!(&releases[0].checksum, Checksum::Sha256(s) if s == "ab"));
     }
 
     #[test]

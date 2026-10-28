@@ -22,13 +22,15 @@ pub enum Kind {
     Mysql,
     Mariadb,
     Postgresql,
+    Mongodb,
+    Mongosh,
     Redis,
     Garnet,
     Adminer,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 11] = [
+    pub const ALL: [Kind; 13] = [
         Kind::Php,
         Kind::Node,
         Kind::Composer,
@@ -37,6 +39,8 @@ impl Kind {
         Kind::Mysql,
         Kind::Mariadb,
         Kind::Postgresql,
+        Kind::Mongodb,
+        Kind::Mongosh,
         Kind::Redis,
         Kind::Garnet,
         Kind::Adminer,
@@ -52,6 +56,8 @@ impl Kind {
             Kind::Mysql => "mysql",
             Kind::Mariadb => "mariadb",
             Kind::Postgresql => "postgresql",
+            Kind::Mongodb => "mongodb",
+            Kind::Mongosh => "mongosh",
             Kind::Redis => "redis",
             Kind::Garnet => "garnet",
             Kind::Adminer => "adminer",
@@ -59,7 +65,10 @@ impl Kind {
     }
 
     pub fn is_database(self) -> bool {
-        matches!(self, Kind::Mysql | Kind::Mariadb | Kind::Postgresql)
+        matches!(
+            self,
+            Kind::Mysql | Kind::Mariadb | Kind::Postgresql | Kind::Mongodb
+        )
     }
 
     /// Runtime yang punya versi default global / per project (`devlock use`). Database & cache
@@ -98,6 +107,8 @@ impl FromStr for Kind {
             "mysql" => Kind::Mysql,
             "mariadb" => Kind::Mariadb,
             "postgresql" | "postgres" | "pgsql" | "pg" => Kind::Postgresql,
+            "mongodb" | "mongo" => Kind::Mongodb,
+            "mongosh" => Kind::Mongosh,
             "redis" => Kind::Redis,
             "garnet" => Kind::Garnet,
             "adminer" => Kind::Adminer,

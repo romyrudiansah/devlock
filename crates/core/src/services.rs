@@ -238,13 +238,24 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
     if let Some(adminer) = sites.iter().find(|s| s.is_adminer(paths)) {
         files.push((
             adminer.dir.join("index.php"),
-            adminer_index(config, &instances),
+            adminer_index(
+                config,
+                &instances
+                    .iter()
+                    .filter(|i| i.is_sql())
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            ),
         ));
     }
     for instance in instances {
         match runtime::resolve_installed(paths, instance.kind, &instance.line)? {
             Some(version) => {
                 let dir = paths.runtime_dir(instance.kind.as_str(), &version);
+                if instance.kind == Kind::Mongodb {
+                    // mongod tidak membuat folder dbpath sendiri.
+                    std::fs::create_dir_all(instance.data_dir(paths))?;
+                }
                 let (spec, config_file) = database_service(paths, config, &instance, &dir);
                 files.extend(config_file);
                 services.push(spec);
@@ -375,6 +386,9 @@ fn database_service(
     if instance.kind == Kind::Postgresql {
         return (postgresql_service(paths, config, instance, dir), None);
     }
+    if instance.kind == Kind::Mongodb {
+        return (mongodb_service(paths, config, instance, dir), None);
+    }
     let port = instance.port(config);
     let data = instance.data_dir(paths);
     let ini_path = paths
@@ -456,6 +470,57 @@ fn database_service(
 
 /// PostgreSQL: `initdb` sekali (superuser `postgres`, auth trust, hanya 127.0.0.1),
 /// lalu `postgres.exe`; berhenti rapi lewat `pg_ctl stop -m fast`.
+/// `mongod` per instance, data di `data\mongodb\<major.minor>`. Berhenti lewat perintah
+/// `shutdown` dari `mongosh` bila terinstall; tanpa itu proses dihentikan (journal memulihkan).
+fn mongodb_service(
+    paths: &Paths,
+    config: &Config,
+    instance: &DbInstance,
+    dir: &Path,
+) -> ServiceSpec {
+    let port = instance.port(config);
+    let stop = runtime::resolve_installed(paths, Kind::Mongosh, "latest")
+        .ok()
+        .flatten()
+        .map(|version| {
+            let mongosh = paths.runtime_dir(Kind::Mongosh.as_str(), &version);
+            Command {
+                program: mongosh.join("bin").join("mongosh.exe"),
+                args: vec![
+                    "--quiet".into(),
+                    format!("mongodb://127.0.0.1:{port}/admin"),
+                    "--eval".into(),
+                    "db.adminCommand({ shutdown: 1 })".into(),
+                ],
+                cwd: mongosh,
+                env: vec![],
+            }
+        });
+    ServiceSpec {
+        name: instance.name(),
+        group: instance.name(),
+        command: Command {
+            program: dir.join("bin").join("mongod.exe"),
+            args: vec![
+                "--dbpath".into(),
+                instance.data_dir(paths).to_string_lossy().into_owned(),
+                "--bind_ip".into(),
+                "127.0.0.1".into(),
+                "--port".into(),
+                port.to_string(),
+            ],
+            cwd: dir.to_path_buf(),
+            env: vec![],
+        },
+        stop,
+        init: None,
+        init_marker: None,
+        port: Some(port),
+        extra_ports: vec![],
+        log: paths.logs().join(format!("{}.log", instance.name())),
+    }
+}
+
 fn postgresql_service(
     paths: &Paths,
     config: &Config,
@@ -1071,6 +1136,49 @@ mod tests {
         assert!(conf.contains("fastcgi_pass php_8_3;"));
         assert!(conf.contains("proxy_pass http://127.0.0.1:3000;"));
         assert!(conf.ends_with("}\n"));
+    }
+
+    #[test]
+    fn mongodb_instance_service() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("mongodb", "8.0.34")).unwrap();
+        std::fs::create_dir_all(paths.runtime_dir("mysql", "8.4.3")).unwrap();
+        let mut config = Config::default();
+        config
+            .defaults
+            .insert("database".into(), "mongodb@8.0".into());
+
+        let plan = plan(&paths, &config).unwrap();
+        let mongo = plan
+            .services
+            .iter()
+            .find(|s| s.name == "mongodb@8.0")
+            .unwrap();
+        assert!(mongo.command.program.ends_with("bin/mongod.exe"));
+        assert_eq!(mongo.port, Some(27080));
+        let data = paths.data().join("mongodb").join("8.0");
+        assert!(mongo
+            .command
+            .args
+            .windows(2)
+            .any(|w| w[0] == "--dbpath" && w[1] == data.to_string_lossy()));
+        assert!(data.is_dir());
+        // Tanpa mongosh: dihentikan langsung (tidak ada perintah stop).
+        assert!(mongo.stop.is_none());
+
+        std::fs::create_dir_all(paths.runtime_dir("mongosh", "2.14.0")).unwrap();
+        let plan = super::plan(&paths, &config).unwrap();
+        let mongo = plan
+            .services
+            .iter()
+            .find(|s| s.name == "mongodb@8.0")
+            .unwrap();
+        let stop = mongo.stop.as_ref().unwrap();
+        assert!(stop.program.ends_with("bin/mongosh.exe"));
+        assert!(stop
+            .args
+            .contains(&"mongodb://127.0.0.1:27080/admin".to_string()));
     }
 
     #[test]
