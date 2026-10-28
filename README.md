@@ -7,8 +7,9 @@ bisa berjalan **bersamaan** dan dipilih **per-project**.
 > Status: semua fase ROADMAP selesai (CLI + GUI, database, HTTPS, Mailpit, tunnel, installer,
 > update). Open source di bawah MIT OR Apache-2.0. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
 >
-> **Website & panduan pengguna:** folder [`site/`](site/) (`index.html` dan `panduan.html`),
-> diterbitkan lewat GitHub Pages.
+> **Website:** https://romyrudiansah.github.io/devlock/ ·
+> **Panduan pengguna:** https://romyrudiansah.github.io/devlock/panduan.html
+> (sumbernya di folder [`site/`](site/), diterbitkan otomatis lewat GitHub Pages).
 
 ## Unduh
 
