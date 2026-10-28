@@ -30,10 +30,24 @@ pub fn status() -> Result<()> {
         },
         config.https.port
     );
+    println!(
+        "Redirect HTTP  : {}",
+        if config.https.redirect {
+            "aktif (HTTP → HTTPS)"
+        } else {
+            "nonaktif"
+        }
+    );
     let https_sites: Vec<String> = sites::discover(&paths, &config)?
         .iter()
         .filter(|s| s.https)
-        .map(|s| s.url(&config))
+        .map(|s| {
+            if s.https_redirect {
+                format!("{} (redirect)", s.url(&config))
+            } else {
+                s.url(&config)
+            }
+        })
         .collect();
     if https_sites.is_empty() {
         println!("Site HTTPS     : -");
@@ -100,6 +114,20 @@ pub fn set_enabled(enabled: bool) -> Result<()> {
         }
     } else {
         println!("HTTPS global nonaktif (project masih bisa memakai `https = true`).");
+    }
+    println!("Terapkan dengan `devlock reload`.");
+    Ok(())
+}
+
+pub fn set_redirect(enabled: bool) -> Result<()> {
+    let paths = Paths::discover()?;
+    Config::set_value(&paths, "https", "redirect", toml_edit::value(enabled))?;
+    if enabled {
+        println!(
+            "HTTP dialihkan ke HTTPS untuk site ber-HTTPS (project bisa menimpa dengan `https_redirect = false`)."
+        );
+    } else {
+        println!("Redirect HTTP→HTTPS global nonaktif (project masih bisa memakai `https_redirect = true`).");
     }
     println!("Terapkan dengan `devlock reload`.");
     Ok(())

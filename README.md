@@ -159,6 +159,7 @@ Isi `REDIS_PORT` di `.env` project sesuai port instance; `devlock current` menam
 ```
 devlock ssl trust      # sekali: pasang CA DevLock ke Windows (ada dialog konfirmasi)
 devlock ssl enable     # HTTPS untuk semua site, atau `https = true` di .devlock.toml
+devlock ssl redirect on   # opsional: HTTP dialihkan (301) ke HTTPS, atau `https_redirect = true`
 devlock reload
 ```
 
