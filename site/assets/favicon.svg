@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="DevLock">
+  <!-- Ikon aplikasi DevLock: logo heksagon </> putih di atas tile biru-indigo. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#4338ca"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="58" fill="url(#tile)"/>
+  <rect width="256" height="256" rx="58" fill="url(#shine)"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(128 128) scale(0.8) translate(-128 -128)">
+    <path d="M112 52 L58 84 V172 L112 204" stroke="#ffffff" stroke-width="24"/>
+    <path d="M144 52 L198 84 V172 L144 204" stroke="#ffffff" stroke-width="24"/>
+    <path d="M140 96 L116 160" stroke="#67e8f9" stroke-width="22"/>
+  </g>
+</svg>

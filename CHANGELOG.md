@@ -6,6 +6,10 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Changed
+- Logo baru: dua kurung kode yang membentuk heksagon dengan garis miring di tengah (`</>`). Dipakai di ikon aplikasi, tray, installer (`icon.ico` 16–256 px), header GUI, README, dan website. Sumber di `brand/` (`logo-mark.svg` tanpa kotak, `logo-app.svg` ikon aplikasi, PNG 16–512 px).
+- Website dwibahasa: versi Inggris di `/en/` (halaman utama dan panduan lengkap) dengan pemilih ID/EN, `hreflang`, dan screenshot GUI berbahasa Inggris.
+
 ## [0.12.3] - 2026-10-28
 
 ### Changed

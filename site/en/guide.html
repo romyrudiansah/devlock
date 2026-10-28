@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevLock Guide</title>
+  <meta name="description" content="The complete DevLock guide: installation, Laravel/Node/WordPress projects, databases, HTTPS, .test domains, Mailpit, tunnels, the GUI, updates, and troubleshooting.">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon.png" sizes="32x32">
+  <link rel="alternate" hreflang="id" href="https://romyrudiansah.github.io/devlock/panduan.html">
+  <link rel="alternate" hreflang="en" href="https://romyrudiansah.github.io/devlock/en/guide.html">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/theme.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="../assets/logo.svg" alt="">DevLock</a>
+      <nav class="nav" aria-label="Main navigation">
+        <a class="hide-sm" href="./#features">Features</a>
+        <a href="guide.html" aria-current="page">Guide</a>
+        <a href="https://github.com/romyrudiansah/devlock">GitHub</a>
+        <span class="lang" aria-label="Language"><a href="../panduan.html" lang="id" hreflang="id">ID</a><a href="guide.html" aria-current="true" lang="en">EN</a></span>
+        <button class="theme-toggle" type="button" aria-label="Toggle theme" data-to-light="Switch to light theme" data-to-dark="Switch to dark theme">☾</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wrap doc">
+    <details class="toc" open>
+      <summary>Contents</summary>
+      <nav aria-label="Contents">
+      <p>Getting started</p>
+      <ol>
+        <li><a href="#persyaratan">Requirements</a></li>
+        <li><a href="#instalasi">Installation</a></li>
+        <li><a href="#konsep">How DevLock works</a></li>
+        <li><a href="#pertama">First steps</a></li>
+      </ol>
+      <p>Projects</p>
+      <ol>
+        <li><a href="#laravel">Laravel</a></li>
+        <li><a href="#node">Node.js (Next, Nuxt, Vite)</a></li>
+        <li><a href="#wordpress">WordPress &amp; other PHP</a></li>
+        <li><a href="#apache">Apache &amp; .htaccess</a></li>
+        <li><a href="#devlock-toml">.devlock.toml reference</a></li>
+      </ol>
+      <p>Services</p>
+      <ol>
+        <li><a href="#database">Databases</a></li>
+        <li><a href="#cache">Redis &amp; Garnet</a></li>
+        <li><a href="#https">Local HTTPS</a></li>
+        <li><a href="#domain">.test domains</a></li>
+        <li><a href="#mailpit">Email (Mailpit)</a></li>
+        <li><a href="#share">Share publicly</a></li>
+        <li><a href="#bahasa-lain">Go, Python, Java</a></li>
+      </ol>
+      <p>The app</p>
+      <ol>
+        <li><a href="#gui">GUI &amp; tray</a></li>
+        <li><a href="#terminal">Terminal &amp; editor</a></li>
+        <li><a href="#profil">Profiles, export &amp; import</a></li>
+        <li><a href="#update">Updates</a></li>
+        <li><a href="#masalah">Troubleshooting</a></li>
+        <li><a href="#uninstall">Uninstall</a></li>
+        <li><a href="#cli">CLI reference</a></li>
+      </ol>
+      </nav>
+    </details>
+    <script>
+      // On small screens the contents start collapsed so the article is visible; wide screens keep them open.
+      (function () {
+        var toc = document.querySelector("details.toc");
+        var small = window.matchMedia("(max-width: 860px)");
+        function sync() {
+          toc.open = !small.matches;
+        }
+        sync();
+        small.addEventListener("change", sync);
+      })();
+    </script>
+
+    <article>
+      <h1>DevLock Guide</h1>
+      <p>This guide explains how to install DevLock, run your first project, and use its other features. Commands are
+        typed in PowerShell or Command Prompt; most are also available in the GUI. CLI messages are in Indonesian; the
+        GUI can be switched to English in <strong>Settings → Tampilan (Appearance)</strong>.</p>
+
+      <h2 id="persyaratan">Requirements</h2>
+      <ul>
+        <li>Windows 10 or 11, 64-bit.</li>
+        <li>The latest <a href="https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist">Visual C++ Redistributable</a>
+          (x64), needed by PHP and Apache. <code>devlock doctor</code> tells you if it is missing.</li>
+        <li>Port 80 (and 443 for HTTPS) not used by another program such as IIS, Laragon, or XAMPP.</li>
+        <li>An internet connection while downloading runtimes. Once installed, DevLock runs fully offline.</li>
+      </ul>
+
+      <h2 id="instalasi">Installation</h2>
+      <p>Download from the <a href="https://github.com/romyrudiansah/devlock/releases">Releases</a> page and compare the
+        file's SHA256 with the <code>.sha256</code> file in the same release.</p>
+      <h3>Option 1: installer (recommended)</h3>
+      <p>Run <code>devlock-vX.Y.Z-windows-x64-setup.exe</code>. DevLock is installed per user in
+        <code>%LOCALAPPDATA%\DevLock</code> without admin rights, with a Start Menu shortcut and an entry in
+        <em>Apps &amp; features</em>.</p>
+      <h3>Option 2: portable</h3>
+      <p>Extract <code>devlock-vX.Y.Z-windows-x64.zip</code> anywhere, for example <code>D:\DevLock</code>, then:</p>
+<pre>D:\DevLock\bin\devlock.exe init</pre>
+      <h3>After installing</h3>
+      <p>To use <code>devlock</code>, <code>php</code>, <code>composer</code>, <code>node</code>, and other commands from
+        any terminal, add the shim folder to PATH and open a new terminal:</p>
+<pre>devlock path add</pre>
+      <div class="callout warn">
+        <p><strong>Windows warnings.</strong> DevLock releases are not signed yet. <em>SmartScreen</em> may show
+          "Windows protected your PC": choose <em>More info</em> → <em>Run anyway</em>. <em>Smart App Control</em>
+          sometimes blocks freshly released executables; this usually clears up on its own after a while. See
+          <a href="#masalah">troubleshooting</a>.</p>
+      </div>
+
+      <h2 id="konsep">How DevLock works</h2>
+      <p>Everything DevLock owns lives in its install folder:</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Folder</th><th>Contents</th></tr></thead>
+          <tbody>
+            <tr><td><code>bin\</code></td><td><code>devlock.exe</code> (CLI), <code>devlock-gui.exe</code>, <code>devlock-shim.exe</code></td></tr>
+            <tr><td><code>runtimes\</code></td><td>Installed runtimes, one folder per version (e.g. <code>php\8.3.12</code>)</td></tr>
+            <tr><td><code>www\</code></td><td>Your projects; each subfolder becomes <code>&lt;name&gt;.test</code></td></tr>
+            <tr><td><code>data\</code></td><td>Database, cache, and email data per instance</td></tr>
+            <tr><td><code>shims\</code></td><td><code>php.exe</code>, <code>node.exe</code>, <code>mysql.exe</code>, … that pick the project's version</td></tr>
+            <tr><td><code>etc\</code>, <code>logs\</code>, <code>ssl\</code></td><td>Generated configuration, service logs, CA and certificates</td></tr>
+            <tr><td><code>devlock.toml</code></td><td>Global configuration (ports, TLD, default versions, etc.)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Three core ideas:</p>
+      <ul>
+        <li><strong>Versions per project.</strong> A <code>.devlock.toml</code> file in the project folder sets the PHP,
+          Node, database, and other versions. Without it, the global defaults are used.</li>
+        <li><strong>Separate instances.</strong> Each PHP version has its own php-cgi pool; each database + version
+          (<code>mysql@8.4</code>, <code>postgresql@18</code>) has its own port and data folder. They can all run at the
+          same time.</li>
+        <li><strong>Only what is used runs.</strong> <code>devlock start</code> starts the nginx, PHP pools, databases,
+          caches, and dev servers your sites need. Installed runtimes that no site uses are not started.</li>
+      </ul>
+
+      <h2 id="pertama">First steps</h2>
+      <p>List the available versions, then install what you need. The first version you install becomes the
+        default.</p>
+<pre>devlock list php --available
+devlock install php 8.3
+devlock install composer
+devlock install nginx</pre>
+      <p>Create a <code>www\hello</code> folder containing an <code>index.php</code>, then run:</p>
+<pre>devlock start
+devlock status</pre>
+      <p>Open <code>http://hello.test</code>. The first time, DevLock asks for permission (UAC) to add the domain to the
+        Windows hosts file. To avoid that for every new project, enable the <a href="#domain">wildcard DNS</a>.</p>
+      <p>Stop everything with <code>devlock stop</code>, or the <strong>Stop all</strong> button in the GUI.</p>
+
+      <h2 id="laravel">Laravel projects</h2>
+      <h3>What to install</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Runtime</th><th>Need</th><th>Command</th></tr></thead>
+          <tbody>
+            <tr><td>PHP</td><td>Required</td><td><code>devlock install php 8.3</code></td></tr>
+            <tr><td>Composer</td><td>Required</td><td><code>devlock install composer</code></td></tr>
+            <tr><td>nginx</td><td>Required</td><td><code>devlock install nginx</code></td></tr>
+            <tr><td>Database</td><td>Pick one</td><td><code>devlock install mysql 8.4</code> / <code>mariadb 11.4</code> / <code>postgresql 17</code></td></tr>
+            <tr><td>Node.js</td><td>For Vite</td><td><code>devlock install node 22</code></td></tr>
+            <tr><td>Redis</td><td>Optional</td><td><code>devlock install redis 8</code></td></tr>
+            <tr><td>Mailpit</td><td>Optional</td><td><code>devlock install mailpit</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>New project</h3>
+<pre>devlock new laravel shop --php 8.3 --db mysql@8.4</pre>
+      <p>DevLock runs <code>composer create-project</code>, writes <code>.devlock.toml</code>, creates the
+        <code>shop</code> database, fills in the database connection and <code>APP_URL</code> in <code>.env</code>, and
+        registers <code>shop.test</code>. In the GUI: <strong>Projects</strong> tab → <strong>New project</strong>.</p>
+      <h3>Existing project</h3>
+      <p>Copy or clone the project into <code>www\shop</code>, then create <code>www\shop\.devlock.toml</code>:</p>
+<pre>php = "8.3"
+database = "mysql@8.4"
+cache = "redis@8"        <span class="c"># optional</span>
+dev = "npm run dev"      <span class="c"># Vite also runs on devlock start</span></pre>
+      <p>Create the database and adjust <code>.env</code>:</p>
+<pre>cd www\shop
+devlock start
+devlock db create shop
+composer install
+php artisan migrate</pre>
+<pre><span class="c"># .env</span>
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3384
+DB_DATABASE=shop
+DB_USERNAME=root
+DB_PASSWORD=</pre>
+      <p>Each instance's port is derived from its version (see <a href="#database">Databases</a>);
+        <code>devlock current</code> in the project folder shows it.</p>
+      <div class="callout">
+        <p><strong>Vite in a PHP project.</strong> In a Laravel project, <code>dev = "npm run dev"</code> runs Vite as a
+          service <em>next to</em> PHP, so <code>shop.test</code> is still served by Laravel and assets load from the
+          Vite dev server. You can also leave <code>dev</code> out and run <code>npm run dev</code> yourself in a
+          terminal.</p>
+      </div>
+
+      <h2 id="node">Node.js projects (Next.js, Nuxt, Vite)</h2>
+<pre>devlock install node 22
+devlock new next dashboard --node 22</pre>
+      <p>For an existing project, just add the dev server command:</p>
+<pre><span class="c"># www\dashboard\.devlock.toml</span>
+node = "22"
+dev = "npm run dev"</pre>
+      <p><code>devlock start</code> runs that dev server as the <code>dev:dashboard</code> service, reads the port from
+        its output (Vite, Next.js, Nuxt, Astro, Angular, …), and points <code>dashboard.test</code> at that port,
+        including websockets for hot reload. To pin the port, write <code>proxy_port = 5173</code>. The Node version is
+        also read from <code>.nvmrc</code>, <code>.node-version</code>, or <code>volta</code> in
+        <code>package.json</code>.</p>
+      <p>The <code>npm</code>, <code>npx</code>, <code>pnpm</code>, <code>yarn</code>, and <code>corepack</code> shims
+        use the project's Node. Enable pnpm/yarn once with <code>corepack enable</code>.</p>
+
+      <h2 id="wordpress">WordPress &amp; other PHP</h2>
+<pre>devlock new wordpress blog --db mariadb@11.4</pre>
+      <p>DevLock downloads the official WordPress, creates the database, and fills in <code>wp-config.php</code>. Other
+        templates: Symfony, CodeIgniter 4, Vite + React, Vite + Vue, Nuxt, and static HTML
+        (<code>devlock new --list</code>).</p>
+      <p>The document root is detected automatically: <code>public\</code>, <code>web\</code>,
+        <code>public_html\</code>, <code>dist\</code>, or the project folder. Override it with
+        <code>docroot = "app/public"</code>.</p>
+      <h3>Extensions, Xdebug, and php.ini</h3>
+<pre>devlock php ext enable gmp intl --php 8.3
+devlock php xdebug install           <span class="c"># download from xdebug.org + enable</span>
+devlock php ini set memory_limit 1G</pre>
+      <p>Changes apply immediately to running PHP pools. Xdebug uses <code>debug,develop</code> mode, starts on the
+        <code>XDEBUG_SESSION</code> trigger, and connects to port 9003 (VS Code, PhpStorm). All of this is also on the
+        <strong>PHP</strong> tab in the GUI.</p>
+
+      <h2 id="apache">Apache &amp; .htaccess</h2>
+      <p>For applications that rely on <code>.htaccess</code>:</p>
+<pre>devlock install apache</pre>
+<pre><span class="c"># www\legacy\.devlock.toml</span>
+php = "7.4"
+webserver = "apache"</pre>
+      <p>nginx still receives every request and forwards this site to Apache on <code>127.0.0.1:8180</code>. Apache
+        processes <code>.htaccess</code> (mod_rewrite, headers, auth) and uses the same PHP pools, so per-project PHP
+        versions still apply.</p>
+
+      <h2 id="devlock-toml">.devlock.toml reference</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Key</th><th>Example</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>php</code></td><td><code>"8.3"</code></td><td>PHP version (also from <code>config.platform.php</code> in composer.json)</td></tr>
+            <tr><td><code>node</code></td><td><code>"22"</code></td><td>Node version (also from <code>.nvmrc</code>)</td></tr>
+            <tr><td><code>go</code>, <code>python</code>, <code>java</code></td><td><code>"1.27"</code>, <code>"3.13"</code>, <code>"21"</code></td><td>Go, Python, Java versions</td></tr>
+            <tr><td><code>database</code></td><td><code>"mysql@8.4"</code></td><td>Database instance: <code>mysql</code>, <code>mariadb</code>, <code>postgresql</code>, <code>mongodb</code></td></tr>
+            <tr><td><code>cache</code></td><td><code>"redis@8"</code></td><td>Cache instance: <code>redis</code> or <code>garnet</code></td></tr>
+            <tr><td><code>webserver</code></td><td><code>"apache"</code></td><td><code>nginx</code> (default) or <code>apache</code></td></tr>
+            <tr><td><code>docroot</code></td><td><code>"public"</code></td><td>Document root relative to the project folder</td></tr>
+            <tr><td><code>aliases</code></td><td><code>["shop.local"]</code></td><td>Extra domains</td></tr>
+            <tr><td><code>dev</code></td><td><code>"npm run dev"</code></td><td>Dev server run as a service</td></tr>
+            <tr><td><code>proxy_port</code></td><td><code>5173</code></td><td>Pin the dev server port and proxy the domain to it</td></tr>
+            <tr><td><code>https</code></td><td><code>true</code></td><td>Also serve over HTTPS</td></tr>
+            <tr><td><code>https_redirect</code></td><td><code>true</code></td><td>Redirect HTTP to HTTPS</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Changing this file needs no manual restart: the daemon notices within a few seconds. To pick a version from the
+        terminal: <code>devlock use php 8.2</code> (project) or <code>devlock use php 8.2 --global</code>.</p>
+
+      <h2 id="database">Databases</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Engine</th><th>Port</th><th>Example</th><th>Local user</th></tr></thead>
+          <tbody>
+            <tr><td>MySQL</td><td>3300 + major×10 + minor</td><td><code>mysql@8.4</code> → 3384</td><td><code>root</code>, no password</td></tr>
+            <tr><td>MariaDB</td><td>3400 + (major−10)×20 + minor</td><td><code>mariadb@11.4</code> → 3424</td><td><code>root</code>, no password</td></tr>
+            <tr><td>PostgreSQL</td><td>5400 + major</td><td><code>postgresql@18</code> → 5418</td><td><code>postgres</code>, no password</td></tr>
+            <tr><td>MongoDB</td><td>27000 + major×10 + minor</td><td><code>mongodb@8.0</code> → 27080</td><td>no authentication</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Every instance listens on <code>127.0.0.1</code> only. Change ports with <code>[ports]</code> in
+        <code>devlock.toml</code>, e.g. <code>"mysql@8.4" = 3306</code>.</p>
+<pre>devlock start db                       <span class="c"># every database instance in use</span>
+devlock db create shop
+devlock db list --instance mysql@8.4
+devlock db dump shop                   <span class="c"># → data\backups\mysql-8.4\shop-&lt;time&gt;.sql</span>
+devlock db restore shop_copy backup.sql
+devlock db drop shop --yes</pre>
+      <p>The <code>mysql</code>, <code>mysqldump</code>, <code>psql</code>, <code>pg_dump</code>, and
+        <code>mongosh</code> shims connect to the project's instance automatically.</p>
+      <h3>Adminer</h3>
+<pre>devlock install adminer</pre>
+      <p>Open <code>http://adminer.test</code>. The server field offers your DevLock instances, and passwordless login is
+        allowed because this site is only reachable from your own machine.</p>
+
+      <h2 id="cache">Redis &amp; Garnet</h2>
+<pre>devlock install redis 8
+devlock use cache redis@8              <span class="c"># or cache = "redis@8" in .devlock.toml</span>
+redis-cli ping</pre>
+      <p>Ports: <code>redis@7</code> → 6379, <code>redis@8</code> → 6389. Set <code>REDIS_PORT</code> in
+        <code>.env</code> accordingly. The alternative is Microsoft Garnet (<code>devlock install garnet</code>,
+        <code>cache = "garnet@2"</code>, port 6402), which runs in memory only.</p>
+
+      <h2 id="https">Local HTTPS</h2>
+<pre>devlock ssl trust                      <span class="c"># once: install the DevLock CA (Windows shows a dialog)</span>
+devlock ssl enable                     <span class="c"># HTTPS for every site, or https = true per project</span>
+devlock ssl redirect on                <span class="c"># optional: HTTP → HTTPS</span>
+devlock reload</pre>
+      <p>In the GUI, the "DevLock CA not trusted" warning on the Services tab has a <strong>Trust DevLock CA</strong>
+        button. Chrome and Edge trust this CA right away. <strong>Firefox</strong> only reads CAs from the machine
+        store, so run <code>devlock ssl trust --machine</code> once (UAC). PHP, Composer, and Node are also configured
+        to trust the DevLock CA.</p>
+
+      <h2 id="domain">.test domains</h2>
+      <p>By default DevLock writes site domains to the Windows hosts file through UAC whenever a site is added. To make
+        every <code>*.test</code>, including subdomains like <code>api.shop.test</code>, work without the hosts
+        file:</p>
+<pre>devlock dns enable                     <span class="c"># once (UAC)</span>
+devlock dns status</pre>
+      <p>DevLock runs a small DNS server on <code>127.0.0.1:53</code> and Windows sends only <code>.test</code> queries
+        to it; other DNS is untouched. Port 53 must be free; the Windows <em>Internet Connection Sharing</em> service
+        (Mobile Hotspot, Hyper-V NAT) can take it, and <code>devlock dns status</code> detects that.</p>
+
+      <h2 id="mailpit">Email (Mailpit)</h2>
+<pre>devlock install mailpit
+devlock start mail</pre>
+      <p>Every email from your projects is caught and readable at <code>http://mail.test</code>. PHP's
+        <code>mail()</code> is pointed at Mailpit automatically; for Laravel set <code>MAIL_MAILER=smtp</code>,
+        <code>MAIL_HOST=127.0.0.1</code>, <code>MAIL_PORT=1025</code> (new projects from <code>devlock new</code> are
+        already filled in).</p>
+
+      <h2 id="share">Share publicly</h2>
+<pre>devlock install cloudflared
+devlock share shop                     <span class="c"># → https://&lt;random&gt;.trycloudflare.com</span></pre>
+      <p>Uses a Cloudflare Quick Tunnel without an account. Anyone with the URL can reach the site until you press
+        Ctrl+C. Absolute URLs generated by the app (e.g. <code>APP_URL</code>) still point to
+        <code>shop.test</code>.</p>
+
+      <h2 id="bahasa-lain">Go, Python, Java</h2>
+<pre>devlock install go 1.27
+devlock install python 3.13
+devlock install java 21                <span class="c"># Eclipse Temurin</span></pre>
+      <p>The <code>go</code>, <code>gofmt</code>, <code>python</code>, <code>pip</code>, <code>java</code>,
+        <code>javac</code>, and <code>jar</code> shims use the project's version from <code>.devlock.toml</code>,
+        <code>go.mod</code>, <code>.python-version</code>, or <code>.java-version</code>. The Java shims also set
+        <code>JAVA_HOME</code> for Maven and Gradle. These runtimes do not run as services.</p>
+
+      <h2 id="gui">GUI &amp; tray</h2>
+      <p>Open <strong>DevLock</strong> from the Start Menu (or <code>bin\devlock-gui.exe</code>). Switch the language to
+        English in <strong>Settings → Tampilan</strong>.</p>
+      <figure>
+        <img src="../assets/gui-service-en.png" width="800" height="507" alt="DevLock Services tab with the service list, status, ports, uptime, and action buttons" loading="lazy">
+        <figcaption>Services tab: start, stop, restart, and logs per service. Notifications can be dismissed.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Services</strong>: the status of every service, start/stop/restart per group (<code>php@8.3</code>,
+          <code>mysql@8.4</code>, <code>dev:&lt;site&gt;</code>), and logs.</li>
+        <li><strong>Projects</strong>: the site list; open in a browser, folder, editor, or terminal; create a database;
+          <strong>New project</strong> from a template.</li>
+        <li><strong>Runtimes</strong>: install versions with progress, remove them, and pick the default.</li>
+        <li><strong>PHP</strong>: extensions, Xdebug, and php.ini per version.</li>
+        <li><strong>Settings</strong>: www folder, TLD, ports, HTTPS, autostart, editor, and language
+          (Indonesian/English).</li>
+      </ul>
+      <figure>
+        <img src="../assets/gui-projects-en.png" width="800" height="507" alt="DevLock Projects tab with site cards and Open, Folder, Editor, Terminal, and Create DB buttons" loading="lazy">
+        <figcaption>Projects tab: each folder in www becomes a card.</figcaption>
+      </figure>
+      <p>Closing the window only hides it to the tray; services keep running. Right-click the tray icon to start/stop
+        everything, open a project, or quit.</p>
+
+      <h2 id="terminal">Terminal &amp; editor</h2>
+      <p>The <strong>Terminal</strong> button on a project card opens a terminal in that folder with the shims on PATH.
+        The <strong>Editor</strong> button opens VS Code, Cursor, Windsurf, Zed, Sublime Text, or PhpStorm (configure it
+        in Settings if needed). For a dedicated Windows Terminal profile:</p>
+<pre>devlock terminal install</pre>
+
+      <h2 id="profil">Profiles, export &amp; import</h2>
+      <h3>Stack profiles</h3>
+<pre>devlock profile save laravel           <span class="c"># save the services that are running</span>
+devlock profile use legacy             <span class="c"># stop everything, run another profile</span>
+devlock profile list</pre>
+      <h3>Moving to another computer</h3>
+<pre>devlock config export devlock-export.toml
+devlock config import devlock-export.toml   <span class="c"># on the new computer</span></pre>
+      <p>The export file contains <code>devlock.toml</code> and the runtime list; on import, missing runtimes are
+        installed automatically. Move project folders yourself.</p>
+      <h3>From Laragon or XAMPP</h3>
+<pre>devlock import --dry-run               <span class="c"># preview first</span>
+devlock import                         <span class="c"># C:\laragon\www / C:\xampp\htdocs → www</span></pre>
+      <p>Projects are added as junctions, so the files stay where they are. Add <code>--copy</code> to copy them
+        instead. Stop Laragon/XAMPP before <code>devlock start</code> so the ports don't clash.</p>
+
+      <h2 id="update">Updates</h2>
+<pre>devlock update --check
+devlock update</pre>
+      <p>Close the GUI first (right-click the tray → Quit). DevLock stops the services, downloads the latest release,
+        verifies the checksum, replaces the binaries, and refreshes the shims. If Windows blocks the new binaries, the
+        old version is restored automatically. If a runtime download fails, DevLock tries mirrors (configurable under
+        <code>[mirrors]</code>).</p>
+
+      <h2 id="masalah">Troubleshooting</h2>
+<pre>devlock doctor                         <span class="c"># check PATH, ports, Visual C++, CA</span>
+devlock logs nginx -f
+devlock logs php@8.3</pre>
+      <h3>Port 80 is already in use</h3>
+      <p>The service status names the process using the port, usually IIS, Laragon, XAMPP, or an old Skype. Stop that
+        program, or change the port in Settings / <code>[http] port</code>.</p>
+      <h3>The site can't be reached</h3>
+      <p>Make sure the domain is registered: run <code>devlock hosts</code> (approve UAC) or enable the
+        <a href="#domain">wildcard DNS</a>. Also check <code>devlock status</code>.</p>
+      <h3>Error 502 or 500</h3>
+      <p>Check the PHP pool log (<code>devlock logs php@8.3</code>) and <code>logs\nginx-error.log</code>. For dev
+        server sites, make sure the <code>dev:&lt;site&gt;</code> service is running.</p>
+      <h3>"An Application Control policy has blocked this file"</h3>
+      <p>That is Windows Smart App Control blocking unsigned executables, sometimes including runtimes like nginx or PHP.
+        It usually clears up on its own after a while; try again later. DevLock does not change Windows security
+        settings.</p>
+      <h3>The browser warns about the certificate</h3>
+      <p>Run <code>devlock ssl trust</code> (Firefox: <code>--machine</code>), then close and reopen the browser.</p>
+
+      <h2 id="uninstall">Uninstall</h2>
+<pre>devlock stop
+devlock dns disable                    <span class="c"># if it was ever enabled</span>
+devlock hosts --clear
+devlock ssl untrust
+devlock path remove
+devlock terminal remove</pre>
+      <p>Then uninstall from <em>Apps &amp; features</em> (installer) or delete the DevLock folder (portable). Uninstalling
+        does not remove runtimes, databases, or projects; back up what you need (<code>devlock db dump</code>) before
+        deleting the folder.</p>
+      <div class="callout">
+        <p>DevLock sends no usage data. Outgoing connections are only made when you download runtimes, update, or use
+          <code>devlock share</code>.</p>
+      </div>
+
+      <h2 id="cli">CLI reference</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>devlock init</code></td><td>Prepare folders and devlock.toml</td></tr>
+            <tr><td><code>devlock list &lt;runtime&gt; [--available]</code></td><td>Installed / available versions</td></tr>
+            <tr><td><code>devlock install &lt;runtime&gt; [version]</code></td><td>Install a runtime</td></tr>
+            <tr><td><code>devlock uninstall &lt;runtime&gt; &lt;version&gt;</code></td><td>Remove a runtime (data is kept)</td></tr>
+            <tr><td><code>devlock use &lt;runtime|database|cache&gt; &lt;version&gt; [--global]</code></td><td>Pick a version</td></tr>
+            <tr><td><code>devlock which &lt;command&gt;</code>, <code>devlock current</code></td><td>Versions used in this folder</td></tr>
+            <tr><td><code>devlock start|stop|restart [target]</code></td><td><code>all</code>, <code>nginx</code>, <code>php@8.3</code>, <code>db</code>, <code>cache</code>, <code>mail</code>, <code>dev:&lt;site&gt;</code></td></tr>
+            <tr><td><code>devlock status</code>, <code>devlock reload</code></td><td>Service status, reload configuration</td></tr>
+            <tr><td><code>devlock logs &lt;service&gt; [-f]</code></td><td>Service logs</td></tr>
+            <tr><td><code>devlock site list</code></td><td>List sites</td></tr>
+            <tr><td><code>devlock new &lt;template&gt; &lt;name&gt;</code></td><td>New project</td></tr>
+            <tr><td><code>devlock db ...</code></td><td>create, list, drop, dump, restore</td></tr>
+            <tr><td><code>devlock php ...</code></td><td>ext, xdebug, ini</td></tr>
+            <tr><td><code>devlock ssl ...</code></td><td>trust, enable, redirect, status, bundle</td></tr>
+            <tr><td><code>devlock dns ...</code>, <code>devlock hosts</code></td><td>.test domains</td></tr>
+            <tr><td><code>devlock share &lt;site&gt;</code></td><td>Public tunnel</td></tr>
+            <tr><td><code>devlock import</code>, <code>devlock config export|import</code>, <code>devlock profile ...</code></td><td>Move and save configuration</td></tr>
+            <tr><td><code>devlock terminal ...</code>, <code>devlock path add|remove</code>, <code>devlock shims</code></td><td>Windows integration</td></tr>
+            <tr><td><code>devlock update [--check]</code>, <code>devlock doctor</code></td><td>Updates and diagnostics</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Full help for each command: <code>devlock &lt;command&gt; --help</code>.</p>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>DevLock · MIT OR Apache-2.0</span>
+      <span><a href="./">Home</a> · <a href="https://github.com/romyrudiansah/devlock/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/romyrudiansah/devlock/issues">Report an issue</a></span>
+    </div>
+  </footer>
+</body>
+</html>

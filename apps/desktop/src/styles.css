@@ -78,7 +78,8 @@ code,
 }
 
 .brand-mark {
-  color: var(--accent);
+  width: 22px;
+  height: 22px;
 }
 
 .nav-item {

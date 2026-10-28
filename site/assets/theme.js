@@ -21,7 +21,11 @@
     function label() {
       var dark = current() === "dark";
       button.textContent = dark ? "☀" : "☾";
-      button.setAttribute("aria-label", dark ? "Ganti ke tema terang" : "Ganti ke tema gelap");
+      // Label per bahasa dari data-to-light / data-to-dark di tombol (default Indonesia).
+      button.setAttribute(
+        "aria-label",
+        dark ? button.dataset.toLight || "Ganti ke tema terang" : button.dataset.toDark || "Ganti ke tema gelap"
+      );
     }
     label();
     button.addEventListener("click", function () {

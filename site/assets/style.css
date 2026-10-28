@@ -148,8 +148,8 @@ pre .c {
 }
 
 .brand img {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
 }
 
 .brand:hover {
@@ -172,6 +172,34 @@ pre .c {
 .nav a[aria-current="page"] {
   color: var(--text);
   text-decoration: none;
+}
+
+.lang {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lang a {
+  padding: 6px 9px;
+  color: var(--muted);
+}
+
+.lang a[aria-current="true"] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.lang a:hover {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.lang a[aria-current="true"]:hover {
+  color: var(--accent-text);
 }
 
 .theme-toggle {

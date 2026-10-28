@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevLock — Local Dev for Windows</title>
+  <meta name="description" content="DevLock: a local development environment for Windows with PHP, Node, MySQL, MariaDB, PostgreSQL, and more in multiple versions that run side by side and are picked per project. Free and open source.">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon.png" sizes="32x32">
+  <link rel="alternate" hreflang="id" href="https://romyrudiansah.github.io/devlock/">
+  <link rel="alternate" hreflang="en" href="https://romyrudiansah.github.io/devlock/en/">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/theme.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="../assets/logo.svg" alt="">DevLock</a>
+      <nav class="nav" aria-label="Main navigation">
+        <a class="hide-sm" href="#features">Features</a>
+        <a class="hide-sm" href="#start">Get started</a>
+        <a href="guide.html">Guide</a>
+        <a href="https://github.com/romyrudiansah/devlock">GitHub</a>
+        <span class="lang" aria-label="Language"><a href="../" lang="id" hreflang="id">ID</a><a href="./" aria-current="true" lang="en">EN</a></span>
+        <button class="theme-toggle" type="button" aria-label="Toggle theme" data-to-light="Switch to light theme" data-to-dark="Switch to dark theme">☾</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <span class="eyebrow">Free &amp; open source · Windows 10/11</span>
+        <h1>Many versions of PHP, Node, and databases. Running side by side. Picked per project.</h1>
+        <p class="lead">DevLock is a local development environment for Windows, an alternative to Laragon,
+          XAMPP, and WAMP. <code>blog.test</code> runs PHP 7.4 with MySQL 5.7 while
+          <code>shop.test</code> runs PHP 8.4 with PostgreSQL 18, at the same time.</p>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/romyrudiansah/devlock/releases">Download for Windows</a>
+          <a class="btn" href="guide.html">Read the guide</a>
+        </div>
+        <p class="note">Per-user installer without admin rights, or a portable zip. MIT / Apache-2.0 license.</p>
+        <div class="shot">
+          <img src="../assets/gui-service-en.png" width="800" height="507"
+               alt="DevLock dashboard listing PHP 7.4, PHP 8.3, nginx, MariaDB, PostgreSQL, MySQL, and a dev server with status, ports, and Restart, Stop, and Log buttons">
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="features">
+      <div class="wrap">
+        <h2>Everything a web project needs, without stepping on each other</h2>
+        <p class="sub">Each project writes what it needs in a <code>.devlock.toml</code> file. DevLock prepares the
+          versions, services, domains, and certificates.</p>
+        <div class="grid">
+          <div class="card"><div class="icon">7.4</div><h3>Versions side by side</h3>
+            <p>Each PHP version gets its own php-cgi pool; each database + version is an instance with its own port and data.</p></div>
+          <div class="card"><div class="icon">.test</div><h3>Automatic domains</h3>
+            <p>Every folder in <code>www</code> becomes <code>name.test</code>, through the hosts file or a <code>*.test</code> wildcard DNS.</p></div>
+          <div class="card"><div class="icon">⇄</div><h3>Per-project shims</h3>
+            <p><code>php</code>, <code>composer</code>, <code>node</code>, <code>npm</code>, <code>mysql</code>, <code>psql</code>, and more automatically use the version of the folder you type them in.</p></div>
+          <div class="card"><div class="icon">🔒</div><h3>Local HTTPS</h3>
+            <p>A DevLock CA, a certificate per site, and an optional HTTP→HTTPS redirect. PHP and Node trust it too.</p></div>
+          <div class="card"><div class="icon">DB</div><h3>Complete databases</h3>
+            <p>MySQL, MariaDB, PostgreSQL, and MongoDB, plus Redis or Garnet as a cache. Create, dump, and restore databases from the CLI or GUI.</p></div>
+          <div class="card"><div class="icon">⚡</div><h3>Node dev servers</h3>
+            <p><code>dev = "npm run dev"</code>: the dev server runs as a service, its port is detected automatically, and the domain points to it.</p></div>
+          <div class="card"><div class="icon">✉</div><h3>Email &amp; DB panel</h3>
+            <p>Mailpit catches every email at <code>mail.test</code>; Adminer at <code>adminer.test</code> already knows your database instances.</p></div>
+          <div class="card"><div class="icon">↗</div><h3>Share publicly</h3>
+            <p><code>devlock share blog</code> exposes a site through a Cloudflare Quick Tunnel until you press Ctrl+C.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap split">
+        <div>
+          <h2>One small file per project</h2>
+          <p class="sub">PHP, Node, database, cache, web server, and HTTPS settings live in the project folder, so
+            they are committed and identical on every teammate's machine.</p>
+<pre><span class="c"># www\shop\.devlock.toml</span>
+php = "8.3"
+database = "mysql@8.4"
+cache = "redis@8"
+dev = "npm run dev"     <span class="c"># Vite runs next to PHP</span>
+https = true</pre>
+          <p>Versions are also read from files you already use: <code>composer.json</code>,
+            <code>.nvmrc</code>, <code>go.mod</code>, <code>.python-version</code>, and
+            <code>.java-version</code>.</p>
+        </div>
+        <div class="shot"><img src="../assets/gui-projects-en.png" width="800" height="507"
+          alt="DevLock Projects page with cards for dash.test, legacy.test, and shop.test showing PHP version, database, docroot, and Open, Folder, Editor, Terminal, and Create DB buttons"></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap split">
+        <div class="shot"><img src="../assets/gui-runtimes-en.png" width="800" height="507"
+          alt="DevLock Runtimes page: PHP 8.3 and 7.4, Node.js 22 and 20, Composer, nginx, with Install version, Make default, and Remove buttons"></div>
+        <div>
+          <h2>Runtimes from official sources, verified</h2>
+          <p class="sub">Every runtime is downloaded straight from its publisher and checksum-verified before it is
+            installed: php.net, nodejs.org, nginx.org, mariadb.org, mysql.com, postgresql.org, go.dev, Adoptium,
+            MongoDB, and official GitHub releases.</p>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Category</th><th>Available</th></tr></thead>
+              <tbody>
+                <tr><td>Languages</td><td>PHP, Node.js, Composer, Go, Python, Java (Temurin)</td></tr>
+                <tr><td>Web servers</td><td>nginx, Apache (per project, for <code>.htaccess</code>)</td></tr>
+                <tr><td>Databases</td><td>MySQL, MariaDB, PostgreSQL, MongoDB</td></tr>
+                <tr><td>Cache</td><td>Redis, Garnet</td></tr>
+                <tr><td>Tools</td><td>Adminer, Mailpit, cloudflared, Xdebug</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="start">
+      <div class="wrap">
+        <h2>Up and running in five minutes</h2>
+        <p class="sub">Example for a Laravel project. Every step is also available in the GUI.</p>
+        <ol class="steps">
+          <li><strong>Install DevLock</strong>Run the installer from the Releases page, then open a new terminal.
+<pre>devlock path add       <span class="c"># put php/composer/node shims on PATH</span></pre></li>
+          <li><strong>Install the runtimes you need</strong>
+<pre>devlock install php 8.3
+devlock install composer
+devlock install nginx
+devlock install mysql 8.4
+devlock install node 22</pre></li>
+          <li><strong>Create a project</strong>
+<pre>devlock new laravel shop --php 8.3 --db mysql@8.4</pre></li>
+          <li><strong>Start</strong>
+<pre>devlock start          <span class="c"># nginx, PHP 8.3, MySQL 8.4 → http://shop.test</span></pre></li>
+        </ol>
+        <p style="margin-top:22px">Full steps, Node projects, WordPress, HTTPS, and troubleshooting are in the
+          <a href="guide.html">guide</a>.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <h2>Compared with other tools</h2>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th></th><th>DevLock</th><th>Laragon</th><th>XAMPP</th></tr></thead>
+            <tbody>
+              <tr><td>Several PHP versions active at once</td><td class="yes">Yes</td><td>One active</td><td>One</td></tr>
+              <tr><td>Several database versions at once</td><td class="yes">Yes</td><td>One active</td><td>One</td></tr>
+              <tr><td>Version picked per project (file in the project)</td><td class="yes">Yes</td><td>No</td><td>No</td></tr>
+              <tr><td>Node dev server as a service</td><td class="yes">Yes</td><td>No</td><td>No</td></tr>
+              <tr><td>Open source</td><td class="yes">MIT / Apache-2.0</td><td>No</td><td>Yes</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sub">Already using Laragon or XAMPP? <code>devlock import</code> brings projects over from
+          <code>www</code>/<code>htdocs</code> without copying files.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <div class="cta">
+          <h2>Try DevLock now</h2>
+          <p class="sub" style="margin:0 auto 22px">Portable, no telemetry, and every service listens on 127.0.0.1 only.</p>
+          <a class="btn primary" href="https://github.com/romyrudiansah/devlock/releases">Download the latest release</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>DevLock · MIT OR Apache-2.0</span>
+      <span><a href="guide.html">Guide</a> · <a href="https://github.com/romyrudiansah/devlock/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/romyrudiansah/devlock/issues">Report an issue</a></span>
+    </div>
+  </footer>
+</body>
+</html>
