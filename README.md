@@ -8,13 +8,17 @@ Local development environment untuk Windows — alternatif Laragon / WAMP / XAMP
 
 ## Unduh
 
-Unduh `devlock-vX.Y.Z-windows-x64.zip` dari halaman
-[**Releases**](https://github.com/romyrudiansah/devlock/releases) (Windows 10/11 x64), cocokkan
-checksum-nya dengan file `.sha256` di rilis yang sama, lalu:
+Dari halaman [**Releases**](https://github.com/romyrudiansah/devlock/releases) (Windows 10/11 x64),
+cocokkan checksum dengan file `.sha256` di rilis yang sama, lalu pilih salah satu:
 
-1. Ekstrak ke folder instalasi, mis. `D:\DevLock` (hasilnya `D:\DevLock\bin\devlock.exe`, dst.).
-2. Jalankan `D:\DevLock\bin\devlock.exe init`, lalu `devlock path add` agar shim masuk PATH.
-3. Buka `devlock-gui.exe` untuk dashboard dan ikon tray, atau lanjut lewat CLI di bawah.
+- **Installer** `devlock-vX.Y.Z-windows-x64-setup.exe`: dipasang per user di
+  `%LOCALAPPDATA%\DevLock` (tanpa admin), dengan shortcut Start Menu dan entri di *Apps &
+  features*. Uninstall hanya menghapus binary; runtime, database, dan project tetap ada.
+  Setelahnya jalankan `devlock path add` bila ingin shim di PATH.
+- **Portable** `devlock-vX.Y.Z-windows-x64.zip`:
+   1. Ekstrak ke folder instalasi, mis. `D:\DevLock` (hasilnya `D:\DevLock\bin\devlock.exe`, dst.).
+   2. Jalankan `D:\DevLock\bin\devlock.exe init`, lalu `devlock path add` agar shim masuk PATH.
+   3. Buka `devlock-gui.exe` untuk dashboard dan ikon tray, atau lanjut lewat CLI di bawah.
 
 **Code signing:** binary rilis DevLock **belum ditandatangani**. Pastikan zip berasal dari
 halaman Releases di atas dan checksum-nya cocok. Windows bisa menampilkan peringatan:
@@ -256,6 +260,7 @@ perintahnya**:
 
 | Perubahan | Kapan | Membatalkan |
 |---|---|---|
+| Shortcut Start Menu "DevLock" dan entri *Apps & features* (registry `HKCU`) | installer `-setup.exe` | uninstall dari *Apps & features* |
 | Blok `# devlock-start … # devlock-end` di file hosts Windows (lewat UAC) | `devlock hosts`, `devlock start` | `devlock hosts --clear` |
 | Folder `shims` di depan PATH user (registry `HKCU\Environment`) | `devlock path add` | `devlock path remove` |
 | CA "DevLock Local CA" di store sertifikat Root milik user (Windows meminta konfirmasi) | `devlock ssl trust` | `devlock ssl untrust` |

@@ -90,6 +90,15 @@ jobs:
           # Akhiran LF agar `sha256sum -c` bisa langsung dipakai.
           [IO.File]::WriteAllText("$PWD/$name.zip.sha256", "$hash  $name.zip`n")
 
+      - name: Installer NSIS
+        shell: pwsh
+        run: |
+          $name = "devlock-${{ github.ref_name }}-windows-x64"
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          ./installer/build.ps1 -Version $version -Source $name -Output "$PWD/$name-setup.exe"
+          $hash = (Get-FileHash "$name-setup.exe" -Algorithm SHA256).Hash.ToLower()
+          [IO.File]::WriteAllText("$PWD/$name-setup.exe.sha256", "$hash  $name-setup.exe`n")
+
       - name: Catatan rilis dari CHANGELOG
         shell: pwsh
         run: |
@@ -117,3 +126,5 @@ jobs:
           files: |
             devlock-${{ github.ref_name }}-windows-x64.zip
             devlock-${{ github.ref_name }}-windows-x64.zip.sha256
+            devlock-${{ github.ref_name }}-windows-x64-setup.exe
+            devlock-${{ github.ref_name }}-windows-x64-setup.exe.sha256

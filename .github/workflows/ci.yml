@@ -32,3 +32,16 @@ jobs:
       # Fitur yang sama dengan build rilis, agar konfigurasi rilis ikut dicek di setiap PR.
       - run: cargo clippy --workspace --all-targets --features devlock-desktop/custom-protocol -- -D warnings
       - run: cargo test --workspace
+
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cek skrip installer NSIS (binary tiruan)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force pkg/bin | Out-Null
+          foreach ($exe in 'devlock.exe', 'devlock-shim.exe', 'devlock-gui.exe') { Set-Content "pkg/bin/$exe" 'x' }
+          Copy-Item README.md, CHANGELOG.md, LICENSE-MIT, LICENSE-APACHE -Destination pkg
+          ./installer/build.ps1 -Version 0.0.0 -Source pkg -Output "$PWD/setup-test.exe"
+          if (-not (Test-Path setup-test.exe)) { throw 'installer tidak terbentuk' }
