@@ -216,7 +216,7 @@ impl Default for PhpConfig {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct GuiConfig {
     /// Jalankan semua service saat GUI dibuka.
@@ -225,6 +225,16 @@ pub struct GuiConfig {
     pub editor: String,
     /// Bahasa GUI & menu tray: `id` atau `en`.
     pub language: String,
+}
+
+impl Default for GuiConfig {
+    fn default() -> Self {
+        Self {
+            autostart_services: false,
+            editor: String::new(),
+            language: "id".into(),
+        }
+    }
 }
 
 impl GuiConfig {
