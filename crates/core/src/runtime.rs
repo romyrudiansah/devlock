@@ -19,6 +19,7 @@ pub enum Kind {
     Composer,
     Go,
     Python,
+    Java,
     Nginx,
     Apache,
     Mysql,
@@ -34,12 +35,13 @@ pub enum Kind {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 17] = [
+    pub const ALL: [Kind; 18] = [
         Kind::Php,
         Kind::Node,
         Kind::Composer,
         Kind::Go,
         Kind::Python,
+        Kind::Java,
         Kind::Nginx,
         Kind::Apache,
         Kind::Mysql,
@@ -61,6 +63,7 @@ impl Kind {
             Kind::Composer => "composer",
             Kind::Go => "go",
             Kind::Python => "python",
+            Kind::Java => "java",
             Kind::Nginx => "nginx",
             Kind::Apache => "apache",
             Kind::Mysql => "mysql",
@@ -88,7 +91,7 @@ impl Kind {
     pub fn has_default_version(self) -> bool {
         matches!(
             self,
-            Kind::Php | Kind::Node | Kind::Composer | Kind::Go | Kind::Python
+            Kind::Php | Kind::Node | Kind::Composer | Kind::Go | Kind::Python | Kind::Java
         )
     }
 
@@ -118,6 +121,7 @@ impl FromStr for Kind {
             "node" | "nodejs" => Kind::Node,
             "composer" => Kind::Composer,
             "go" | "golang" => Kind::Go,
+            "java" | "jdk" | "temurin" => Kind::Java,
             "python" | "py" => Kind::Python,
             "nginx" => Kind::Nginx,
             "apache" | "httpd" => Kind::Apache,

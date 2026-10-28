@@ -8,6 +8,7 @@ const LABELS: Record<string, string> = {
   composer: "Composer",
   go: "Go",
   python: "Python",
+  java: "Java (Temurin)",
   nginx: "nginx",
   apache: "Apache",
   mysql: "MySQL",
@@ -128,7 +129,7 @@ function RuntimeRow(props: {
   const isWebserver = rt.kind === "nginx" || rt.kind === "apache";
   // Sama dengan Kind::has_default_version: database & cache dipilih lewat instance,
   // web server & Adminer lewat konfigurasi.
-  const canDefault = ["php", "node", "composer", "go", "python"].includes(rt.kind);
+  const canDefault = ["php", "node", "composer", "go", "python", "java"].includes(rt.kind);
 
   const loadAvailable = async () => {
     setLoading(true);

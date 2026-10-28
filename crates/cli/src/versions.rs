@@ -36,7 +36,7 @@ pub fn use_version(target: &str, spec: &str, global: bool) -> Result<()> {
         } else {
             let kind: Kind = target.parse()?;
             if !kind.has_default_version() {
-                bail!("`use` untuk php, node, composer, go, python, database, atau cache");
+                bail!("`use` untuk php, node, composer, go, python, java, database, atau cache");
             }
             match runtime::resolve_installed(&paths, kind, spec)? {
                 Some(version) => println!("{kind} {spec} → {version}"),
@@ -94,9 +94,10 @@ pub fn current() -> Result<()> {
         Kind::Composer,
         Kind::Go,
         Kind::Python,
+        Kind::Java,
     ] {
-        // Go & Python hanya ditampilkan bila terinstall, agar ringkasan tetap pendek.
-        let optional = matches!(kind, Kind::Go | Kind::Python);
+        // Go, Python, & Java hanya ditampilkan bila terinstall, agar ringkasan tetap pendek.
+        let optional = matches!(kind, Kind::Go | Kind::Python | Kind::Java);
         if optional && runtime::installed_versions(&paths, kind)?.is_empty() {
             continue;
         }

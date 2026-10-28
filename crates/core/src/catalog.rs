@@ -23,6 +23,8 @@ const GARNET: &str = "https://api.github.com/repos/microsoft/garnet/releases?per
 /// Adminer resmi: satu file PHP per rilis.
 const ADMINER: &str = "https://api.github.com/repos/vrana/adminer/releases?per_page=30";
 /// Semua rilis Go beserta SHA256 per file.
+/// API Eclipse Temurin (Adoptium): daftar rilis dan build terbaru per versi fitur.
+const ADOPTIUM: &str = "https://api.adoptium.net/v3";
 const GO_DL: &str = "https://go.dev/dl/?mode=json&include=all";
 /// Build CPython portable (dipakai juga oleh `uv`); tiap rilis memuat semua cabang Python.
 const PYTHON_STANDALONE: &str =
@@ -170,6 +172,7 @@ pub fn available(kind: Kind) -> Result<Vec<Release>> {
         })?,
         Kind::Adminer => github_releases(ADMINER, Kind::Adminer, |v| format!("adminer-{v}.php"))?,
         Kind::Go => go_from(http::get_json(GO_DL)?),
+        Kind::Java => java_releases()?,
         Kind::Python => python_from(http::get_json(PYTHON_STANDALONE)?),
         Kind::Cloudflared => github_releases(CLOUDFLARED, Kind::Cloudflared, |_| {
             "cloudflared-windows-amd64.exe".to_string()
@@ -435,6 +438,83 @@ fn releases_from_github(
                 url: found.browser_download_url,
                 checksum: Checksum::Sha256(sha256),
                 lts: false,
+            })
+        })
+        .collect()
+}
+
+// --- Java (Eclipse Temurin) ---------------------------------------------------
+
+#[derive(Deserialize)]
+struct AdoptiumInfo {
+    available_lts_releases: Vec<u32>,
+    most_recent_feature_release: u32,
+}
+
+#[derive(Deserialize)]
+struct AdoptiumAsset {
+    binary: AdoptiumBinary,
+    version: AdoptiumVersion,
+}
+
+#[derive(Deserialize)]
+struct AdoptiumBinary {
+    image_type: String,
+    os: String,
+    architecture: String,
+    package: AdoptiumPackage,
+}
+
+#[derive(Deserialize)]
+struct AdoptiumPackage {
+    name: String,
+    link: String,
+    #[serde(default)]
+    checksum: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct AdoptiumVersion {
+    major: u32,
+    minor: u32,
+    security: u32,
+}
+
+/// JDK terbaru untuk tiap versi LTS ditambah versi fitur terbaru (satu request per versi).
+fn java_releases() -> Result<Vec<Release>> {
+    let info: AdoptiumInfo = http::get_json(&format!("{ADOPTIUM}/info/available_releases"))?;
+    let mut features = info.available_lts_releases.clone();
+    if !features.contains(&info.most_recent_feature_release) {
+        features.push(info.most_recent_feature_release);
+    }
+    let mut out = Vec::new();
+    for feature in features {
+        let assets: Vec<AdoptiumAsset> = http::get_json(&format!(
+            "{ADOPTIUM}/assets/latest/{feature}/hotspot?os=windows&architecture=x64&image_type=jdk"
+        ))?;
+        out.extend(java_from(assets, &info.available_lts_releases));
+    }
+    Ok(out)
+}
+
+/// Zip JDK Windows x64 ber-SHA256; versi `major.minor.security` (`21.0.5`, `8.0.432`).
+fn java_from(assets: Vec<AdoptiumAsset>, lts: &[u32]) -> Vec<Release> {
+    assets
+        .into_iter()
+        .filter(|a| {
+            a.binary.image_type == "jdk"
+                && a.binary.os == "windows"
+                && a.binary.architecture == "x64"
+                && a.binary.package.name.ends_with(".zip")
+        })
+        .filter_map(|a| {
+            let v = &a.version;
+            Some(Release {
+                kind: Kind::Java,
+                version: format!("{}.{}.{}", v.major, v.minor, v.security),
+                checksum: Checksum::Sha256(a.binary.package.checksum?.to_lowercase()),
+                url: a.binary.package.link,
+                lts: lts.contains(&v.major),
             })
         })
         .collect()
@@ -867,6 +947,29 @@ mod tests {
             postgresql_zip_url("16.15", 2),
             "https://get.enterprisedb.com/postgresql/postgresql-16.15-2-windows-x64-binaries.zip"
         );
+    }
+
+    #[test]
+    fn java_catalog() {
+        let json = r#"[
+            {"binary": {"image_type": "jdk", "os": "windows", "architecture": "x64",
+                "package": {"name": "OpenJDK21U-jdk_x64_windows_hotspot_21.0.12.1_1.zip",
+                    "link": "https://x/jdk21.zip", "checksum": "ABC"}},
+             "version": {"major": 21, "minor": 0, "security": 12}},
+            {"binary": {"image_type": "jdk", "os": "windows", "architecture": "x64",
+                "package": {"name": "OpenJDK21U-jdk_x64_windows_hotspot_21.0.12.1_1.msi",
+                    "link": "https://x/jdk21.msi", "checksum": "DEF"}},
+             "version": {"major": 21, "minor": 0, "security": 12}},
+            {"binary": {"image_type": "jre", "os": "windows", "architecture": "x64",
+                "package": {"name": "jre.zip", "link": "https://x/jre.zip", "checksum": "AA"}},
+             "version": {"major": 21, "minor": 0, "security": 12}}
+        ]"#;
+        let releases = java_from(serde_json::from_str(json).unwrap(), &[8, 21]);
+        assert_eq!(releases.len(), 1);
+        assert_eq!(releases[0].version, "21.0.12");
+        assert_eq!(releases[0].url, "https://x/jdk21.zip");
+        assert!(releases[0].lts);
+        assert!(matches!(&releases[0].checksum, Checksum::Sha256(s) if s == "abc"));
     }
 
     #[test]
