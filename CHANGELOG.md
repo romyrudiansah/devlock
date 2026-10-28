@@ -6,6 +6,13 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-28
+
+### Added
+- Runtime Java (Eclipse Temurin): `devlock install java <versi>` dari API Adoptium (JDK terbaru tiap versi LTS ditambah versi fitur terbaru, zip Windows x64 ber-SHA256). Versi per project lewat `java` di `.devlock.toml` atau `.java-version` (`21`, `temurin-21.0.5`, `1.8`); shim `java`, `javac`, `jar` mengisi `JAVA_HOME` untuk Maven/Gradle.
+- Mirror fallback unduhan runtime: bila arsip gagal diunduh dari sumber asli, dicoba mirror dari `[mirrors]` lalu mirror bawaan (`windows.php.net` untuk PHP, `npmmirror.com` untuk Node; matikan dengan `[download] builtin_mirrors = false`). Checksum tetap dari sumber asli/katalog resmi.
+- GUI dan menu tray dwibahasa Indonesia/Inggris: pilih di Settings → Tampilan (`[gui] language = "id"|"en"`). Pesan dari backend/CLI tetap berbahasa Indonesia.
+
 ## [0.11.0] - 2026-10-28
 
 ### Added
@@ -158,7 +165,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/romyrudiansah/devlock/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/romyrudiansah/devlock/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/romyrudiansah/devlock/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/romyrudiansah/devlock/compare/v0.9.1...v0.9.2
