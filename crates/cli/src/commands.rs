@@ -30,6 +30,7 @@ pub fn init() -> Result<()> {
         ),
         Err(err) => println!("Shim         : dilewati ({err:#})"),
     }
+    crate::terminal::sync_quietly(&paths);
     println!("\nLangkah berikut: `devlock path add` agar shim masuk PATH, lalu `devlock install php 8.3`.");
     Ok(())
 }

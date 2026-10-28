@@ -155,5 +155,6 @@ pub fn shims() -> Result<()> {
     let paths = Paths::discover()?;
     let count = install_shims(&paths)?;
     println!("{count} shim dibuat di {}", paths.shims().display());
+    crate::terminal::sync_quietly(&paths);
     Ok(())
 }

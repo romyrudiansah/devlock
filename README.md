@@ -197,6 +197,18 @@ enable` dan `devlock dns status` mendeteksinya. Hentikan layanan itu atau tetap 
 
 Menutup jendela menyembunyikannya ke tray; service tetap diawasi daemon.
 
+## Windows Terminal
+
+```
+devlock terminal install   # profil "DevLock": PowerShell di folder www, shim di depan PATH
+devlock terminal remove
+```
+
+Profil dipasang sebagai [JSON fragment](https://learn.microsoft.com/windows/terminal/json-fragment-extensions)
+di `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\DevLock`, jadi `settings.json` Windows
+Terminal tidak diubah. Setelah dipasang, profil diperbarui otomatis saat GUI dibuka atau
+`devlock shims` dijalankan.
+
 ## Build dari source
 
 Butuh Rust stable (toolchain MSVC) dan Node.js 20.19+.
@@ -229,6 +241,7 @@ perintahnya**:
 | Folder `shims` di depan PATH user (registry `HKCU\Environment`) | `devlock path add` | `devlock path remove` |
 | CA "DevLock Local CA" di store sertifikat Root milik user (Windows meminta konfirmasi) | `devlock ssl trust` | `devlock ssl untrust` |
 | Aturan DNS (NRPT) `.test` → `127.0.0.1` berkomentar "DevLock" (lewat UAC) | `devlock dns enable` | `devlock dns disable` |
+| Profil Windows Terminal "DevLock" (fragment di `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\DevLock`) | `devlock terminal install` | `devlock terminal remove` |
 
 ## Uninstall
 
@@ -238,6 +251,7 @@ devlock dns disable    # bila DNS wildcard pernah diaktifkan
 devlock hosts --clear
 devlock ssl untrust
 devlock path remove
+devlock terminal remove
 ```
 
 Lalu hapus folder instalasi DevLock (berisi runtime, database di `data`, dan project di `www`;
