@@ -67,6 +67,8 @@ autostart_services = false
 # Editor untuk tombol "Editor" (perintah atau path lengkap). Kosong = deteksi otomatis:
 # VS Code, Cursor, Windsurf, Zed, Sublime Text, PhpStorm.
 editor = ""
+# Bahasa GUI dan menu tray: "id" (Indonesia) atau "en" (English)
+language = "id"
 
 # Override port instance database, contoh:
 # [ports]
@@ -221,6 +223,14 @@ pub struct GuiConfig {
     pub autostart_services: bool,
     /// Perintah atau path editor; kosong = deteksi otomatis (lihat `editor::KNOWN`).
     pub editor: String,
+    /// Bahasa GUI & menu tray: `id` atau `en`.
+    pub language: String,
+}
+
+impl GuiConfig {
+    pub fn english(&self) -> bool {
+        self.language.eq_ignore_ascii_case("en")
+    }
 }
 
 impl Default for DaemonConfig {

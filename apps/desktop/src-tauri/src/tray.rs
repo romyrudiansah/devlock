@@ -16,14 +16,18 @@ const REFRESH_EVERY: Duration = Duration::from_secs(5);
 /// Isi menu yang berubah-ubah; menu hanya dibangun ulang bila nilainya berbeda.
 #[derive(PartialEq)]
 struct Snapshot {
+    /// Menu dalam bahasa Inggris (`[gui] language = "en"`).
+    english: bool,
     status: String,
     /// (nama site, URL)
     sites: Vec<(String, String)>,
 }
 
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
+    let english = load().is_ok_and(|(_, config)| config.gui.english());
     let initial = Snapshot {
-        status: "Service: memuat…".into(),
+        english,
+        status: tr(english, "Service: memuat…").into(),
         sites: Vec::new(),
     };
     let mut builder = TrayIconBuilder::with_id("main")
@@ -71,7 +75,34 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Label menu tray dalam bahasa terpilih; teks Indonesia adalah kuncinya.
+fn tr(english: bool, text: &'static str) -> &'static str {
+    if !english {
+        return text;
+    }
+    match text {
+        "Service: memuat…" => "Services: loading…",
+        "Buka folder" => "Open folder",
+        "Buka di editor" => "Open in editor",
+        "Terminal di folder ini" => "Terminal in this folder",
+        "Project (belum ada)" => "Projects (none yet)",
+        "Project" => "Projects",
+        "Buka DevLock" => "Open DevLock",
+        "Start semua" => "Start all",
+        "Stop semua" => "Stop all",
+        "Buka folder www" => "Open www folder",
+        "Keluar (service tetap jalan)" => "Quit (services keep running)",
+        "Stop semua & keluar" => "Stop all & quit",
+        "Konfigurasi DevLock tidak terbaca" => "DevLock configuration is unreadable",
+        "Service: belum ada yang berjalan" => "Services: none running",
+        "Service: daemon tidak berjalan" => "Services: daemon not running",
+        "Service: status tidak terbaca" => "Services: status unavailable",
+        other => other,
+    }
+}
+
 fn build_menu(app: &AppHandle, snap: &Snapshot) -> tauri::Result<Menu<Wry>> {
+    let en = snap.english;
     let item = |id: &str, label: &str| MenuItem::with_id(app, id, label, true, None::<&str>);
 
     let mut projects = Vec::new();
@@ -81,34 +112,40 @@ fn build_menu(app: &AppHandle, snap: &Snapshot) -> tauri::Result<Menu<Wry>> {
             name,
             true,
             &[
-                &item(&format!("site-open:{name}"), &format!("Buka {url}"))?,
-                &item(&format!("site-dir:{name}"), "Buka folder")?,
-                &item(&format!("site-editor:{name}"), "Buka di editor")?,
-                &item(&format!("site-term:{name}"), "Terminal di folder ini")?,
+                &item(
+                    &format!("site-open:{name}"),
+                    &format!("{} {url}", if en { "Open" } else { "Buka" }),
+                )?,
+                &item(&format!("site-dir:{name}"), tr(en, "Buka folder"))?,
+                &item(&format!("site-editor:{name}"), tr(en, "Buka di editor"))?,
+                &item(
+                    &format!("site-term:{name}"),
+                    tr(en, "Terminal di folder ini"),
+                )?,
             ],
         )?);
     }
     let project_refs: Vec<&dyn IsMenuItem<Wry>> =
         projects.iter().map(|s| s as &dyn IsMenuItem<Wry>).collect();
     let projects_menu = if project_refs.is_empty() {
-        Submenu::with_items(app, "Project (belum ada)", false, &[])?
+        Submenu::with_items(app, tr(en, "Project (belum ada)"), false, &[])?
     } else {
-        Submenu::with_items(app, "Project", true, &project_refs)?
+        Submenu::with_items(app, tr(en, "Project"), true, &project_refs)?
     };
 
     Menu::with_items(
         app,
         &[
-            &item("open", "Buka DevLock")?,
+            &item("open", tr(en, "Buka DevLock"))?,
             &MenuItem::with_id(app, "status", &snap.status, false, None::<&str>)?,
             &PredefinedMenuItem::separator(app)?,
-            &item("start", "Start semua")?,
-            &item("stop", "Stop semua")?,
+            &item("start", tr(en, "Start semua"))?,
+            &item("stop", tr(en, "Stop semua"))?,
             &projects_menu,
-            &item("www", "Buka folder www")?,
+            &item("www", tr(en, "Buka folder www"))?,
             &PredefinedMenuItem::separator(app)?,
-            &item("quit", "Keluar (service tetap jalan)")?,
-            &item("quit-stop", "Stop semua & keluar")?,
+            &item("quit", tr(en, "Keluar (service tetap jalan)"))?,
+            &item("quit-stop", tr(en, "Stop semua & keluar"))?,
         ],
     )
 }
@@ -116,18 +153,24 @@ fn build_menu(app: &AppHandle, snap: &Snapshot) -> tauri::Result<Menu<Wry>> {
 fn snapshot() -> Snapshot {
     let Ok((paths, config)) = load() else {
         return Snapshot {
+            english: false,
             status: "Konfigurasi DevLock tidak terbaca".into(),
             sites: Vec::new(),
         };
     };
+    let en = config.gui.english();
     let status = match daemon::send(&config, &Request::Status) {
-        Ok(Some(r)) if r.services.is_empty() => "Service: belum ada yang berjalan".into(),
+        Ok(Some(r)) if r.services.is_empty() => tr(en, "Service: belum ada yang berjalan").into(),
         Ok(Some(r)) => {
             let running = r.services.iter().filter(|s| s.state == "running").count();
-            format!("Service: {running}/{} berjalan", r.services.len())
+            if en {
+                format!("Services: {running}/{} running", r.services.len())
+            } else {
+                format!("Service: {running}/{} berjalan", r.services.len())
+            }
         }
-        Ok(None) => "Service: daemon tidak berjalan".into(),
-        Err(_) => "Service: status tidak terbaca".into(),
+        Ok(None) => tr(en, "Service: daemon tidak berjalan").into(),
+        Err(_) => tr(en, "Service: status tidak terbaca").into(),
     };
     let sites = sites::discover(&paths, &config)
         .map(|sites| {
@@ -137,7 +180,11 @@ fn snapshot() -> Snapshot {
                 .collect()
         })
         .unwrap_or_default();
-    Snapshot { status, sites }
+    Snapshot {
+        english: en,
+        status,
+        sites,
+    }
 }
 
 /// Bangun ulang menu tray bila isinya berubah: tiap `REFRESH_EVERY`, atau segera setelah

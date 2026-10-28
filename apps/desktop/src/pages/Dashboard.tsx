@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { api, errorText, type Overview, type ServiceAction, type ServiceStatus } from "../api";
 import LogModal from "./LogModal";
+import { t } from "../i18n";
 
 /** Gabungkan worker `php@8.3#0..3` menjadi satu baris `php@8.3`. */
 function groupServices(services: ServiceStatus[]) {
@@ -41,7 +42,7 @@ function formatUptime(secs: number) {
   if (secs < 0) return "-";
   if (secs < 60) return `${secs}s`;
   if (secs < 3600) return `${Math.floor(secs / 60)}m`;
-  return `${Math.floor(secs / 3600)}j ${Math.floor((secs % 3600) / 60)}m`;
+  return t("{h}j {m}m", { h: Math.floor(secs / 3600), m: Math.floor((secs % 3600) / 60) });
 }
 
 const STATE_LABEL: Record<string, string> = {
@@ -101,25 +102,25 @@ export default function Dashboard() {
     <section>
       <header className="page-header">
         <div>
-          <h1>Service</h1>
+          <h1>{t("Service")}</h1>
           <p className="muted">
             {overview?.daemon_running
-              ? `${runningCount} dari ${groups.length} service berjalan`
-              : "Daemon belum berjalan"}
+              ? t("{running} dari {total} service berjalan", { running: runningCount, total: groups.length })
+              : t("Daemon belum berjalan")}
           </p>
         </div>
         <div className="actions">
           <button className="primary" disabled={!!busy} onClick={() => run("start")}>
-            {busy === "start:all" ? "Menjalankan…" : "Start semua"}
+            {busy === "start:all" ? t("Menjalankan…") : t("Start semua")}
           </button>
           <button disabled={!!busy || !overview?.daemon_running} onClick={() => run("reload")}>
             Reload
           </button>
           <button disabled={!!busy || !overview?.daemon_running} onClick={() => run("stop")}>
-            Stop semua
+            {t("Stop semua")}
           </button>
           <button className="ghost" onClick={() => setLogFor("daemon")}>
-            Log daemon
+            {t("Log daemon")}
           </button>
         </div>
       </header>
@@ -133,10 +134,11 @@ export default function Dashboard() {
 
       {overview && !overview.daemon_running ? (
         <div className="empty">
-          <p>Belum ada service yang berjalan.</p>
+          <p>{t("Belum ada service yang berjalan.")}</p>
           <p className="muted">
-            Klik <strong>Start semua</strong> untuk menyalakan nginx, PHP, database, dan dev server
-            sesuai project di <code>{overview.www}</code>.
+            {t("Klik")} <strong>{t("Start semua")}</strong>{" "}
+            {t("untuk menyalakan nginx, PHP, database, dan dev server sesuai project di")}{" "}
+            <code>{overview.www}</code>.
           </p>
         </div>
       ) : (
@@ -144,7 +146,7 @@ export default function Dashboard() {
           <thead>
             <tr>
               <th>Service</th>
-              <th>Status</th>
+              <th>{t("Status")}</th>
               <th>Port</th>
               <th>Uptime</th>
               <th>Restart</th>
@@ -158,13 +160,13 @@ export default function Dashboard() {
                   <div className="service-name">{g.group}</div>
                   {g.items.length > 1 && (
                     <div className="muted small">
-                      {g.running}/{g.items.length} worker
+                      {t("{running}/{total} worker", { running: g.running, total: g.items.length })}
                     </div>
                   )}
                   {g.error && <div className="error-text small">{g.error}</div>}
                 </td>
                 <td>
-                  <span className={`badge ${g.state}`}>{STATE_LABEL[g.state] ?? g.state}</span>
+                  <span className={`badge ${g.state}`}>{STATE_LABEL[g.state] ? t(STATE_LABEL[g.state]) : g.state}</span>
                 </td>
                 <td className="mono">{g.ports}</td>
                 <td>{formatUptime(g.uptime)}</td>

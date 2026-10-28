@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, errorText, type PhpInfo } from "../api";
+import { t } from "../i18n";
 
 const INI_LABELS: Record<string, string> = {
   memory_limit: "memory_limit",
@@ -69,7 +70,7 @@ export default function Php() {
         <header className="page-header">
           <div>
             <h1>PHP</h1>
-            <p className="muted">Belum ada PHP terinstall. Install dulu lewat tab Runtime.</p>
+            <p className="muted">{t("Belum ada PHP terinstall. Install dulu lewat tab Runtime.")}</p>
           </div>
         </header>
         {notice && <div className={`notice ${notice.ok ? "ok" : "error"}`}>{notice.text}</div>}
@@ -82,7 +83,9 @@ export default function Php() {
       <header className="page-header">
         <div>
           <h1>PHP</h1>
-          <p className="muted">Ekstensi, Xdebug, dan php.ini per versi. Pool PHP yang berjalan di-restart otomatis.</p>
+          <p className="muted">
+            {t("Ekstensi, Xdebug, dan php.ini per versi. Pool PHP yang berjalan di-restart otomatis.")}
+          </p>
         </div>
         <div className="actions">
           <select value={version} onChange={(e) => setVersion(e.target.value)} disabled={!!busy}>
@@ -93,7 +96,7 @@ export default function Php() {
             ))}
           </select>
           <button onClick={() => api.openPhpIni(version).catch((e) => setNotice({ ok: false, text: errorText(e) }))}>
-            Buka php.ini
+            {t("Buka php.ini")}
           </button>
         </div>
       </header>
@@ -106,11 +109,16 @@ export default function Php() {
             <div className="runtime-head">
               <h2>Xdebug</h2>
               <span className={`badge ${info.xdebug_enabled ? "running" : ""}`}>
-                {info.xdebug_enabled ? "aktif" : info.xdebug_installed ? "terpasang, nonaktif" : "belum terpasang"}
+                {info.xdebug_enabled
+                  ? t("aktif")
+                  : info.xdebug_installed
+                    ? t("terpasang, nonaktif")
+                    : t("belum terpasang")}
               </span>
             </div>
             <p className="muted small">
-              Mode debug + develop, mulai saat ada trigger <code>XDEBUG_SESSION</code>, port 9003 (VS Code / PhpStorm).
+              {t("Mode debug + develop, mulai saat ada trigger")} <code>XDEBUG_SESSION</code>
+              {t(", port 9003 (VS Code / PhpStorm).")}
             </p>
             <div className="card-actions">
               {!info.xdebug_installed ? (
@@ -118,10 +126,10 @@ export default function Php() {
                   className="primary"
                   disabled={!!busy}
                   onClick={() =>
-                    run("xdebug", () => api.phpXdebug(version, "install"), "Xdebug terpasang dari xdebug.org dan aktif.")
+                    run("xdebug", () => api.phpXdebug(version, "install"), t("Xdebug terpasang dari xdebug.org dan aktif."))
                   }
                 >
-                  {busy === "xdebug" ? "Mengunduh…" : "Install & aktifkan"}
+                  {busy === "xdebug" ? t("Mengunduh…") : t("Install & aktifkan")}
                 </button>
               ) : (
                 <button
@@ -130,11 +138,11 @@ export default function Php() {
                     run(
                       "xdebug",
                       () => api.phpXdebug(version, info.xdebug_enabled ? "off" : "on"),
-                      info.xdebug_enabled ? "Xdebug dinonaktifkan." : "Xdebug diaktifkan.",
+                      info.xdebug_enabled ? t("Xdebug dinonaktifkan.") : t("Xdebug diaktifkan."),
                     )
                   }
                 >
-                  {info.xdebug_enabled ? "Nonaktifkan" : "Aktifkan"}
+                  {info.xdebug_enabled ? t("Nonaktifkan") : t("Aktifkan")}
                 </button>
               )}
             </div>
@@ -151,23 +159,23 @@ export default function Php() {
                 run(
                   "ini",
                   () => api.phpSetIni(version, Object.entries(ini).filter(([, v]) => v.trim() !== "")),
-                  "php.ini disimpan.",
+                  t("php.ini disimpan."),
                 );
               }}
             >
               {info.ini.map(([key]) => (
                 <label key={key} className="field">
-                  <span className="small muted">{INI_LABELS[key] ?? key}</span>
+                  <span className="small muted">{INI_LABELS[key] ? t(INI_LABELS[key]) : key}</span>
                   <input
                     value={ini[key] ?? ""}
-                    placeholder="default PHP"
+                    placeholder={t("default PHP")}
                     onChange={(e) => setIni({ ...ini, [key]: e.target.value })}
                   />
                 </label>
               ))}
               <div className="card-actions">
                 <button className="primary" type="submit" disabled={!!busy}>
-                  {busy === "ini" ? "Menyimpan…" : "Simpan"}
+                  {busy === "ini" ? t("Menyimpan…") : t("Simpan")}
                 </button>
               </div>
             </form>
@@ -175,10 +183,10 @@ export default function Php() {
 
           <article className="runtime wide">
             <div className="runtime-head">
-              <h2>Ekstensi</h2>
+              <h2>{t("Ekstensi")}</h2>
               <input
                 className="search"
-                placeholder="Cari ekstensi…"
+                placeholder={t("Cari ekstensi…")}
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
               />
@@ -194,7 +202,7 @@ export default function Php() {
                       run(
                         `ext:${ext.name}`,
                         () => api.phpSetExtension(version, ext.name, e.target.checked),
-                        `${ext.name} ${e.target.checked ? "diaktifkan" : "dinonaktifkan"}.`,
+                        t(e.target.checked ? "{name} diaktifkan." : "{name} dinonaktifkan.", { name: ext.name }),
                       )
                     }
                   />

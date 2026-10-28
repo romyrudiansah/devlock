@@ -283,7 +283,9 @@ enable` dan `devlock dns status` mendeteksinya. Hentikan layanan itu atau tetap 
 - **Project**: daftar site di `www\`, buka di browser, folder, editor (`[gui] editor`, atau otomatis VS Code/Cursor/Windsurf/Zed/Sublime/PhpStorm), atau terminal (shim sudah di PATH)
 - **Runtime**: install versi baru dengan progress, hapus, pilih default
 
-Menutup jendela menyembunyikannya ke tray; service tetap diawasi daemon.
+Menutup jendela menyembunyikannya ke tray; service tetap diawasi daemon. Bahasa GUI dan menu tray bisa
+diganti ke English di **Settings → Tampilan** (`[gui] language = "en"`); pesan dari CLI tetap
+berbahasa Indonesia.
 
 ## Windows Terminal
 

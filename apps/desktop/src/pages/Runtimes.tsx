@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { api, errorText, type AvailableRelease, type InstallProgress, type RuntimeInfo } from "../api";
+import { t } from "../i18n";
 
 const LABELS: Record<string, string> = {
   php: "PHP",
@@ -62,7 +63,7 @@ export default function Runtimes() {
   };
 
   const uninstall = async (kind: string, version: string) => {
-    if (!confirm(`Hapus ${LABELS[kind] ?? kind} ${version}?`)) return;
+    if (!confirm(t("Hapus {name} {version}?", { name: LABELS[kind] ?? kind, version }))) return;
     setError(null);
     try {
       await api.uninstallRuntime(kind, version);
@@ -86,8 +87,8 @@ export default function Runtimes() {
     <section>
       <header className="page-header">
         <div>
-          <h1>Runtime</h1>
-          <p className="muted">Banyak versi bisa terinstall sekaligus; tiap project memilih versinya sendiri.</p>
+          <h1>{t("Runtime")}</h1>
+          <p className="muted">{t("Banyak versi bisa terinstall sekaligus; tiap project memilih versinya sendiri.")}</p>
         </div>
       </header>
 
@@ -153,7 +154,7 @@ function RuntimeRow(props: {
         <h2>{LABELS[rt.kind] ?? rt.kind}</h2>
         {available === null ? (
           <button disabled={loading || props.busy} onClick={loadAvailable}>
-            {loading ? "Memuat daftar…" : "Install versi…"}
+            {loading ? t("Memuat daftar…") : t("Install versi…")}
           </button>
         ) : (
           <div className="install-form">
@@ -162,7 +163,7 @@ function RuntimeRow(props: {
                 <option key={r.version} value={r.version}>
                   {r.version}
                   {r.lts ? (isWebserver ? " (stable)" : " (LTS)") : ""}
-                  {rt.installed.includes(r.version) ? " — terinstall" : ""}
+                  {rt.installed.includes(r.version) ? t(" — terinstall") : ""}
                 </option>
               ))}
             </select>
@@ -171,10 +172,10 @@ function RuntimeRow(props: {
               disabled={props.busy || !choice || rt.installed.includes(choice)}
               onClick={() => props.onInstall(choice)}
             >
-              {props.installing ? "Menginstall…" : "Install"}
+              {props.installing ? t("Menginstall…") : "Install"}
             </button>
             <button className="ghost" disabled={props.busy} onClick={() => setAvailable(null)}>
-              Batal
+              {t("Batal")}
             </button>
           </div>
         )}
@@ -193,7 +194,7 @@ function RuntimeRow(props: {
       {error && <div className="error-text small">{error}</div>}
 
       {rt.installed.length === 0 ? (
-        <p className="muted small">Belum ada versi terinstall.</p>
+        <p className="muted small">{t("Belum ada versi terinstall.")}</p>
       ) : (
         <ul className="versions">
           {rt.installed.map((v) => (
@@ -203,11 +204,11 @@ function RuntimeRow(props: {
               <span className="spacer" />
               {canDefault && rt.default_version !== v && (
                 <button className="ghost small" onClick={() => props.onSetDefault(v)}>
-                  Jadikan default
+                  {t("Jadikan default")}
                 </button>
               )}
               <button className="ghost small danger" disabled={props.busy} onClick={() => props.onUninstall(v)}>
-                Hapus
+                {t("Hapus")}
               </button>
             </li>
           ))}

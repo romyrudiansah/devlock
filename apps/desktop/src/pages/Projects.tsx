@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, errorText, type Overview, type SiteInfo } from "../api";
 import NewProject from "./NewProject";
+import { t } from "../i18n";
 
 export default function Projects() {
   const [sites, setSites] = useState<SiteInfo[] | null>(null);
@@ -30,33 +31,35 @@ export default function Projects() {
     <section>
       <header className="page-header">
         <div>
-          <h1>Project</h1>
+          <h1>{t("Project")}</h1>
           <p className="muted">
-            Setiap folder di <code>{overview?.www ?? "www"}</code> otomatis menjadi{" "}
-            <code>nama.{overview?.tld ?? "test"}</code>
+            {t("Setiap folder di")} <code>{overview?.www ?? "www"}</code> {t("otomatis menjadi")}{" "}
+            <code>
+              {t("nama")}.{overview?.tld ?? "test"}
+            </code>
           </p>
         </div>
         <div className="actions">
           <button className="primary" onClick={() => setCreating(true)}>
-            Project baru
+            {t("Project baru")}
           </button>
-          {overview && <button onClick={() => act(api.openFolder(overview.www))}>Buka folder www</button>}
-          <button onClick={refresh}>Muat ulang</button>
+          {overview && <button onClick={() => act(api.openFolder(overview.www))}>{t("Buka folder www")}</button>}
+          <button onClick={refresh}>{t("Muat ulang")}</button>
         </div>
       </header>
 
       {error && <div className="notice error">{error}</div>}
       {notice && <div className="notice ok">{notice}</div>}
       {overview && !overview.daemon_running && sites && sites.length > 0 && (
-        <div className="notice warn">Service belum berjalan — buka tab Service lalu klik Start semua.</div>
+        <div className="notice warn">{t("Service belum berjalan — buka tab Service lalu klik Start semua.")}</div>
       )}
 
       {sites?.length === 0 && (
         <div className="empty">
-          <p>Belum ada project.</p>
+          <p>{t("Belum ada project.")}</p>
           <p className="muted">
-            Buat folder baru di <code>{overview?.www}</code>, lalu klik Muat ulang. Atur versi lewat file{" "}
-            <code>.devlock.toml</code> di folder project.
+            {t("Buat folder baru di")} <code>{overview?.www}</code>
+            {t(", lalu klik Muat ulang. Atur versi lewat file")} <code>.devlock.toml</code> {t("di folder project.")}
           </p>
         </div>
       )}
@@ -71,7 +74,9 @@ export default function Projects() {
               <span className={`badge kind-${site.kind}`}>{site.detail}</span>
             </div>
             {site.domains.length > 1 && (
-              <div className="muted small">alias: {site.domains.slice(1).join(", ")}</div>
+              <div className="muted small">
+                {t("alias")}: {site.domains.slice(1).join(", ")}
+              </div>
             )}
             <dl className="meta">
               <dt>Database</dt>
@@ -82,14 +87,14 @@ export default function Projects() {
             {site.warning && <div className="error-text small">{site.warning}</div>}
             <div className="card-actions">
               <button className="primary" onClick={() => act(api.openUrl(site.url))}>
-                Buka
+                {t("Buka")}
               </button>
-              <button onClick={() => act(api.openFolder(site.dir))}>Folder</button>
+              <button onClick={() => act(api.openFolder(site.dir))}>{t("Folder")}</button>
               <button onClick={() => act(api.openEditor(site.dir))}>Editor</button>
               <button onClick={() => act(api.openTerminal(site.dir))}>Terminal</button>
               {site.database && (
                 <button
-                  title={`Buat database untuk ${site.name} di ${site.database}`}
+                  title={t("Buat database untuk {site} di {db}", { site: site.name, db: site.database })}
                   onClick={() =>
                     api
                       .createSiteDatabase(site.name)
@@ -97,7 +102,7 @@ export default function Projects() {
                       .catch((e) => setError(errorText(e)))
                   }
                 >
-                  Buat DB
+                  {t("Buat DB")}
                 </button>
               )}
             </div>
