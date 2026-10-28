@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- `dev = "npm run dev"` di project PHP (mis. Laravel + Vite) tidak lagi mengubah site menjadi reverse proxy ke dev server: domain tetap dilayani PHP dan dev server berjalan sebagai service di sampingnya (tanpa `PORT`). `proxy_port` tetap memaksa mode proxy.
+
 ## [0.12.1] - 2026-10-28
 
 ### Fixed

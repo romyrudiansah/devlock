@@ -327,9 +327,10 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
         }
     }
 
-    // Dev server project Node: dijalankan lewat shim agar versi Node sesuai project.
+    // Dev server: dijalankan lewat shim agar versi Node sesuai project. Site proxy diarahkan ke
+    // port-nya; di project PHP (Laravel + Vite) dev server hanya berjalan di samping PHP.
     for site in &sites {
-        let (Some(dev), SiteKind::Proxy { port }) = (&site.dev, &site.kind) else {
+        let Some(dev) = &site.dev else {
             continue;
         };
         let path = std::env::join_paths(
@@ -342,10 +343,13 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
         .context("PATH tidak valid")?;
         // Port otomatis: `PORT` tetap per site agar spec tidak berubah saat port sebenarnya
         // terdeteksi (nginx cukup di-reload); kesiapan tidak dicek lewat port.
-        let (env_port, ready_port) = if site.dev_port_auto {
-            (crate::devport::assigned_port(&site.name), None)
-        } else {
-            (*port, Some(*port))
+        let (env_port, ready_port) = match &site.kind {
+            SiteKind::Proxy { .. } if site.dev_port_auto => {
+                (Some(crate::devport::assigned_port(&site.name)), None)
+            }
+            SiteKind::Proxy { port } => (Some(*port), Some(*port)),
+            // Vite milik Laravel memilih port sendiri; `PORT` bisa bentrok dengan aplikasi lain.
+            _ => (None, None),
         };
         services.push(ServiceSpec {
             name: format!("dev:{}", site.name),
@@ -356,14 +360,15 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
                 ),
                 args: vec!["/d".into(), "/s".into(), "/c".into(), dev.clone()],
                 cwd: site.dir.clone(),
-                env: vec![
-                    ("PORT".into(), env_port.to_string()),
-                    ("PATH".into(), path.to_string_lossy().into()),
-                    ("BROWSER".into(), "none".into()),
-                ]
-                .into_iter()
-                .chain(node_ca_env(paths))
-                .collect(),
+                env: env_port
+                    .map(|port| ("PORT".to_string(), port.to_string()))
+                    .into_iter()
+                    .chain([
+                        ("PATH".into(), path.to_string_lossy().into()),
+                        ("BROWSER".into(), "none".into()),
+                    ])
+                    .chain(node_ca_env(paths))
+                    .collect(),
             },
             stop: None,
             init: None,
@@ -1286,6 +1291,37 @@ mod tests {
         );
         // PostgreSQL tidak memakai my.ini.
         assert!(!plan.files.iter().any(|(p, _)| p.ends_with("my.ini")));
+    }
+
+    #[test]
+    fn php_project_dev_server_runs_beside_php() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("nginx", "1.30.6")).unwrap();
+        std::fs::create_dir_all(paths.runtime_dir("php", "8.3.12")).unwrap();
+        let www = paths.default_www();
+        std::fs::create_dir_all(www.join("toko/public")).unwrap();
+        std::fs::write(www.join("toko/composer.json"), "{}").unwrap();
+        std::fs::write(www.join("toko/public/index.php"), "").unwrap();
+        std::fs::write(www.join("toko/.devlock.toml"), "dev = \"npm run dev\"\n").unwrap();
+
+        let plan = plan(&paths, &Config::default()).unwrap();
+        let site = plan.sites.iter().find(|s| s.name == "toko").unwrap();
+        assert_eq!(site.kind, SiteKind::Php { line: "8.3".into() });
+        assert!(!site.dev_port_auto);
+        let dev = plan.services.iter().find(|s| s.name == "dev:toko").unwrap();
+        assert_eq!(dev.port, None);
+        assert!(dev.command.args.contains(&"npm run dev".to_string()));
+        assert!(dev.command.env.iter().all(|(k, _)| k != "PORT"));
+        let (_, conf) = plan
+            .files
+            .iter()
+            .find(|(p, _)| p.ends_with("nginx.conf"))
+            .unwrap();
+        let block = &conf[conf.find("server_name toko.test;").unwrap()..];
+        let block = &block[..block.find("\n    }\n").unwrap()];
+        assert!(block.contains("fastcgi_pass php_8_3;"));
+        assert!(!block.contains("proxy_pass"));
     }
 
     #[test]

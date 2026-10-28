@@ -191,7 +191,10 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
     domains.extend(project.aliases.iter().cloned());
 
     let mut warning = None;
-    let dev_port_auto = project.dev.is_some() && project.proxy_port.is_none();
+    // Project PHP (mis. Laravel + Vite): `dev` tanpa `proxy_port` hanya menjalankan dev server
+    // di samping PHP; domain tetap dilayani PHP. Project lain di-proxy ke dev server.
+    let php_project = is_php_project(dir, &docroot);
+    let dev_port_auto = project.dev.is_some() && project.proxy_port.is_none() && !php_project;
     let kind = if let Some(port) = project.proxy_port {
         SiteKind::Proxy { port }
     } else if dev_port_auto {
@@ -200,7 +203,7 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
             port: crate::devport::read_detected(paths, name)
                 .unwrap_or_else(|| crate::devport::assigned_port(name)),
         }
-    } else if is_php_project(dir, &docroot) {
+    } else if php_project {
         match resolve::resolve(paths, config, Kind::Php, dir) {
             Ok(r) => SiteKind::Php {
                 line: Version::parse(&r.version)
