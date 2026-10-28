@@ -4,6 +4,7 @@ import Projects from "./pages/Projects";
 import Runtimes from "./pages/Runtimes";
 import Php from "./pages/Php";
 import Settings from "./pages/Settings";
+import { t } from "./i18n";
 
 const TABS = [
   { id: "dashboard", label: "Service" },
@@ -27,13 +28,13 @@ export default function App() {
           </span>
           DevLock
         </div>
-        {TABS.map((t) => (
+        {TABS.map((item) => (
           <button
-            key={t.id}
-            className={`nav-item ${tab === t.id ? "active" : ""}`}
-            onClick={() => setTab(t.id)}
+            key={item.id}
+            className={`nav-item ${tab === item.id ? "active" : ""}`}
+            onClick={() => setTab(item.id)}
           >
-            {t.label}
+            {t(item.label)}
           </button>
         ))}
       </nav>

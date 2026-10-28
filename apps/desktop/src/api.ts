@@ -81,6 +81,7 @@ export interface Settings {
   php_workers: number;
   autostart_services: boolean;
   editor: string;
+  language: string;
   start_with_windows: boolean;
 }
 

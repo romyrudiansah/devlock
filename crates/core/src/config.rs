@@ -67,6 +67,8 @@ autostart_services = false
 # Editor untuk tombol "Editor" (perintah atau path lengkap). Kosong = deteksi otomatis:
 # VS Code, Cursor, Windsurf, Zed, Sublime Text, PhpStorm.
 editor = ""
+# Bahasa GUI dan menu tray: "id" (Indonesia) atau "en" (English)
+language = "id"
 
 # Unduhan runtime: bila sumber asli gagal, arsip dicoba dari mirror (checksum tetap dari
 # sumber asli). Mirror bawaan: windows.php.net untuk PHP, npmmirror.com untuk Node.
@@ -243,13 +245,31 @@ impl Default for PhpConfig {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct GuiConfig {
     /// Jalankan semua service saat GUI dibuka.
     pub autostart_services: bool,
     /// Perintah atau path editor; kosong = deteksi otomatis (lihat `editor::KNOWN`).
     pub editor: String,
+    /// Bahasa GUI & menu tray: `id` atau `en`.
+    pub language: String,
+}
+
+impl Default for GuiConfig {
+    fn default() -> Self {
+        Self {
+            autostart_services: false,
+            editor: String::new(),
+            language: "id".into(),
+        }
+    }
+}
+
+impl GuiConfig {
+    pub fn english(&self) -> bool {
+        self.language.eq_ignore_ascii_case("en")
+    }
 }
 
 impl Default for DaemonConfig {

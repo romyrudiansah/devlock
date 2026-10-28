@@ -17,6 +17,7 @@ pub struct Settings {
     php_workers: u16,
     autostart_services: bool,
     editor: String,
+    language: String,
     start_with_windows: bool,
 }
 
@@ -33,7 +34,8 @@ pub async fn get_settings() -> CmdResult<Settings> {
             https_redirect: config.https.redirect,
             php_workers: config.php.workers,
             autostart_services: config.gui.autostart_services,
-            editor: config.gui.editor,
+            editor: config.gui.editor.clone(),
+            language: if config.gui.english() { "en" } else { "id" }.into(),
             start_with_windows: startup::is_enabled(),
         })
     })
@@ -88,6 +90,12 @@ pub async fn save_settings(settings: Settings) -> CmdResult<String> {
             toml_edit::value(settings.autostart_services),
         )?;
         set("gui", "editor", toml_edit::value(settings.editor.trim()))?;
+        let language = if settings.language == "en" {
+            "en"
+        } else {
+            "id"
+        };
+        set("gui", "language", toml_edit::value(language))?;
         startup::set_enabled(settings.start_with_windows).map_err(err)?;
 
         let config = Config::load(&paths).map_err(err)?;

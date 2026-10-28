@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { api, errorText } from "../api";
+import { t } from "../i18n";
 
 export default function LogModal({ service, onClose }: { service: string; onClose: () => void }) {
-  const [text, setText] = useState("Memuat…");
+  const [text, setText] = useState(t("Memuat…"));
   const [follow, setFollow] = useState(true);
   const pre = useRef<HTMLPreElement>(null);
 
@@ -11,7 +12,7 @@ export default function LogModal({ service, onClose }: { service: string; onClos
     const load = async () => {
       try {
         const log = await api.readLog(service);
-        if (alive) setText(log || "(log masih kosong)");
+        if (alive) setText(log || t("(log masih kosong)"));
       } catch (e) {
         if (alive) setText(errorText(e));
       }
@@ -41,10 +42,10 @@ export default function LogModal({ service, onClose }: { service: string; onClos
           <h2>Log {service}</h2>
           <label className="small">
             <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} />{" "}
-            Ikuti
+            {t("Ikuti")}
           </label>
           <button className="ghost" onClick={onClose}>
-            Tutup
+            {t("Tutup")}
           </button>
         </header>
         <pre ref={pre} className="log">

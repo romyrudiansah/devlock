@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { api, errorText, type CreatedProject, type RuntimeInfo, type TemplateInfo } from "../api";
 import { Version } from "./version";
+import { t } from "../i18n";
 
 /// Instance database dari versi terinstall: MySQL/MariaDB per major.minor, PostgreSQL per major.
 function instances(runtimes: RuntimeInfo[]): string[] {
@@ -85,16 +86,16 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
     <div className="modal-backdrop" onClick={busy ? undefined : onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <header className="modal-header">
-          <h2>Project baru</h2>
+          <h2>{t("Project baru")}</h2>
           <button className="ghost" onClick={onClose} disabled={busy}>
-            Tutup
+            {t("Tutup")}
           </button>
         </header>
 
         <div className="modal-body">
           {created ? (
             <div className="form">
-              <div className="notice ok">Project siap di {created.dir}</div>
+              <div className="notice ok">{t("Project siap di {dir}", { dir: created.dir })}</div>
               <p>
                 URL:{" "}
                 <button className="link" onClick={() => api.openUrl(created.url)}>
@@ -121,19 +122,19 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
                 </select>
               </label>
               <label className="field">
-                <span className="small muted">Nama (folder &amp; domain): huruf kecil, angka, tanda minus</span>
+                <span className="small muted">{t("Nama (folder & domain): huruf kecil, angka, tanda minus")}</span>
                 <input
                   value={name}
-                  placeholder="mis. toko-online"
+                  placeholder={t("mis. toko-online")}
                   onChange={(e) => setName(e.target.value.toLowerCase())}
                   disabled={busy}
                 />
               </label>
               {info?.uses_php && (
                 <label className="field">
-                  <span className="small muted">Versi PHP</span>
+                  <span className="small muted">{t("Versi PHP")}</span>
                   <select value={php} onChange={(e) => setPhp(e.target.value)} disabled={busy}>
-                    <option value="">Default</option>
+                    <option value="">{t("Default")}</option>
                     {phpVersions.map((v) => (
                       <option key={v} value={v}>
                         PHP {v}
@@ -144,9 +145,9 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
               )}
               {info?.uses_node && (
                 <label className="field">
-                  <span className="small muted">Versi Node.js</span>
+                  <span className="small muted">{t("Versi Node.js")}</span>
                   <select value={node} onChange={(e) => setNode(e.target.value)} disabled={busy}>
-                    <option value="">Default</option>
+                    <option value="">{t("Default")}</option>
                     {nodeVersions.map((v) => (
                       <option key={v} value={v}>
                         Node {v}
@@ -157,9 +158,11 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
               )}
               {(info?.uses_php || info?.needs_database) && (
                 <label className="field">
-                  <span className="small muted">Database {info?.needs_database ? "(wajib)" : "(opsional)"}</span>
+                  <span className="small muted">
+                    Database {info?.needs_database ? t("(wajib)") : t("(opsional)")}
+                  </span>
                   <select value={database} onChange={(e) => setDatabase(e.target.value)} disabled={busy}>
-                    {!info?.needs_database && <option value="">Tanpa database</option>}
+                    {!info?.needs_database && <option value="">{t("Tanpa database")}</option>}
                     {dbInstances.map((d) => (
                       <option key={d} value={d}>
                         {d}
@@ -168,12 +171,16 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
                   </select>
                 </label>
               )}
-              {missingRuntime && <div className="notice warn">Install {missingRuntime} dulu lewat tab Runtime.</div>}
-              {name && !validName && <div className="notice warn">Nama hanya huruf kecil, angka, dan tanda minus.</div>}
+              {missingRuntime && (
+                <div className="notice warn">{t("Install {what} dulu lewat tab Runtime.", { what: missingRuntime })}</div>
+              )}
+              {name && !validName && (
+                <div className="notice warn">{t("Nama hanya huruf kecil, angka, dan tanda minus.")}</div>
+              )}
               {error && <div className="notice error">{error}</div>}
               <div className="card-actions">
                 <button className="primary" disabled={busy || !validName || !!missingRuntime} onClick={submit}>
-                  {busy ? "Membuat…" : "Buat project"}
+                  {busy ? t("Membuat…") : t("Buat project")}
                 </button>
               </div>
             </div>

@@ -134,6 +134,14 @@ const mockSettings = {
   php_workers: 4,
   autostart_services: false,
   editor: "",
+  // Disimpan di localStorage agar pergantian bahasa tetap terlihat setelah reload.
+  language: (() => {
+    try {
+      return localStorage.getItem("devmock-language") ?? "id";
+    } catch {
+      return "id";
+    }
+  })(),
   start_with_windows: false,
 };
 
@@ -171,6 +179,11 @@ const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
   get_settings: () => ({ ...mockSettings }),
   save_settings: ({ settings }) => {
     Object.assign(mockSettings, settings as object);
+    try {
+      localStorage.setItem("devmock-language", mockSettings.language);
+    } catch {
+      // localStorage tidak tersedia: bahasa hanya berlaku sampai reload.
+    }
     return "Pengaturan disimpan dan diterapkan.";
   },
   list_templates: () => [
