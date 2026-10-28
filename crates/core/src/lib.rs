@@ -16,6 +16,7 @@ pub mod runtime;
 pub mod services;
 pub mod sites;
 pub mod ssl;
+pub mod terminal;
 pub mod tools;
 pub mod version;
 
