@@ -77,6 +77,7 @@ export interface Settings {
   http_port: number;
   https_enabled: boolean;
   https_port: number;
+  https_redirect: boolean;
   php_workers: number;
   autostart_services: boolean;
   start_with_windows: boolean;

@@ -182,7 +182,7 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 ### F. SSL Lokal — **P1**
 - [ ] Generate root CA sekali, trust ke Windows Cert Store (helper + UAC) — juga NSS Firefox (opsional) _(sebagian: CA + trust store user, v0.5.0; Firefox belum)_
 - [x] Sertifikat per host / wildcard otomatis saat vhost dibuat _(per site + alias, v0.5.0)_
-- [ ] Toggle HTTPS per project, redirect HTTP→HTTPS opsional _(sebagian: toggle global & per project ada; redirect belum)_
+- [x] Toggle HTTPS per project, redirect HTTP→HTTPS opsional _(`https_redirect` / `[https] redirect`)_
 - [x] Set `NODE_EXTRA_CA_CERTS` dan `curl.cainfo` agar runtime percaya CA lokal _(v0.5.0 / v0.6.0)_
 
 ### G. Database — **P0 (MySQL/MariaDB) / P1 (lainnya)**

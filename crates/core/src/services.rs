@@ -741,13 +741,29 @@ pub fn nginx_conf(
 
     for site in sites {
         let root = slash(&site.docroot);
+        let names = site.domains.join(" ");
+        let cert = certs.get(&site.name);
+        let redirect = site.https_redirect && cert.is_some();
+        let _ = write!(c, "\n    # {dir}\n", dir = site.dir.display());
+        if redirect {
+            let port = match config.https.port {
+                443 => String::new(),
+                port => format!(":{port}"),
+            };
+            let _ = write!(
+                c,
+                "    server {{\n        listen {listen};\n        server_name {names};\n        return 301 https://$host{port}$request_uri;\n    }}\n\n"
+            );
+        }
+        let _ = writeln!(c, "    server {{");
+        if !redirect {
+            let _ = writeln!(c, "        listen {listen};");
+        }
         let _ = write!(
             c,
-            "\n    # {dir}\n    server {{\n        listen {listen};\n        server_name {names};\n        root \"{root}\";\n",
-            dir = site.dir.display(),
-            names = site.domains.join(" "),
+            "        server_name {names};\n        root \"{root}\";\n"
         );
-        if let Some(cert) = certs.get(&site.name) {
+        if let Some(cert) = cert {
             let _ = write!(
                 c,
                 "        listen {https_listen} ssl;\n        ssl_certificate \"{crt}\";\n        ssl_certificate_key \"{key}\";\n",
@@ -1118,6 +1134,68 @@ mod tests {
             .sites
             .iter()
             .any(|s| s.name == "secure" && s.url(&Config::default()) == "https://secure.test"));
+        assert!(!conf.contains("return 301"));
+    }
+
+    #[test]
+    fn https_redirect_moves_http_to_redirect_server() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("nginx", "1.30.6")).unwrap();
+        let www = paths.default_www();
+        for name in ["secure", "plain", "optout"] {
+            std::fs::create_dir_all(www.join(name)).unwrap();
+            std::fs::write(www.join(name).join("index.html"), "").unwrap();
+        }
+        std::fs::write(
+            www.join("secure/.devlock.toml"),
+            "https = true\nhttps_redirect = true\n",
+        )
+        .unwrap();
+        // Redirect tanpa HTTPS tidak berlaku.
+        std::fs::write(www.join("plain/.devlock.toml"), "https_redirect = true\n").unwrap();
+        std::fs::write(
+            www.join("optout/.devlock.toml"),
+            "https = true\nhttps_redirect = false\n",
+        )
+        .unwrap();
+        let mut config = Config::default();
+        config.https.redirect = true;
+        config.https.port = 8443;
+
+        let plan = plan(&paths, &config).unwrap();
+        let (_, conf) = plan
+            .files
+            .iter()
+            .find(|(p, _)| p.ends_with("nginx.conf"))
+            .unwrap();
+        let block = |name: &str| {
+            let start = conf
+                .find(&format!("www{}{name}\n", std::path::MAIN_SEPARATOR))
+                .unwrap();
+            let end = conf[start + 1..]
+                .find("\n    # ")
+                .map_or(conf.len(), |i| start + 1 + i);
+            conf[start..end].to_string()
+        };
+        let secure = block("secure");
+        assert!(secure.contains(
+            "listen 127.0.0.1:80;\n        server_name secure.test;\n        return 301 https://$host:8443$request_uri;"
+        ));
+        assert_eq!(secure.matches("listen 127.0.0.1:80;").count(), 1);
+        assert!(secure.contains("listen 127.0.0.1:8443 ssl;"));
+        let plain = block("plain");
+        assert!(!plain.contains("return 301") && plain.contains("listen 127.0.0.1:80;"));
+        let optout = block("optout");
+        assert!(!optout.contains("return 301") && optout.contains("listen 127.0.0.1:8443 ssl;"));
+        assert!(plan
+            .sites
+            .iter()
+            .any(|s| s.name == "secure" && s.https_redirect));
+        assert!(plan
+            .sites
+            .iter()
+            .any(|s| s.name == "plain" && !s.https_redirect));
     }
 
     #[test]

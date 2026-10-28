@@ -269,6 +269,12 @@ enum SslCommand {
     Enable,
     /// Nonaktifkan HTTPS global
     Disable,
+    /// Alihkan HTTP ke HTTPS (301) untuk site ber-HTTPS secara default ([https] redirect);
+    /// per project: `https_redirect = true/false` di .devlock.toml
+    Redirect {
+        #[arg(value_parser = ["on", "off"])]
+        state: String,
+    },
     /// Perbarui bundle CA (Mozilla + CA DevLock) dan pasang ke php.ini semua versi PHP
     Bundle,
 }
@@ -391,6 +397,7 @@ fn main() {
             SslCommand::Untrust => ssl::untrust(),
             SslCommand::Enable => ssl::set_enabled(true),
             SslCommand::Disable => ssl::set_enabled(false),
+            SslCommand::Redirect { state } => ssl::set_redirect(state == "on"),
             SslCommand::Bundle => ssl::bundle(),
         },
         Command::Dns { command, root } => {

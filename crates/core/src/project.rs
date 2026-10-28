@@ -27,6 +27,8 @@ pub struct ProjectConfig {
     pub proxy_port: Option<u16>,
     /// Layani juga lewat HTTPS; default mengikuti `[https] enabled` global.
     pub https: Option<bool>,
+    /// Alihkan HTTP ke HTTPS; default mengikuti `[https] redirect` global.
+    pub https_redirect: Option<bool>,
 }
 
 impl ProjectConfig {

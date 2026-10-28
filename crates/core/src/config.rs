@@ -31,9 +31,11 @@ port = 80
 
 # HTTPS lokal dengan sertifikat dari CA DevLock (`devlock ssl trust` sekali).
 # Bisa juga per project: `https = true` di .devlock.toml.
+# redirect = true mengalihkan HTTP ke HTTPS (per project: `https_redirect`).
 [https]
 enabled = false
 port = 443
+redirect = false
 
 # Apache untuk site dengan webserver = "apache": hanya di 127.0.0.1, nginx meneruskan
 # request site itu ke port ini.
@@ -96,6 +98,9 @@ pub struct HttpsConfig {
     /// HTTPS untuk semua site (project bisa menimpa lewat `https` di `.devlock.toml`).
     pub enabled: bool,
     pub port: u16,
+    /// Alihkan HTTP ke HTTPS (301) untuk site ber-HTTPS; project bisa menimpa lewat
+    /// `https_redirect` di `.devlock.toml`.
+    pub redirect: bool,
 }
 
 impl Default for HttpsConfig {
@@ -103,6 +108,7 @@ impl Default for HttpsConfig {
         Self {
             enabled: false,
             port: 443,
+            redirect: false,
         }
     }
 }
