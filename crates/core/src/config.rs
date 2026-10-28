@@ -86,6 +86,8 @@ pub struct Config {
     pub gui: GuiConfig,
     /// Override port per instance, mis. `"mysql@8.4" = 3306`.
     pub ports: BTreeMap<String, u16>,
+    /// Profil stack: grup service yang dijalankan bersama (`devlock profile use <nama>`).
+    pub profiles: BTreeMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -164,6 +166,7 @@ impl Default for Config {
             daemon: DaemonConfig::default(),
             gui: GuiConfig::default(),
             ports: BTreeMap::new(),
+            profiles: BTreeMap::new(),
         }
     }
 }
@@ -243,6 +246,27 @@ impl Config {
     }
 
     /// Ubah satu nilai `[table] key = value` tanpa menghilangkan komentar di file.
+    /// Hapus satu kunci di tabel `devlock.toml` (komentar lain dipertahankan). `true` bila ada.
+    pub fn remove_value(paths: &Paths, table: &str, key: &str) -> Result<bool> {
+        let file = paths.config_file();
+        let Ok(text) = std::fs::read_to_string(&file) else {
+            return Ok(false);
+        };
+        let mut doc: toml_edit::DocumentMut = text
+            .parse()
+            .with_context(|| format!("format {} tidak valid", file.display()))?;
+        let removed = doc
+            .get_mut(table)
+            .and_then(|t| t.as_table_like_mut())
+            .and_then(|t| t.remove(key))
+            .is_some();
+        if removed {
+            std::fs::write(&file, doc.to_string())
+                .with_context(|| format!("gagal menulis {}", file.display()))?;
+        }
+        Ok(removed)
+    }
+
     pub fn set_value(paths: &Paths, table: &str, key: &str, value: toml_edit::Item) -> Result<()> {
         let file = paths.config_file();
         let text = std::fs::read_to_string(&file).unwrap_or_else(|_| DEFAULT_CONFIG.to_string());
