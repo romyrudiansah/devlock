@@ -1,10 +1,14 @@
 # DevLock
 
 Local development environment untuk Windows — alternatif Laragon / WAMP / XAMPP dengan
-**multi-versi runtime** (PHP, Node, MySQL/MariaDB, PostgreSQL) yang bisa berjalan
-**bersamaan** dan dipilih **per-project**.
+**multi-versi runtime** (PHP, Node, MySQL/MariaDB, PostgreSQL, MongoDB, Go, Python, Java) yang
+bisa berjalan **bersamaan** dan dipilih **per-project**.
 
-> Status: Fase 3 (CLI + GUI, PostgreSQL, HTTPS lokal, aksi database). Open source di bawah MIT OR Apache-2.0. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
+> Status: semua fase ROADMAP selesai (CLI + GUI, database, HTTPS, Mailpit, tunnel, installer,
+> update). Open source di bawah MIT OR Apache-2.0. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
+>
+> **Website & panduan pengguna:** folder [`site/`](site/) (`index.html` dan `panduan.html`),
+> diterbitkan lewat GitHub Pages.
 
 ## Unduh
 
@@ -76,7 +80,8 @@ membutuhkan Visual C++ Redistributable terbaru.
 ```
 devlock init                       siapkan struktur folder + devlock.toml
 devlock list php --available       lihat versi yang bisa diinstall (cache 6 jam; --refresh)
-devlock install php 8.3            install runtime (php, node, composer, nginx, mysql, mariadb, postgresql)
+devlock install php 8.3            install runtime (php, node, composer, go, python, java, nginx, apache,
+                                   mysql, mariadb, postgresql, mongodb, redis, garnet, adminer, mailpit, …)
 devlock use php 8.2 [--global]     pilih versi (per project / global)
 devlock which php                  versi & path yang dipakai di folder ini
 devlock current                    versi php/node/composer/database di folder ini
@@ -384,10 +389,16 @@ cadangkan dulu yang masih diperlukan, mis. dengan `devlock db dump`).
 ## Privasi
 
 DevLock tidak mengumpulkan atau mengirim data penggunaan (tanpa telemetri). Koneksi keluar
-hanya dibuat saat Anda meminta daftar atau unduhan runtime, langsung ke sumber resminya:
-`downloads.php.net`, `nodejs.org`, `getcomposer.org`, `nginx.org`, `downloads.mariadb.org`,
-`cdn.mysql.com`, `www.postgresql.org`, dan `get.enterprisedb.com`. Daemon DevLock dan semua
-service hanya mendengarkan di `127.0.0.1`.
+hanya dibuat saat Anda meminta daftar atau unduhan runtime, update DevLock, atau
+`devlock share`, langsung ke sumber resminya: `downloads.php.net`, `nodejs.org`,
+`getcomposer.org`, `nginx.org`, `www.apachelounge.com`, `downloads.mariadb.org`,
+`cdn.mysql.com`, `www.postgresql.org`, `get.enterprisedb.com`, `downloads.mongodb.org`,
+`go.dev`, `api.adoptium.net`, `builds.dotnet.microsoft.com` (runtime Garnet), `xdebug.org`,
+`curl.se` (bundle CA), dan GitHub Releases (Redis, Garnet, Adminer, Mailpit, cloudflared,
+mongosh, Python, rilis DevLock). Mirror (`windows.php.net`, `npmmirror.com`, atau
+`[mirrors]` Anda) hanya dipakai bila sumber asli gagal. `devlock share` meneruskan site ke
+Cloudflare selama tunnel aktif. Daemon DevLock dan semua service hanya mendengarkan di
+`127.0.0.1`.
 
 ## Code signing policy
 

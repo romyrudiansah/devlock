@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panduan DevLock</title>
+  <meta name="description" content="Panduan lengkap DevLock: instalasi, project Laravel/Node/WordPress, database, HTTPS, domain .test, Mailpit, tunnel, GUI, update, dan pemecahan masalah.">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/theme.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="assets/icon.png" alt="">DevLock</a>
+      <nav class="nav" aria-label="Navigasi utama">
+        <a class="hide-sm" href="./#fitur">Fitur</a>
+        <a href="panduan.html" aria-current="page">Panduan</a>
+        <a href="https://github.com/romyrudiansah/devlock">GitHub</a>
+        <button class="theme-toggle" type="button" aria-label="Ganti tema">☾</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wrap doc">
+    <details class="toc" open>
+      <summary>Daftar isi</summary>
+      <nav aria-label="Daftar isi">
+      <p>Memulai</p>
+      <ol>
+        <li><a href="#persyaratan">Persyaratan</a></li>
+        <li><a href="#instalasi">Instalasi</a></li>
+        <li><a href="#konsep">Cara kerja DevLock</a></li>
+        <li><a href="#pertama">Langkah pertama</a></li>
+      </ol>
+      <p>Project</p>
+      <ol>
+        <li><a href="#laravel">Laravel</a></li>
+        <li><a href="#node">Node.js (Next, Nuxt, Vite)</a></li>
+        <li><a href="#wordpress">WordPress &amp; PHP lain</a></li>
+        <li><a href="#apache">Apache &amp; .htaccess</a></li>
+        <li><a href="#devlock-toml">Referensi .devlock.toml</a></li>
+      </ol>
+      <p>Layanan</p>
+      <ol>
+        <li><a href="#database">Database</a></li>
+        <li><a href="#cache">Redis &amp; Garnet</a></li>
+        <li><a href="#https">HTTPS lokal</a></li>
+        <li><a href="#domain">Domain .test</a></li>
+        <li><a href="#mailpit">Email (Mailpit)</a></li>
+        <li><a href="#share">Bagikan ke publik</a></li>
+        <li><a href="#bahasa-lain">Go, Python, Java</a></li>
+      </ol>
+      <p>Aplikasi</p>
+      <ol>
+        <li><a href="#gui">GUI &amp; tray</a></li>
+        <li><a href="#terminal">Terminal &amp; editor</a></li>
+        <li><a href="#profil">Profil, ekspor &amp; impor</a></li>
+        <li><a href="#update">Update</a></li>
+        <li><a href="#masalah">Pemecahan masalah</a></li>
+        <li><a href="#uninstall">Uninstall</a></li>
+        <li><a href="#cli">Referensi CLI</a></li>
+      </ol>
+      </nav>
+    </details>
+    <script>
+      // Di layar kecil daftar isi dilipat agar konten langsung terlihat; di layar lebar selalu terbuka.
+      (function () {
+        var toc = document.querySelector("details.toc");
+        var small = window.matchMedia("(max-width: 860px)");
+        function sync() {
+          toc.open = !small.matches;
+        }
+        sync();
+        small.addEventListener("change", sync);
+      })();
+    </script>
+
+    <article>
+      <h1>Panduan DevLock</h1>
+      <p>Panduan ini menjelaskan cara memasang DevLock, menjalankan project pertama, dan memakai fitur
+        lainnya. Semua perintah diketik di PowerShell atau Command Prompt; sebagian besar juga tersedia
+        lewat GUI.</p>
+
+      <h2 id="persyaratan">Persyaratan</h2>
+      <ul>
+        <li>Windows 10 atau 11, 64-bit.</li>
+        <li><a href="https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist">Visual C++ Redistributable</a>
+          terbaru (x64), dibutuhkan PHP dan Apache. <code>devlock doctor</code> memberi tahu bila belum ada.</li>
+        <li>Port 80 (dan 443 bila memakai HTTPS) tidak dipakai program lain, misalnya IIS, Laragon, atau XAMPP.</li>
+        <li>Koneksi internet saat mengunduh runtime. Setelah terpasang, DevLock berjalan sepenuhnya offline.</li>
+      </ul>
+
+      <h2 id="instalasi">Instalasi</h2>
+      <p>Unduh dari halaman <a href="https://github.com/romyrudiansah/devlock/releases">Releases</a> dan
+        cocokkan SHA256 file dengan isi file <code>.sha256</code> di rilis yang sama.</p>
+      <h3>Pilihan 1: installer (disarankan)</h3>
+      <p>Jalankan <code>devlock-vX.Y.Z-windows-x64-setup.exe</code>. DevLock dipasang per user di
+        <code>%LOCALAPPDATA%\DevLock</code> tanpa hak admin, lengkap dengan shortcut Start Menu dan entri
+        di <em>Apps &amp; features</em>.</p>
+      <h3>Pilihan 2: portable</h3>
+      <p>Ekstrak <code>devlock-vX.Y.Z-windows-x64.zip</code> ke folder mana saja, misalnya
+        <code>D:\DevLock</code>, lalu:</p>
+<pre>D:\DevLock\bin\devlock.exe init</pre>
+      <h3>Setelah memasang</h3>
+      <p>Agar perintah <code>devlock</code>, <code>php</code>, <code>composer</code>, <code>node</code>, dan
+        lainnya bisa dipakai dari terminal mana pun, tambahkan folder shim ke PATH, lalu buka terminal baru:</p>
+<pre>devlock path add</pre>
+      <div class="callout warn">
+        <p><strong>Peringatan Windows.</strong> Rilis DevLock belum ditandatangani. <em>SmartScreen</em> bisa
+          menampilkan "Windows protected your PC": pilih <em>More info</em> → <em>Run anyway</em>.
+          <em>Smart App Control</em> kadang memblokir exe yang baru dirilis; biasanya hilang sendiri setelah
+          beberapa waktu. Lihat <a href="#masalah">pemecahan masalah</a>.</p>
+      </div>
+
+      <h2 id="konsep">Cara kerja DevLock</h2>
+      <p>Semua milik DevLock tinggal di folder instalasinya:</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Folder</th><th>Isi</th></tr></thead>
+          <tbody>
+            <tr><td><code>bin\</code></td><td><code>devlock.exe</code> (CLI), <code>devlock-gui.exe</code>, <code>devlock-shim.exe</code></td></tr>
+            <tr><td><code>runtimes\</code></td><td>Runtime terpasang, satu folder per versi (mis. <code>php\8.3.12</code>)</td></tr>
+            <tr><td><code>www\</code></td><td>Project Anda; tiap subfolder menjadi <code>&lt;nama&gt;.test</code></td></tr>
+            <tr><td><code>data\</code></td><td>Data database, cache, dan email per instance</td></tr>
+            <tr><td><code>shims\</code></td><td><code>php.exe</code>, <code>node.exe</code>, <code>mysql.exe</code>, … yang memilih versi sesuai project</td></tr>
+            <tr><td><code>etc\</code>, <code>logs\</code>, <code>ssl\</code></td><td>Konfigurasi hasil generate, log service, CA dan sertifikat</td></tr>
+            <tr><td><code>devlock.toml</code></td><td>Konfigurasi global (port, TLD, versi default, dll.)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Tiga ide utamanya:</p>
+      <ul>
+        <li><strong>Versi per project.</strong> File <code>.devlock.toml</code> di folder project menentukan versi
+          PHP, Node, database, dan lainnya. Tanpa file itu, dipakai versi default global.</li>
+        <li><strong>Instance terpisah.</strong> Tiap versi PHP punya pool php-cgi sendiri; tiap database + versi
+          (<code>mysql@8.4</code>, <code>postgresql@18</code>) punya port dan folder data sendiri. Semuanya bisa
+          berjalan bersamaan.</li>
+        <li><strong>Hanya yang dipakai yang berjalan.</strong> <code>devlock start</code> menjalankan nginx, pool PHP,
+          database, cache, dan dev server yang dibutuhkan site Anda. Runtime yang terpasang tetapi tidak dipakai
+          site mana pun tidak dijalankan.</li>
+      </ul>
+
+      <h2 id="pertama">Langkah pertama</h2>
+      <p>Lihat versi yang tersedia, lalu install yang dibutuhkan. Versi pertama yang dipasang otomatis menjadi
+        default.</p>
+<pre>devlock list php --available
+devlock install php 8.3
+devlock install composer
+devlock install nginx</pre>
+      <p>Buat folder <code>www\halo</code> berisi <code>index.php</code>, lalu jalankan:</p>
+<pre>devlock start
+devlock status</pre>
+      <p>Buka <code>http://halo.test</code>. Saat pertama kali, DevLock meminta izin (UAC) untuk menambahkan domain
+        ke file hosts Windows. Agar tidak perlu lagi setiap ada project baru, aktifkan
+        <a href="#domain">DNS wildcard</a>.</p>
+      <p>Hentikan semuanya dengan <code>devlock stop</code>, atau tombol <strong>Stop semua</strong> di GUI.</p>
+
+      <h2 id="laravel">Project Laravel</h2>
+      <h3>Yang perlu dipasang</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Runtime</th><th>Kebutuhan</th><th>Perintah</th></tr></thead>
+          <tbody>
+            <tr><td>PHP</td><td>Wajib</td><td><code>devlock install php 8.3</code></td></tr>
+            <tr><td>Composer</td><td>Wajib</td><td><code>devlock install composer</code></td></tr>
+            <tr><td>nginx</td><td>Wajib</td><td><code>devlock install nginx</code></td></tr>
+            <tr><td>Database</td><td>Pilih satu</td><td><code>devlock install mysql 8.4</code> / <code>mariadb 11.4</code> / <code>postgresql 17</code></td></tr>
+            <tr><td>Node.js</td><td>Untuk Vite</td><td><code>devlock install node 22</code></td></tr>
+            <tr><td>Redis</td><td>Opsional</td><td><code>devlock install redis 8</code></td></tr>
+            <tr><td>Mailpit</td><td>Opsional</td><td><code>devlock install mailpit</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Project baru</h3>
+<pre>devlock new laravel toko --php 8.3 --db mysql@8.4</pre>
+      <p>DevLock menjalankan <code>composer create-project</code>, menulis <code>.devlock.toml</code>, membuat
+        database <code>toko</code>, mengisi koneksi database dan <code>APP_URL</code> di <code>.env</code>, lalu
+        mendaftarkan <code>toko.test</code>. Di GUI: tab <strong>Project</strong> → <strong>Project baru</strong>.</p>
+      <h3>Project yang sudah ada</h3>
+      <p>Salin atau clone project ke <code>www\toko</code>, lalu buat <code>www\toko\.devlock.toml</code>:</p>
+<pre>php = "8.3"
+database = "mysql@8.4"
+cache = "redis@8"        <span class="c"># opsional</span>
+dev = "npm run dev"      <span class="c"># Vite ikut berjalan saat devlock start</span></pre>
+      <p>Buat database dan sesuaikan <code>.env</code>:</p>
+<pre>cd www\toko
+devlock start
+devlock db create toko
+composer install
+php artisan migrate</pre>
+<pre><span class="c"># .env</span>
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3384
+DB_DATABASE=toko
+DB_USERNAME=root
+DB_PASSWORD=</pre>
+      <p>Port tiap instance dihitung dari versinya (lihat <a href="#database">Database</a>);
+        <code>devlock current</code> di folder project menampilkannya.</p>
+      <div class="callout">
+        <p><strong>Vite di project PHP.</strong> Di project Laravel, <code>dev = "npm run dev"</code> menjalankan Vite
+          sebagai service <em>di samping</em> PHP, jadi <code>toko.test</code> tetap dilayani Laravel dan aset
+          dimuat dari dev server Vite. Anda juga boleh tidak mengisi <code>dev</code> dan menjalankan
+          <code>npm run dev</code> sendiri di terminal.</p>
+      </div>
+
+      <h2 id="node">Project Node.js (Next.js, Nuxt, Vite)</h2>
+<pre>devlock install node 22
+devlock new next dashboard --node 22</pre>
+      <p>Untuk project yang sudah ada, cukup tambahkan perintah dev server:</p>
+<pre><span class="c"># www\dashboard\.devlock.toml</span>
+node = "22"
+dev = "npm run dev"</pre>
+      <p><code>devlock start</code> menjalankan dev server itu sebagai service <code>dev:dashboard</code>, membaca
+        port dari output-nya (Vite, Next.js, Nuxt, Astro, Angular, …), dan mengarahkan
+        <code>dashboard.test</code> ke port tersebut, termasuk websocket untuk hot reload. Untuk mengunci port,
+        tulis <code>proxy_port = 5173</code>. Versi Node juga dibaca dari <code>.nvmrc</code>,
+        <code>.node-version</code>, atau <code>volta</code> di <code>package.json</code>.</p>
+      <p>Shim <code>npm</code>, <code>npx</code>, <code>pnpm</code>, <code>yarn</code>, dan <code>corepack</code> memakai
+        Node milik project. Aktifkan pnpm/yarn sekali dengan <code>corepack enable</code>.</p>
+
+      <h2 id="wordpress">WordPress &amp; PHP lain</h2>
+<pre>devlock new wordpress blog --db mariadb@11.4</pre>
+      <p>DevLock mengunduh WordPress resmi, membuat database, dan mengisi <code>wp-config.php</code>. Template lain:
+        Symfony, CodeIgniter 4, Vite + React, Vite + Vue, Nuxt, dan HTML statis
+        (<code>devlock new --list</code>).</p>
+      <p>Document root dideteksi otomatis: <code>public\</code>, <code>web\</code>, <code>public_html\</code>,
+        <code>dist\</code>, atau folder project. Ubah dengan <code>docroot = "app/public"</code>.</p>
+      <h3>Ekstensi, Xdebug, dan php.ini</h3>
+<pre>devlock php ext enable gmp intl --php 8.3
+devlock php xdebug install           <span class="c"># unduh dari xdebug.org + aktifkan</span>
+devlock php ini set memory_limit 1G</pre>
+      <p>Perubahan langsung diterapkan ke pool PHP yang berjalan. Xdebug memakai mode <code>debug,develop</code>,
+        mulai dengan trigger <code>XDEBUG_SESSION</code>, dan terhubung ke port 9003 (VS Code, PhpStorm). Semua juga
+        tersedia di tab <strong>PHP</strong> pada GUI.</p>
+
+      <h2 id="apache">Apache &amp; .htaccess</h2>
+      <p>Untuk aplikasi yang bergantung pada <code>.htaccess</code>:</p>
+<pre>devlock install apache</pre>
+<pre><span class="c"># www\legacy\.devlock.toml</span>
+php = "7.4"
+webserver = "apache"</pre>
+      <p>nginx tetap menerima semua request lalu meneruskan site ini ke Apache di <code>127.0.0.1:8180</code>. Apache
+        memproses <code>.htaccess</code> (mod_rewrite, headers, auth) dan memakai pool PHP yang sama, jadi versi PHP per
+        project tetap berlaku.</p>
+
+      <h2 id="devlock-toml">Referensi .devlock.toml</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Kunci</th><th>Contoh</th><th>Arti</th></tr></thead>
+          <tbody>
+            <tr><td><code>php</code></td><td><code>"8.3"</code></td><td>Versi PHP (juga dari <code>config.platform.php</code> di composer.json)</td></tr>
+            <tr><td><code>node</code></td><td><code>"22"</code></td><td>Versi Node (juga dari <code>.nvmrc</code>)</td></tr>
+            <tr><td><code>go</code>, <code>python</code>, <code>java</code></td><td><code>"1.27"</code>, <code>"3.13"</code>, <code>"21"</code></td><td>Versi Go, Python, Java</td></tr>
+            <tr><td><code>database</code></td><td><code>"mysql@8.4"</code></td><td>Instance database: <code>mysql</code>, <code>mariadb</code>, <code>postgresql</code>, <code>mongodb</code></td></tr>
+            <tr><td><code>cache</code></td><td><code>"redis@8"</code></td><td>Instance cache: <code>redis</code> atau <code>garnet</code></td></tr>
+            <tr><td><code>webserver</code></td><td><code>"apache"</code></td><td><code>nginx</code> (default) atau <code>apache</code></td></tr>
+            <tr><td><code>docroot</code></td><td><code>"public"</code></td><td>Document root relatif ke folder project</td></tr>
+            <tr><td><code>aliases</code></td><td><code>["shop.local"]</code></td><td>Domain tambahan</td></tr>
+            <tr><td><code>dev</code></td><td><code>"npm run dev"</code></td><td>Dev server yang dijalankan sebagai service</td></tr>
+            <tr><td><code>proxy_port</code></td><td><code>5173</code></td><td>Kunci port dev server dan proxy domain ke sana</td></tr>
+            <tr><td><code>https</code></td><td><code>true</code></td><td>Layani juga lewat HTTPS</td></tr>
+            <tr><td><code>https_redirect</code></td><td><code>true</code></td><td>Alihkan HTTP ke HTTPS</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Mengubah file ini tidak perlu restart manual: daemon mendeteksinya dalam beberapa detik. Untuk memilih versi
+        dari terminal: <code>devlock use php 8.2</code> (project) atau <code>devlock use php 8.2 --global</code>.</p>
+
+      <h2 id="database">Database</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Engine</th><th>Port</th><th>Contoh</th><th>User lokal</th></tr></thead>
+          <tbody>
+            <tr><td>MySQL</td><td>3300 + major×10 + minor</td><td><code>mysql@8.4</code> → 3384</td><td><code>root</code>, tanpa password</td></tr>
+            <tr><td>MariaDB</td><td>3400 + (major−10)×20 + minor</td><td><code>mariadb@11.4</code> → 3424</td><td><code>root</code>, tanpa password</td></tr>
+            <tr><td>PostgreSQL</td><td>5400 + major</td><td><code>postgresql@18</code> → 5418</td><td><code>postgres</code>, tanpa password</td></tr>
+            <tr><td>MongoDB</td><td>27000 + major×10 + minor</td><td><code>mongodb@8.0</code> → 27080</td><td>tanpa autentikasi</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Semua instance hanya mendengarkan di <code>127.0.0.1</code>. Ubah port lewat <code>[ports]</code> di
+        <code>devlock.toml</code>, mis. <code>"mysql@8.4" = 3306</code>.</p>
+<pre>devlock start db                       <span class="c"># semua instance database yang dipakai</span>
+devlock db create toko
+devlock db list --instance mysql@8.4
+devlock db dump toko                   <span class="c"># → data\backups\mysql-8.4\toko-&lt;waktu&gt;.sql</span>
+devlock db restore toko_salinan backup.sql
+devlock db drop toko --yes</pre>
+      <p>Shim <code>mysql</code>, <code>mysqldump</code>, <code>psql</code>, <code>pg_dump</code>, dan
+        <code>mongosh</code> otomatis terhubung ke instance milik project.</p>
+      <h3>Adminer</h3>
+<pre>devlock install adminer</pre>
+      <p>Buka <code>http://adminer.test</code>. Kolom server menawarkan instance DevLock Anda, dan login tanpa password
+        diizinkan karena site ini hanya bisa diakses dari komputer Anda sendiri.</p>
+
+      <h2 id="cache">Redis &amp; Garnet</h2>
+<pre>devlock install redis 8
+devlock use cache redis@8              <span class="c"># atau cache = "redis@8" di .devlock.toml</span>
+redis-cli ping</pre>
+      <p>Port: <code>redis@7</code> → 6379, <code>redis@8</code> → 6389. Isi <code>REDIS_PORT</code> di
+        <code>.env</code> sesuai port itu. Alternatifnya Garnet dari Microsoft (<code>devlock install garnet</code>,
+        <code>cache = "garnet@2"</code>, port 6402), yang berjalan di memori saja.</p>
+
+      <h2 id="https">HTTPS lokal</h2>
+<pre>devlock ssl trust                      <span class="c"># sekali: pasang CA DevLock (ada dialog Windows)</span>
+devlock ssl enable                     <span class="c"># HTTPS untuk semua site, atau https = true per project</span>
+devlock ssl redirect on                <span class="c"># opsional: HTTP → HTTPS</span>
+devlock reload</pre>
+      <p>Di GUI, peringatan "CA DevLock belum dipercaya" di tab Service punya tombol <strong>Percayai CA DevLock</strong>.
+        Chrome dan Edge langsung memercayai CA ini. <strong>Firefox</strong> hanya membaca CA dari store komputer, jadi
+        jalankan sekali <code>devlock ssl trust --machine</code> (UAC). PHP, Composer, dan Node juga dikonfigurasi agar
+        memercayai CA DevLock.</p>
+
+      <h2 id="domain">Domain .test</h2>
+      <p>Secara default, DevLock menulis domain site ke file hosts Windows lewat UAC setiap ada site baru. Agar semua
+        <code>*.test</code>, termasuk subdomain seperti <code>api.toko.test</code>, langsung bekerja tanpa file hosts:</p>
+<pre>devlock dns enable                     <span class="c"># sekali (UAC)</span>
+devlock dns status</pre>
+      <p>DevLock menjalankan DNS kecil di <code>127.0.0.1:53</code> dan Windows hanya mengarahkan query
+        <code>.test</code> ke sana; DNS lain tidak tersentuh. Port 53 harus bebas; layanan Windows
+        <em>Internet Connection Sharing</em> (Mobile Hotspot, NAT Hyper-V) bisa mengambilnya, dan
+        <code>devlock dns status</code> mendeteksinya.</p>
+
+      <h2 id="mailpit">Email (Mailpit)</h2>
+<pre>devlock install mailpit
+devlock start mail</pre>
+      <p>Semua email dari project ditangkap dan bisa dibaca di <code>http://mail.test</code>. <code>mail()</code> PHP
+        otomatis diarahkan ke Mailpit; untuk Laravel isi <code>MAIL_MAILER=smtp</code>,
+        <code>MAIL_HOST=127.0.0.1</code>, <code>MAIL_PORT=1025</code> (project baru dari <code>devlock new</code>
+        sudah terisi).</p>
+
+      <h2 id="share">Bagikan ke publik</h2>
+<pre>devlock install cloudflared
+devlock share toko                     <span class="c"># → https://&lt;acak&gt;.trycloudflare.com</span></pre>
+      <p>Memakai Cloudflare Quick Tunnel tanpa akun. Site bisa diakses siapa pun yang tahu URL-nya, sampai Anda menekan
+        Ctrl+C. URL absolut dari aplikasi (mis. <code>APP_URL</code>) tetap menunjuk <code>toko.test</code>.</p>
+
+      <h2 id="bahasa-lain">Go, Python, Java</h2>
+<pre>devlock install go 1.27
+devlock install python 3.13
+devlock install java 21                <span class="c"># Eclipse Temurin</span></pre>
+      <p>Shim <code>go</code>, <code>gofmt</code>, <code>python</code>, <code>pip</code>, <code>java</code>,
+        <code>javac</code>, dan <code>jar</code> memakai versi project dari <code>.devlock.toml</code>,
+        <code>go.mod</code>, <code>.python-version</code>, atau <code>.java-version</code>. Shim Java juga mengisi
+        <code>JAVA_HOME</code> untuk Maven dan Gradle. Runtime ini tidak berjalan sebagai service.</p>
+
+      <h2 id="gui">GUI &amp; tray</h2>
+      <p>Buka <strong>DevLock</strong> dari Start Menu (atau <code>bin\devlock-gui.exe</code>).</p>
+      <figure>
+        <img src="assets/gui-service.jpg" width="800" height="506" alt="Tab Service DevLock dengan daftar service, status, port, uptime, dan tombol aksi" loading="lazy">
+        <figcaption>Tab Service: start, stop, restart, dan log per service. Notifikasi bisa ditutup.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Service</strong>: status semua service, start/stop/restart per grup (<code>php@8.3</code>,
+          <code>mysql@8.4</code>, <code>dev:&lt;site&gt;</code>), dan log.</li>
+        <li><strong>Project</strong>: daftar site; buka di browser, folder, editor, atau terminal; buat database;
+          <strong>Project baru</strong> dari template.</li>
+        <li><strong>Runtime</strong>: install versi dengan progress, hapus, dan pilih default.</li>
+        <li><strong>PHP</strong>: ekstensi, Xdebug, dan php.ini per versi.</li>
+        <li><strong>Settings</strong>: folder www, TLD, port, HTTPS, autostart, editor, dan bahasa
+          (Indonesia/English).</li>
+      </ul>
+      <figure>
+        <img src="assets/gui-projects.jpg" width="800" height="506" alt="Tab Project DevLock berisi kartu site dengan tombol Buka, Folder, Editor, Terminal, dan Buat DB" loading="lazy">
+        <figcaption>Tab Project: tiap folder di www menjadi satu kartu.</figcaption>
+      </figure>
+      <p>Menutup jendela hanya menyembunyikannya ke tray; service tetap berjalan. Klik kanan ikon tray untuk start/stop
+        semua, membuka project, atau keluar.</p>
+
+      <h2 id="terminal">Terminal &amp; editor</h2>
+      <p>Tombol <strong>Terminal</strong> di kartu project membuka terminal di folder itu dengan shim di PATH. Tombol
+        <strong>Editor</strong> membuka VS Code, Cursor, Windsurf, Zed, Sublime Text, atau PhpStorm (atur di Settings bila
+        perlu). Untuk profil khusus di Windows Terminal:</p>
+<pre>devlock terminal install</pre>
+
+      <h2 id="profil">Profil, ekspor &amp; impor</h2>
+      <h3>Profil stack</h3>
+<pre>devlock profile save laravel           <span class="c"># simpan service yang sedang berjalan</span>
+devlock profile use legacy             <span class="c"># hentikan semua, jalankan profil lain</span>
+devlock profile list</pre>
+      <h3>Pindah komputer</h3>
+<pre>devlock config export devlock-export.toml
+devlock config import devlock-export.toml   <span class="c"># di komputer baru</span></pre>
+      <p>File ekspor berisi <code>devlock.toml</code> dan daftar runtime; saat impor, runtime yang belum ada diinstall
+        otomatis. Folder project dipindah sendiri.</p>
+      <h3>Dari Laragon atau XAMPP</h3>
+<pre>devlock import --dry-run               <span class="c"># lihat dulu</span>
+devlock import                         <span class="c"># C:\laragon\www / C:\xampp\htdocs → www</span></pre>
+      <p>Project dimasukkan sebagai junction, jadi file tetap di tempat asal. Tambahkan <code>--copy</code> untuk
+        menyalin. Matikan Laragon/XAMPP sebelum <code>devlock start</code> agar port tidak bentrok.</p>
+
+      <h2 id="update">Update</h2>
+<pre>devlock update --check
+devlock update</pre>
+      <p>Tutup GUI dulu (klik kanan tray → Keluar). DevLock menghentikan service, mengunduh rilis terbaru, memverifikasi
+        checksum, mengganti binary, dan memperbarui shim. Bila Windows memblokir binary baru, versi lama dipulihkan
+        otomatis. Bila unduhan runtime gagal, DevLock mencoba mirror (bisa diatur di <code>[mirrors]</code>).</p>
+
+      <h2 id="masalah">Pemecahan masalah</h2>
+<pre>devlock doctor                         <span class="c"># cek PATH, port, Visual C++, CA</span>
+devlock logs nginx -f
+devlock logs php@8.3</pre>
+      <h3>Port 80 sudah dipakai</h3>
+      <p>Status service menyebut proses yang memakai port. Biasanya IIS, Laragon, XAMPP, atau Skype versi lama. Hentikan
+        program itu, atau ubah port di Settings / <code>[http] port</code>.</p>
+      <h3>Situs tidak bisa dibuka (<em>site can't be reached</em>)</h3>
+      <p>Pastikan domain terdaftar: jalankan <code>devlock hosts</code> (setujui UAC) atau aktifkan
+        <a href="#domain">DNS wildcard</a>. Cek juga <code>devlock status</code>.</p>
+      <h3>Error 502 atau 500</h3>
+      <p>Lihat log pool PHP (<code>devlock logs php@8.3</code>) dan <code>logs\nginx-error.log</code>. Untuk site
+        dev server, pastikan service <code>dev:&lt;site&gt;</code> berjalan.</p>
+      <h3>"An Application Control policy has blocked this file"</h3>
+      <p>Itu Smart App Control Windows yang memblokir exe tanpa tanda tangan, termasuk kadang runtime seperti nginx atau
+        PHP. Pemblokiran ini biasanya hilang sendiri setelah beberapa waktu; coba lagi nanti. DevLock tidak mengubah
+        pengaturan keamanan Windows.</p>
+      <h3>Browser memperingatkan sertifikat</h3>
+      <p>Jalankan <code>devlock ssl trust</code> (Firefox: <code>--machine</code>), lalu tutup dan buka lagi browser.</p>
+
+      <h2 id="uninstall">Uninstall</h2>
+<pre>devlock stop
+devlock dns disable                    <span class="c"># bila pernah diaktifkan</span>
+devlock hosts --clear
+devlock ssl untrust
+devlock path remove
+devlock terminal remove</pre>
+      <p>Lalu uninstall dari <em>Apps &amp; features</em> (installer) atau hapus folder DevLock (portable). Uninstall tidak
+        menghapus runtime, database, dan project; cadangkan dulu yang diperlukan (<code>devlock db dump</code>) sebelum
+        menghapus foldernya.</p>
+      <div class="callout">
+        <p>DevLock tidak mengirim data penggunaan. Koneksi keluar hanya dibuat saat Anda mengunduh runtime, update, atau
+          memakai <code>devlock share</code>.</p>
+      </div>
+
+      <h2 id="cli">Referensi CLI</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Perintah</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr><td><code>devlock init</code></td><td>Siapkan folder dan devlock.toml</td></tr>
+            <tr><td><code>devlock list &lt;runtime&gt; [--available]</code></td><td>Versi terpasang / tersedia</td></tr>
+            <tr><td><code>devlock install &lt;runtime&gt; [versi]</code></td><td>Pasang runtime</td></tr>
+            <tr><td><code>devlock uninstall &lt;runtime&gt; &lt;versi&gt;</code></td><td>Hapus runtime (data tetap)</td></tr>
+            <tr><td><code>devlock use &lt;runtime|database|cache&gt; &lt;versi&gt; [--global]</code></td><td>Pilih versi</td></tr>
+            <tr><td><code>devlock which &lt;perintah&gt;</code>, <code>devlock current</code></td><td>Versi yang dipakai di folder ini</td></tr>
+            <tr><td><code>devlock start|stop|restart [target]</code></td><td><code>all</code>, <code>nginx</code>, <code>php@8.3</code>, <code>db</code>, <code>cache</code>, <code>mail</code>, <code>dev:&lt;site&gt;</code></td></tr>
+            <tr><td><code>devlock status</code>, <code>devlock reload</code></td><td>Status service, muat ulang konfigurasi</td></tr>
+            <tr><td><code>devlock logs &lt;service&gt; [-f]</code></td><td>Log service</td></tr>
+            <tr><td><code>devlock site list</code></td><td>Daftar site</td></tr>
+            <tr><td><code>devlock new &lt;template&gt; &lt;nama&gt;</code></td><td>Project baru</td></tr>
+            <tr><td><code>devlock db ...</code></td><td>create, list, drop, dump, restore</td></tr>
+            <tr><td><code>devlock php ...</code></td><td>ext, xdebug, ini</td></tr>
+            <tr><td><code>devlock ssl ...</code></td><td>trust, enable, redirect, status, bundle</td></tr>
+            <tr><td><code>devlock dns ...</code>, <code>devlock hosts</code></td><td>Domain .test</td></tr>
+            <tr><td><code>devlock share &lt;site&gt;</code></td><td>Tunnel publik</td></tr>
+            <tr><td><code>devlock import</code>, <code>devlock config export|import</code>, <code>devlock profile ...</code></td><td>Pindah dan simpan konfigurasi</td></tr>
+            <tr><td><code>devlock terminal ...</code>, <code>devlock path add|remove</code>, <code>devlock shims</code></td><td>Integrasi Windows</td></tr>
+            <tr><td><code>devlock update [--check]</code>, <code>devlock doctor</code></td><td>Update dan diagnosa</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Bantuan lengkap tiap perintah: <code>devlock &lt;perintah&gt; --help</code>.</p>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>DevLock · MIT OR Apache-2.0</span>
+      <span><a href="./">Beranda</a> · <a href="https://github.com/romyrudiansah/devlock/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/romyrudiansah/devlock/issues">Laporkan masalah</a></span>
+    </div>
+  </footer>
+</body>
+</html>

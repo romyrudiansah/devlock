@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevLock — Local Dev Windows</title>
+  <meta name="description" content="DevLock: local development environment untuk Windows dengan PHP, Node, MySQL, MariaDB, PostgreSQL, dan lainnya dalam banyak versi yang berjalan bersamaan dan dipilih per project. Gratis dan open source.">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/theme.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="assets/icon.png" alt="">DevLock</a>
+      <nav class="nav" aria-label="Navigasi utama">
+        <a class="hide-sm" href="#fitur">Fitur</a>
+        <a class="hide-sm" href="#mulai">Mulai</a>
+        <a href="panduan.html">Panduan</a>
+        <a href="https://github.com/romyrudiansah/devlock">GitHub</a>
+        <button class="theme-toggle" type="button" aria-label="Ganti tema">☾</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <span class="eyebrow">Gratis &amp; open source · Windows 10/11</span>
+        <h1>Banyak versi PHP, Node, dan database. Jalan bersamaan. Dipilih per project.</h1>
+        <p class="lead">DevLock adalah local development environment untuk Windows, alternatif Laragon,
+          XAMPP, dan WAMP. <code>blog.test</code> memakai PHP 7.4 dan MySQL 5.7, sementara
+          <code>shop.test</code> memakai PHP 8.4 dan PostgreSQL 18, aktif di saat yang sama.</p>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/romyrudiansah/devlock/releases">Unduh untuk Windows</a>
+          <a class="btn" href="panduan.html">Baca panduan</a>
+        </div>
+        <p class="note">Installer per user tanpa hak admin, atau zip portable. Lisensi MIT / Apache-2.0.</p>
+        <div class="shot">
+          <img src="assets/gui-service.jpg" width="800" height="506"
+               alt="Dashboard DevLock: daftar service PHP 7.4, PHP 8.3, nginx, MariaDB, PostgreSQL, MySQL, dan dev server dengan status, port, dan tombol Restart, Stop, Log">
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="fitur">
+      <div class="wrap">
+        <h2>Semua yang dibutuhkan project web, tanpa saling mengganggu</h2>
+        <p class="sub">Tiap project menulis kebutuhannya di file <code>.devlock.toml</code>. DevLock
+          menyiapkan versi, service, domain, dan sertifikatnya.</p>
+        <div class="grid">
+          <div class="card"><div class="icon">7.4</div><h3>Multi-versi bersamaan</h3>
+            <p>Tiap versi PHP punya pool php-cgi sendiri; tiap database + versi adalah instance dengan port dan data terpisah.</p></div>
+          <div class="card"><div class="icon">.test</div><h3>Domain otomatis</h3>
+            <p>Setiap folder di <code>www</code> menjadi <code>nama.test</code>. Lewat file hosts, atau DNS wildcard <code>*.test</code>.</p></div>
+          <div class="card"><div class="icon">⇄</div><h3>Shim per project</h3>
+            <p><code>php</code>, <code>composer</code>, <code>node</code>, <code>npm</code>, <code>mysql</code>, <code>psql</code>, dan lainnya otomatis memakai versi milik folder tempat Anda mengetiknya.</p></div>
+          <div class="card"><div class="icon">🔒</div><h3>HTTPS lokal</h3>
+            <p>CA DevLock sendiri, sertifikat per site, dan redirect HTTP→HTTPS opsional. PHP dan Node ikut memercayainya.</p></div>
+          <div class="card"><div class="icon">DB</div><h3>Database lengkap</h3>
+            <p>MySQL, MariaDB, PostgreSQL, dan MongoDB, ditambah Redis atau Garnet sebagai cache. Buat, dump, dan restore database dari CLI atau GUI.</p></div>
+          <div class="card"><div class="icon">⚡</div><h3>Dev server Node</h3>
+            <p><code>dev = "npm run dev"</code>: dev server dijalankan sebagai service, port-nya dibaca otomatis, lalu domain diarahkan ke sana.</p></div>
+          <div class="card"><div class="icon">✉</div><h3>Email &amp; panel DB</h3>
+            <p>Mailpit menangkap semua email di <code>mail.test</code>; Adminer di <code>adminer.test</code> langsung mengenali instance database Anda.</p></div>
+          <div class="card"><div class="icon">↗</div><h3>Bagikan ke publik</h3>
+            <p><code>devlock share blog</code> membuka site lewat Cloudflare Quick Tunnel sampai Anda menekan Ctrl+C.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap split">
+        <div>
+          <h2>Satu file kecil per project</h2>
+          <p class="sub">Versi PHP, Node, database, cache, web server, dan HTTPS ditulis di folder project,
+            jadi ikut di-commit dan sama di setiap komputer tim.</p>
+<pre><span class="c"># www\toko\.devlock.toml</span>
+php = "8.3"
+database = "mysql@8.4"
+cache = "redis@8"
+dev = "npm run dev"     <span class="c"># Vite berjalan di samping PHP</span>
+https = true</pre>
+          <p>Versi juga dibaca dari file yang sudah biasa dipakai: <code>composer.json</code>,
+            <code>.nvmrc</code>, <code>go.mod</code>, <code>.python-version</code>, dan
+            <code>.java-version</code>.</p>
+        </div>
+        <div class="shot"><img src="assets/gui-projects.jpg" width="800" height="506"
+          alt="Halaman Project DevLock berisi kartu dash.test, legacy.test, dan shop.test dengan versi PHP, database, docroot, serta tombol Buka, Folder, Editor, Terminal, dan Buat DB"></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap split">
+        <div class="shot"><img src="assets/gui-runtimes.jpg" width="800" height="506"
+          alt="Halaman Runtime DevLock: PHP 8.3 dan 7.4, Node.js 22 dan 20, Composer, nginx, dengan tombol Install versi, Jadikan default, dan Hapus"></div>
+        <div>
+          <h2>Runtime dari sumber resmi, diverifikasi</h2>
+          <p class="sub">Semua runtime diunduh langsung dari penerbitnya dan dicek checksum-nya sebelum
+            dipasang: php.net, nodejs.org, nginx.org, mariadb.org, mysql.com, postgresql.org, go.dev,
+            Adoptium, MongoDB, dan rilis GitHub resmi.</p>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Kategori</th><th>Yang tersedia</th></tr></thead>
+              <tbody>
+                <tr><td>Bahasa</td><td>PHP, Node.js, Composer, Go, Python, Java (Temurin)</td></tr>
+                <tr><td>Web server</td><td>nginx, Apache (per project, untuk <code>.htaccess</code>)</td></tr>
+                <tr><td>Database</td><td>MySQL, MariaDB, PostgreSQL, MongoDB</td></tr>
+                <tr><td>Cache</td><td>Redis, Garnet</td></tr>
+                <tr><td>Alat</td><td>Adminer, Mailpit, cloudflared, Xdebug</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="mulai">
+      <div class="wrap">
+        <h2>Mulai dalam lima menit</h2>
+        <p class="sub">Contoh untuk project Laravel. Semua langkah juga bisa dilakukan lewat GUI.</p>
+        <ol class="steps">
+          <li><strong>Pasang DevLock</strong>Jalankan installer dari halaman Releases, lalu buka terminal baru.
+<pre>devlock path add       <span class="c"># shim php/composer/node masuk PATH</span></pre></li>
+          <li><strong>Install runtime yang dibutuhkan</strong>
+<pre>devlock install php 8.3
+devlock install composer
+devlock install nginx
+devlock install mysql 8.4
+devlock install node 22</pre></li>
+          <li><strong>Buat project</strong>
+<pre>devlock new laravel toko --php 8.3 --db mysql@8.4</pre></li>
+          <li><strong>Jalankan</strong>
+<pre>devlock start          <span class="c"># nginx, PHP 8.3, MySQL 8.4 → http://toko.test</span></pre></li>
+        </ol>
+        <p style="margin-top:22px">Langkah lengkap, project Node, WordPress, HTTPS, dan pemecahan masalah ada di
+          <a href="panduan.html">panduan</a>.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <h2>Dibandingkan alat lain</h2>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th></th><th>DevLock</th><th>Laragon</th><th>XAMPP</th></tr></thead>
+            <tbody>
+              <tr><td>Beberapa versi PHP aktif bersamaan</td><td class="yes">Ya</td><td>Satu aktif</td><td>Satu</td></tr>
+              <tr><td>Beberapa versi database bersamaan</td><td class="yes">Ya</td><td>Satu aktif</td><td>Satu</td></tr>
+              <tr><td>Versi dipilih per project (file di project)</td><td class="yes">Ya</td><td>Tidak</td><td>Tidak</td></tr>
+              <tr><td>Dev server Node sebagai service</td><td class="yes">Ya</td><td>Tidak</td><td>Tidak</td></tr>
+              <tr><td>Open source</td><td class="yes">MIT / Apache-2.0</td><td>Tidak</td><td>Ya</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sub">Sudah memakai Laragon atau XAMPP? <code>devlock import</code> memindahkan project dari
+          <code>www</code>/<code>htdocs</code> tanpa menyalin file.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <div class="cta">
+          <h2>Coba DevLock sekarang</h2>
+          <p class="sub" style="margin:0 auto 22px">Portable, tanpa telemetri, dan semua service hanya mendengarkan di 127.0.0.1.</p>
+          <a class="btn primary" href="https://github.com/romyrudiansah/devlock/releases">Unduh rilis terbaru</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>DevLock · MIT OR Apache-2.0</span>
+      <span><a href="panduan.html">Panduan</a> · <a href="https://github.com/romyrudiansah/devlock/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/romyrudiansah/devlock/issues">Laporkan masalah</a></span>
+    </div>
+  </footer>
+</body>
+</html>
