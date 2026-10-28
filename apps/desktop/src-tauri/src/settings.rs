@@ -16,6 +16,7 @@ pub struct Settings {
     https_redirect: bool,
     php_workers: u16,
     autostart_services: bool,
+    editor: String,
     start_with_windows: bool,
 }
 
@@ -32,6 +33,7 @@ pub async fn get_settings() -> CmdResult<Settings> {
             https_redirect: config.https.redirect,
             php_workers: config.php.workers,
             autostart_services: config.gui.autostart_services,
+            editor: config.gui.editor,
             start_with_windows: startup::is_enabled(),
         })
     })
@@ -85,6 +87,7 @@ pub async fn save_settings(settings: Settings) -> CmdResult<String> {
             "autostart_services",
             toml_edit::value(settings.autostart_services),
         )?;
+        set("gui", "editor", toml_edit::value(settings.editor.trim()))?;
         startup::set_enabled(settings.start_with_windows).map_err(err)?;
 
         let config = Config::load(&paths).map_err(err)?;

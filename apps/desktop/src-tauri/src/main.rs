@@ -65,6 +65,7 @@ fn main() {
             commands::open_url,
             commands::open_folder,
             commands::open_terminal,
+            commands::open_editor,
             commands::create_site_database,
             php_page::php_info,
             php_page::php_set_extension,

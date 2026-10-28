@@ -129,6 +129,14 @@ export default function Settings() {
               />
               Buka DevLock (di tray) saat login Windows
             </label>
+            <label className="field">
+              <span className="small muted">Editor (kosong = deteksi VS Code, Cursor, Windsurf, Zed, Sublime, PhpStorm)</span>
+              <input
+                value={form.editor}
+                placeholder="code"
+                onChange={(e) => set("editor", e.target.value)}
+              />
+            </label>
           </div>
         </article>
       </div>
