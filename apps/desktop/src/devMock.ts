@@ -85,6 +85,7 @@ const runtimes: RuntimeInfo[] = [
   { kind: "mariadb", installed: ["11.4.13"], default_spec: null, default_version: null },
   { kind: "postgresql", installed: ["18.6"], default_spec: null, default_version: null },
   { kind: "mongodb", installed: [], default_spec: null, default_version: null },
+  { kind: "mailpit", installed: [], default_spec: null, default_version: null },
   { kind: "mongosh", installed: [], default_spec: null, default_version: null },
   { kind: "redis", installed: ["8.10.3"], default_spec: null, default_version: null },
   { kind: "garnet", installed: [], default_spec: null, default_version: null },
