@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-10-28
+
 ### Fixed
 - `dev = "npm run dev"` di project PHP (mis. Laravel + Vite) tidak lagi mengubah site menjadi reverse proxy ke dev server: domain tetap dilayani PHP dan dev server berjalan sebagai service di sampingnya (tanpa `PORT`). `proxy_port` tetap memaksa mode proxy.
 
@@ -173,7 +175,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/romyrudiansah/devlock/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/romyrudiansah/devlock/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/romyrudiansah/devlock/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/romyrudiansah/devlock/compare/v0.10.0...v0.11.0
