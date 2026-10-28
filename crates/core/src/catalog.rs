@@ -22,6 +22,8 @@ const REDIS_WINDOWS: &str =
 const GARNET: &str = "https://api.github.com/repos/microsoft/garnet/releases?per_page=30";
 /// Adminer resmi: satu file PHP per rilis.
 const ADMINER: &str = "https://api.github.com/repos/vrana/adminer/releases?per_page=30";
+const CLOUDFLARED: &str =
+    "https://api.github.com/repos/cloudflare/cloudflared/releases?per_page=30";
 const MAILPIT: &str = "https://api.github.com/repos/axllent/mailpit/releases?per_page=30";
 /// Rilis MongoDB yang masih didukung (satu per cabang), lengkap dengan SHA256 per arsip.
 const MONGODB_CURRENT: &str = "https://downloads.mongodb.org/current.json";
@@ -162,6 +164,9 @@ pub fn available(kind: Kind) -> Result<Vec<Release>> {
             "win-x64-based-readytorun.zip".to_string()
         })?,
         Kind::Adminer => github_releases(ADMINER, Kind::Adminer, |v| format!("adminer-{v}.php"))?,
+        Kind::Cloudflared => github_releases(CLOUDFLARED, Kind::Cloudflared, |_| {
+            "cloudflared-windows-amd64.exe".to_string()
+        })?,
         Kind::Mailpit => github_releases(MAILPIT, Kind::Mailpit, |_| {
             "mailpit-windows-amd64.zip".to_string()
         })?,

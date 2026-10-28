@@ -123,6 +123,14 @@ pub fn install(
         std::fs::rename(target.join(release.file_name()), target.join("adminer.php"))
             .context("gagal menyiapkan adminer.php")?;
     }
+    if release.kind == Kind::Cloudflared {
+        // `cloudflared-windows-amd64.exe` → `cloudflared.exe`.
+        std::fs::rename(
+            target.join(release.file_name()),
+            target.join("cloudflared.exe"),
+        )
+        .context("gagal menyiapkan cloudflared.exe")?;
+    }
     if release.kind == Kind::Mailpit {
         on_event(Event::Configuring("php.ini (mail)"));
         apply_mail_to_php(paths)?;
