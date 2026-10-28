@@ -10,6 +10,7 @@ mod services;
 mod share;
 mod ssl;
 mod terminal;
+mod update;
 mod user_path;
 mod versions;
 
@@ -41,6 +42,12 @@ enum Command {
     Config {
         #[command(subcommand)]
         command: Option<ConfigCommand>,
+    },
+    /// Update DevLock ke rilis terbaru di GitHub (binary lama dipulihkan bila diblokir Windows)
+    Update {
+        /// Hanya cek apakah ada versi baru
+        #[arg(long)]
+        check: bool,
     },
     /// Profil stack: simpan service yang sedang berjalan, ganti cepat antar kombinasi
     Profile {
@@ -383,6 +390,7 @@ fn main() {
                 profile::import_config(&file, !no_install)
             }
         },
+        Command::Update { check } => update::run(check),
         Command::Profile { command } => match command {
             ProfileCommand::List => profile::list(),
             ProfileCommand::Save { name } => profile::save(&name),

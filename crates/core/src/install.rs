@@ -312,7 +312,7 @@ fn expected_sha256(release: &Release) -> Result<Option<String>> {
 }
 
 /// Cari hash untuk `file` di format `<sha256>  <nama file>`; file berisi satu hash juga diterima.
-fn lookup_shasum(text: &str, file: &str) -> Option<String> {
+pub(crate) fn lookup_shasum(text: &str, file: &str) -> Option<String> {
     let all: Vec<&str> = text
         .lines()
         .map(str::trim)

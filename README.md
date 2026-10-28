@@ -328,6 +328,17 @@ perintahnya**:
 | Aturan DNS (NRPT) `.test` → `127.0.0.1` berkomentar "DevLock" (lewat UAC) | `devlock dns enable` | `devlock dns disable` |
 | Profil Windows Terminal "DevLock" (fragment di `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\DevLock`) | `devlock terminal install` | `devlock terminal remove` |
 
+## Update
+
+```
+devlock update --check   # bandingkan dengan rilis terbaru di GitHub
+devlock update           # unduh zip rilis (SHA256), ganti binary di bin\
+```
+
+Tutup GUI dulu; daemon dan service dihentikan otomatis. Binary lama disimpan sebagai
+`bin\*.exe.old`. Karena rilis belum ditandatangani, Smart App Control kadang memblokir binary
+baru: DevLock mencobanya lebih dulu dan mengembalikan versi lama bila diblokir.
+
 ## Uninstall
 
 ```
