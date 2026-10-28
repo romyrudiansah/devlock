@@ -42,6 +42,9 @@ database = "mysql@8.4"
 - Tiap engine database + versi adalah instance terpisah (port & data dir sendiri):
   `mysql@8.4` (3384), `mariadb@11.4` (3424), `postgresql@16` (5416). Shim `mysql`/`psql`
   otomatis terhubung ke instance milik project.
+- Project Node cukup diberi `dev = "pnpm dev"`: DevLock menjalankan dev server itu sebagai
+  service, membaca port dari output-nya (Vite, Next.js, Nuxt, Astro, Angular, …), dan
+  mengarahkan `<project>.test` ke port tersebut. `proxy_port = 5173` mengunci port secara manual.
 
 ## Apache (per project)
 

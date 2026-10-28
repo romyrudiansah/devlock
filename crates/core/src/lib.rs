@@ -3,6 +3,7 @@
 pub mod config;
 pub mod daemon;
 pub mod db;
+pub mod devport;
 pub mod dns;
 pub mod editor;
 pub mod hosts;

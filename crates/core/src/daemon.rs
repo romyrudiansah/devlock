@@ -276,6 +276,8 @@ pub struct Supervisor {
     fingerprint: Option<String>,
     /// Grup service yang dibutuhkan tiap site (`php@8.3`, `mysql@8.4`, `dev:<site>`).
     site_needs: BTreeMap<String, BTreeSet<String>>,
+    /// Site dengan dev server berport otomatis (dibaca dari log-nya).
+    auto_dev_sites: BTreeSet<String>,
 }
 
 /// Grup service yang dibutuhkan sebuah site.
@@ -350,6 +352,7 @@ impl Supervisor {
             sites: Vec::new(),
             fingerprint: None,
             site_needs: BTreeMap::new(),
+            auto_dev_sites: BTreeSet::new(),
         }
     }
 
@@ -435,6 +438,12 @@ impl Supervisor {
             .iter()
             .map(|s| (s.name.clone(), needs_of(s)))
             .collect();
+        self.auto_dev_sites = plan
+            .sites
+            .iter()
+            .filter(|s| s.dev.is_some() && s.dev_port_auto)
+            .map(|s| s.name.clone())
+            .collect();
         Ok(added)
     }
 
@@ -442,6 +451,7 @@ impl Supervisor {
     /// terapkan tanpa menunggu `devlock reload`. Service baru (mis. pool PHP versi baru)
     /// ikut dijalankan bila service lain sedang berjalan.
     pub fn watch(&mut self) {
+        self.detect_dev_ports();
         let fingerprint = site_fingerprint(&self.paths);
         let previous = self.fingerprint.replace(fingerprint.clone());
         if previous.is_none() || previous.as_deref() == Some(fingerprint.as_str()) {
@@ -488,6 +498,27 @@ impl Supervisor {
                 "service dijalankan untuk site baru/berubah: {}",
                 started.join(", ")
             );
+        }
+    }
+
+    /// Baca port dev server berport otomatis dari log-nya. Port baru disimpan di
+    /// `tmp\dev-ports`, sehingga sidik jari site berubah dan nginx diarahkan ulang.
+    fn detect_dev_ports(&mut self) {
+        for site in &self.auto_dev_sites {
+            let Some(managed) = self.services.get(&format!("dev:{site}")) else {
+                continue;
+            };
+            if managed.process.is_none() {
+                continue;
+            }
+            let Some(port) = crate::devport::detect_in_log(&managed.spec.log) else {
+                continue;
+            };
+            match crate::devport::store_detected(&self.paths, site, port) {
+                Ok(true) => tracing::info!("dev server {site} terdeteksi di port {port}"),
+                Ok(false) => {}
+                Err(err) => tracing::warn!("port dev server {site} tidak tersimpan: {err}"),
+            }
         }
     }
 
