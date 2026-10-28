@@ -151,6 +151,19 @@ MySQL, MariaDB, dan PostgreSQL. Field server menawarkan instance DevLock (mis.
 `postgres`) memang tanpa password dan site ini hanya terjangkau dari `127.0.0.1`. Folder
 `www\adminer` milik Anda sendiri menggantikan site bawaan ini.
 
+## Mailpit (email lokal)
+
+```
+devlock install mailpit      # rilis resmi axllent/mailpit (SHA256 dari GitHub)
+devlock start mail
+```
+
+Semua email dari project ditangkap [Mailpit](https://mailpit.axllent.org/) dan bisa dibaca di
+`http://mail.test`. SMTP ada di `127.0.0.1:1025` (UI di `8025`; ubah lewat `[mail]` di
+`devlock.toml`). Saat install, `mail()` PHP di semua versi diarahkan ke Mailpit (`SMTP` /
+`smtp_port` di `php.ini`), dan project Laravel baru mendapat `MAIL_MAILER=smtp`,
+`MAIL_HOST=127.0.0.1`, `MAIL_PORT=1025`. Pesan disimpan di `data\mailpit`.
+
 ## Redis / Garnet (cache)
 
 ```

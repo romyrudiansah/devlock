@@ -272,7 +272,8 @@ pub fn create(
     match template {
         Template::Laravel => {
             if let Some((instance, db_name)) = &database {
-                configure_laravel(&dir, instance, db_name, config, &site_url)?;
+                let mailpit = runtime::resolve_installed(paths, Kind::Mailpit, "latest")?.is_some();
+                configure_laravel(&dir, instance, db_name, config, &site_url, mailpit)?;
                 notes.push(
                     "Jalankan `php artisan migrate` di folder project untuk membuat tabel.".into(),
                 );
@@ -659,10 +660,14 @@ fn configure_laravel(
     db_name: &str,
     config: &Config,
     url: &str,
+    mailpit: bool,
 ) -> Result<()> {
     let env = dir.join(".env");
     let text = std::fs::read_to_string(&env).context(".env Laravel tidak ditemukan")?;
-    std::fs::write(&env, laravel_env(&text, instance, db_name, config, url))?;
+    std::fs::write(
+        &env,
+        laravel_env(&text, instance, db_name, config, url, mailpit),
+    )?;
     Ok(())
 }
 
@@ -673,6 +678,7 @@ pub fn laravel_env(
     db_name: &str,
     config: &Config,
     url: &str,
+    mailpit: bool,
 ) -> String {
     let (connection, user) = match instance.kind {
         Kind::Postgresql => ("pgsql", "postgres"),
@@ -692,6 +698,17 @@ pub fn laravel_env(
     let mut out = text.to_string();
     for (key, value) in values {
         out = set_env(&out, key, value);
+    }
+    // Email terkirim ke Mailpit (lihat mail.<tld>) bila terinstall.
+    if mailpit {
+        let port = config.mail.smtp_port.to_string();
+        for (key, value) in [
+            ("MAIL_MAILER", "smtp"),
+            ("MAIL_HOST", "127.0.0.1"),
+            ("MAIL_PORT", port.as_str()),
+        ] {
+            out = set_env(&out, key, value);
+        }
     }
     out
 }
@@ -737,7 +754,14 @@ mod tests {
     fn laravel_env_uses_instance() {
         let env = "APP_URL=http://localhost\nDB_CONNECTION=sqlite\n# DB_HOST=127.0.0.1\n# DB_PORT=3306\n# DB_DATABASE=laravel\n# DB_USERNAME=root\n# DB_PASSWORD=\n";
         let pg = DbInstance::parse("postgresql@18").unwrap();
-        let out = laravel_env(env, &pg, "toko", &Config::default(), "http://toko.test");
+        let out = laravel_env(
+            env,
+            &pg,
+            "toko",
+            &Config::default(),
+            "http://toko.test",
+            false,
+        );
         assert!(out.contains("APP_URL=http://toko.test\n"));
         assert!(out.contains("DB_CONNECTION=pgsql\n"));
         assert!(out.contains("\nDB_HOST=127.0.0.1\n"));
@@ -745,9 +769,18 @@ mod tests {
         assert!(out.contains("\nDB_DATABASE=toko\n"));
         assert!(out.contains("\nDB_USERNAME=postgres\n"));
         assert!(!out.contains("# DB_"));
+        assert!(!out.contains("MAIL_PORT"));
         let maria = DbInstance::parse("mariadb@11.4").unwrap();
-        let out = laravel_env(env, &maria, "toko", &Config::default(), "http://toko.test");
+        let out = laravel_env(
+            env,
+            &maria,
+            "toko",
+            &Config::default(),
+            "http://toko.test",
+            true,
+        );
         assert!(out.contains("DB_CONNECTION=mariadb\n") && out.contains("DB_PORT=3424\n"));
+        assert!(out.contains("\nMAIL_MAILER=smtp") && out.contains("\nMAIL_PORT=1025"));
     }
 
     #[test]

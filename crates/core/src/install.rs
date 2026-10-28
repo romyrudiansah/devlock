@@ -123,9 +123,16 @@ pub fn install(
         std::fs::rename(target.join(release.file_name()), target.join("adminer.php"))
             .context("gagal menyiapkan adminer.php")?;
     }
+    if release.kind == Kind::Mailpit {
+        on_event(Event::Configuring("php.ini (mail)"));
+        apply_mail_to_php(paths)?;
+    }
     if release.kind == Kind::Php {
         on_event(Event::Configuring("php.ini"));
         php::write_default_ini(&target)?;
+        if crate::runtime::resolve_installed(paths, Kind::Mailpit, "latest")?.is_some() {
+            php::set_mail_smtp(&target, mail_smtp_port(paths))?;
+        }
         // Tanpa bundle CA, curl/openssl PHP di Windows gagal memverifikasi HTTPS. Kegagalan
         // mengunduh bundle tidak membatalkan install; bisa diulang lewat `devlock ssl bundle`.
         match ensure_ca_bundle(paths) {
@@ -249,6 +256,24 @@ fn set_php_ca_bundle(php_dir: &Path, bundle: &Path) -> Result<()> {
     let value = bundle.to_string_lossy();
     php::set_ini_value(php_dir, "curl.cainfo", &value)?;
     php::set_ini_value(php_dir, "openssl.cafile", &value)
+}
+
+fn mail_smtp_port(paths: &Paths) -> u16 {
+    crate::config::Config::load(paths)
+        .map(|c| c.mail.smtp_port)
+        .unwrap_or(crate::config::MailConfig::default().smtp_port)
+}
+
+/// Arahkan `mail()` semua PHP terinstall ke SMTP Mailpit.
+fn apply_mail_to_php(paths: &Paths) -> Result<()> {
+    let port = mail_smtp_port(paths);
+    for version in crate::runtime::installed_versions(paths, Kind::Php)? {
+        let dir = paths.runtime_dir("php", &version);
+        if dir.join("php.ini").is_file() {
+            php::set_mail_smtp(&dir, port)?;
+        }
+    }
+    Ok(())
 }
 
 /// Pasang ulang bundle CA ke semua PHP terinstall (mis. setelah CA DevLock dibuat).

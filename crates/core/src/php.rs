@@ -207,6 +207,12 @@ pub fn set_ini_value(php_dir: &Path, key: &str, value: &str) -> Result<()> {
         .with_context(|| format!("gagal menulis {}", ini.display()))
 }
 
+/// Arahkan `mail()` PHP ke SMTP Mailpit (`SMTP`/`smtp_port` di `[mail function]`).
+pub fn set_mail_smtp(php_dir: &Path, port: u16) -> Result<()> {
+    set_ini_value(php_dir, "SMTP", "127.0.0.1")?;
+    set_ini_value(php_dir, "smtp_port", &port.to_string())
+}
+
 /// Versi murni dari [`set_ini_value`] untuk isi file.
 pub fn with_ini_value(text: &str, key: &str, value: &str) -> String {
     let wanted = format!("{key} = \"{value}\"");
@@ -295,6 +301,19 @@ memory_limit = 128M
             Some("Asia/Jakarta")
         );
         assert_eq!(ini_value(ini, "display_errors"), None);
+    }
+
+    #[test]
+    fn mail_function_points_to_mailpit() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join("php.ini"),
+            "[mail function]\n; For Win32 only.\nSMTP = localhost\nsmtp_port = 25\n",
+        )
+        .unwrap();
+        set_mail_smtp(tmp.path(), 1025).unwrap();
+        let ini = std::fs::read_to_string(tmp.path().join("php.ini")).unwrap();
+        assert!(ini.contains("\nSMTP = \"127.0.0.1\"\nsmtp_port = \"1025\"\n"));
     }
 
     #[test]

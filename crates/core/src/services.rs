@@ -294,6 +294,12 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
         }
     }
 
+    // Mailpit: SMTP penangkap email untuk semua project, UI di mail.<tld>.
+    if let Some(version) = runtime::resolve_installed(paths, Kind::Mailpit, "latest")? {
+        let dir = paths.runtime_dir(Kind::Mailpit.as_str(), &version);
+        services.push(mailpit_service(paths, config, &dir)?);
+    }
+
     // DNS wildcard `*.<tld>`: `devlock dns serve` sebagai service biasa (port 53 juga TCP,
     // jadi cek kesiapan TCP berlaku).
     if config.dns.enabled {
@@ -470,6 +476,36 @@ fn database_service(
 
 /// PostgreSQL: `initdb` sekali (superuser `postgres`, auth trust, hanya 127.0.0.1),
 /// lalu `postgres.exe`; berhenti rapi lewat `pg_ctl stop -m fast`.
+/// `mailpit` di `127.0.0.1`: SMTP `[mail] smtp_port`, UI `[mail] ui_port`, pesan disimpan di
+/// `data\mailpit\mailpit.db` agar tetap ada setelah restart.
+fn mailpit_service(paths: &Paths, config: &Config, dir: &Path) -> Result<ServiceSpec> {
+    let data = paths.data().join("mailpit");
+    std::fs::create_dir_all(&data)?;
+    Ok(ServiceSpec {
+        name: "mailpit".into(),
+        group: "mailpit".into(),
+        command: Command {
+            program: dir.join("mailpit.exe"),
+            args: vec![
+                "--smtp".into(),
+                format!("127.0.0.1:{}", config.mail.smtp_port),
+                "--listen".into(),
+                format!("127.0.0.1:{}", config.mail.ui_port),
+                "--database".into(),
+                data.join("mailpit.db").to_string_lossy().into_owned(),
+            ],
+            cwd: dir.to_path_buf(),
+            env: vec![],
+        },
+        stop: None,
+        init: None,
+        init_marker: None,
+        port: Some(config.mail.ui_port),
+        extra_ports: vec![config.mail.smtp_port],
+        log: paths.logs().join("mailpit.log"),
+    })
+}
+
 /// `mongod` per instance, data di `data\mongodb\<major.minor>`. Berhenti lewat perintah
 /// `shutdown` dari `mongosh` bila terinstall; tanpa itu proses dihentikan (journal memulihkan).
 fn mongodb_service(
@@ -1136,6 +1172,36 @@ mod tests {
         assert!(conf.contains("fastcgi_pass php_8_3;"));
         assert!(conf.contains("proxy_pass http://127.0.0.1:3000;"));
         assert!(conf.ends_with("}\n"));
+    }
+
+    #[test]
+    fn mailpit_service_and_mail_site() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("nginx", "1.30.6")).unwrap();
+        let config = Config::default();
+        let before = plan(&paths, &config).unwrap();
+        assert!(before.services.iter().all(|s| s.name != "mailpit"));
+        assert!(before.sites.iter().all(|s| s.name != "mail"));
+
+        std::fs::create_dir_all(paths.runtime_dir("mailpit", "1.32.0")).unwrap();
+        let plan = plan(&paths, &config).unwrap();
+        let mailpit = plan.services.iter().find(|s| s.name == "mailpit").unwrap();
+        assert_eq!(mailpit.port, Some(8025));
+        assert_eq!(mailpit.extra_ports, [1025]);
+        let args = mailpit.command.args.join(" ");
+        assert!(args.contains("--smtp 127.0.0.1:1025 --listen 127.0.0.1:8025 --database "));
+        assert!(paths.data().join("mailpit").is_dir());
+        let site = plan.sites.iter().find(|s| s.name == "mail").unwrap();
+        assert_eq!(site.domains, ["mail.test"]);
+        assert_eq!(site.kind, SiteKind::Proxy { port: 8025 });
+        let (_, conf) = plan
+            .files
+            .iter()
+            .find(|(p, _)| p.ends_with("nginx.conf"))
+            .unwrap();
+        assert!(conf.contains("server_name mail.test;"));
+        assert!(conf.contains("proxy_pass http://127.0.0.1:8025;"));
     }
 
     #[test]

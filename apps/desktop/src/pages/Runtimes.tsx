@@ -16,6 +16,7 @@ const LABELS: Record<string, string> = {
   redis: "Redis",
   garnet: "Garnet",
   adminer: "Adminer",
+  mailpit: "Mailpit",
 };
 
 function formatBytes(n: number) {
