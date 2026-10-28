@@ -1,3 +1,5 @@
+<p align="center"><img src="brand/logo-mark.svg" width="96" alt=""></p>
+
 # DevLock
 
 Local development environment untuk Windows — alternatif Laragon / WAMP / XAMPP dengan
@@ -7,8 +9,8 @@ bisa berjalan **bersamaan** dan dipilih **per-project**.
 > Status: semua fase ROADMAP selesai (CLI + GUI, database, HTTPS, Mailpit, tunnel, installer,
 > update). Open source di bawah MIT OR Apache-2.0. Lihat [docs/ROADMAP.md](docs/ROADMAP.md).
 >
-> **Website:** https://romyrudiansah.github.io/devlock/ ·
-> **Panduan pengguna:** https://romyrudiansah.github.io/devlock/panduan.html
+> **Website:** https://romyrudiansah.github.io/devlock/ ([English](https://romyrudiansah.github.io/devlock/en/)) ·
+> **Panduan pengguna:** https://romyrudiansah.github.io/devlock/panduan.html ([English guide](https://romyrudiansah.github.io/devlock/en/guide.html))
 > (sumbernya di folder [`site/`](site/), diterbitkan otomatis lewat GitHub Pages).
 
 ## Unduh

@@ -5,6 +5,7 @@ import Runtimes from "./pages/Runtimes";
 import Php from "./pages/Php";
 import Settings from "./pages/Settings";
 import { t } from "./i18n";
+import logo from "./assets/logo.svg";
 
 const TABS = [
   { id: "dashboard", label: "Service" },
@@ -23,9 +24,7 @@ export default function App() {
     <div className="app">
       <nav className="sidebar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden>
-            ⬢
-          </span>
+          <img className="brand-mark" src={logo} alt="" aria-hidden />
           DevLock
         </div>
         {TABS.map((item) => (
