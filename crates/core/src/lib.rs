@@ -7,6 +7,7 @@ pub mod devport;
 pub mod dns;
 pub mod editor;
 pub mod hosts;
+pub mod import;
 pub mod launcher;
 pub mod paths;
 pub mod php;
