@@ -369,6 +369,31 @@ pub fn open_folder(path: String) -> CmdResult<()> {
     tauri_plugin_opener::open_path(path, None::<&str>).map_err(|e| e.to_string())
 }
 
+/// Buka folder project di editor (`[gui] editor` atau deteksi otomatis VS Code, Cursor, …).
+#[tauri::command]
+pub fn open_editor(dir: String) -> CmdResult<()> {
+    let (_, config) = context()?;
+    let Some(editor) = devlock_core::editor::find(&config.gui.editor) else {
+        return Err(if config.gui.editor.trim().is_empty() {
+            "editor tidak ditemukan (VS Code, Cursor, Windsurf, Zed, Sublime Text, PhpStorm); isi `[gui] editor` di Settings"
+                .into()
+        } else {
+            format!("editor `{}` tidak ditemukan", config.gui.editor.trim())
+        });
+    };
+    let mut command = std::process::Command::new(&editor);
+    command.arg(&dir).current_dir(&dir);
+    {
+        use std::os::windows::process::CommandExt;
+        // `code.cmd` dkk. dijalankan lewat cmd.exe; jangan munculkan jendela console.
+        command.creation_flags(devlock_core::process::CREATE_NO_WINDOW);
+    }
+    command
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("gagal membuka {}: {e}", editor.display()))
+}
+
 /// Buka terminal di folder project (Windows Terminal bila ada, selain itu PowerShell).
 /// Folder shims ditaruh di depan PATH agar `php`/`node` langsung memakai versi project.
 #[tauri::command]

@@ -192,7 +192,7 @@ enable` dan `devlock dns status` mendeteksinya. Hentikan layanan itu atau tetap 
 `devlock-gui.exe` (satu folder dengan `devlock.exe`) membuka dashboard dan ikon tray:
 
 - **Service**: start/stop/restart semua atau per grup (`php@8.3`, `mysql@8.4`, `dev:<site>`), status, dan log
-- **Project**: daftar site di `www\`, buka di browser, folder, atau terminal (shim sudah di PATH)
+- **Project**: daftar site di `www\`, buka di browser, folder, editor (`[gui] editor`, atau otomatis VS Code/Cursor/Windsurf/Zed/Sublime/PhpStorm), atau terminal (shim sudah di PATH)
 - **Runtime**: install versi baru dengan progress, hapus, pilih default
 
 Menutup jendela menyembunyikannya ke tray; service tetap diawasi daemon.

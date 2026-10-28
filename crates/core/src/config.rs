@@ -57,6 +57,9 @@ port = 7433
 [gui]
 # Jalankan semua service saat aplikasi DevLock (GUI) dibuka
 autostart_services = false
+# Editor untuk tombol "Editor" (perintah atau path lengkap). Kosong = deteksi otomatis:
+# VS Code, Cursor, Windsurf, Zed, Sublime Text, PhpStorm.
+editor = ""
 
 # Override port instance database, contoh:
 # [ports]
@@ -182,6 +185,8 @@ impl Default for PhpConfig {
 pub struct GuiConfig {
     /// Jalankan semua service saat GUI dibuka.
     pub autostart_services: bool,
+    /// Perintah atau path editor; kosong = deteksi otomatis (lihat `editor::KNOWN`).
+    pub editor: String,
 }
 
 impl Default for DaemonConfig {
