@@ -229,6 +229,18 @@ dan `dashboard.test` (Node 22 → reverse proxy) aktif **bersamaan** tanpa ganti
 - [x] Log viewer realtime per service
 - [x] Settings: lokasi `www`, TLD (`.test`), port, autostart Windows, bahasa (ID/EN) _(bahasa v0.12.0)_
 
+### M2. Redesain GUI "Fluent Compact" — **P1** _(arah dipilih; belum dikerjakan)_
+Referensi: [`brand/ui-mockups/index.html`](../brand/ui-mockups/index.html), opsi **C**. Gaya Windows 11:
+latar Mica, rail navigasi ikon, kartu dan toggle Fluent, satu tombol besar Start/Stop.
+- [ ] Beranda: status ringkas ("Semua berjalan", jumlah service/site), tombol Restart / Stop semua
+- [ ] Palet perintah <kbd>Ctrl</kbd>+<kbd>K</kbd>: start/stop service, buka site, install runtime
+- [ ] Service sebagai tile dengan toggle (on/off per grup) dan info port/worker
+- [ ] Daftar site ringkas dengan aksi Buka / Folder / Terminal / Editor
+- [ ] Rail navigasi ikon (Beranda, Service, Project, Runtime, Email, Settings)
+- [ ] Efek Mica/Acrylic jendela (Tauri `windowEffects`) dengan fallback warna solid
+- [ ] Mode terang/gelap mengikuti Windows; pertahankan dwibahasa ID/EN
+- [ ] Pinjam dari opsi A/B di halaman detail: grafik kecil per service, log langsung, chip stack per project
+
 ### N. CLI — **P0**
 ```
 devlock start [service]          devlock stop [service]        devlock status
@@ -314,6 +326,7 @@ Status per item ada di checklist bagian 5 (`[x]` = selesai; catatan _sebagian_ =
 | **2. GUI dasar** | Tray + dashboard service + halaman runtimes & projects | Pengalaman setara Laragon | ✅ v0.3.0–v0.3.1 |
 | **3. Kenyamanan** | SSL, DNS wildcard, Apache, MySQL/Postgres/Redis, PHP ext/Xdebug toggle, quick create, terminal | Melebihi Laragon | ✅ PostgreSQL (v0.4.0), DB actions + SSL (v0.5.0), PHP tools + quick create (v0.6.0), tray per project + DNS wildcard (v0.7.0), Apache (v0.8.x), Redis/Garnet + Adminer (v0.9.x), redirect HTTPS + Windows Terminal + editor + port dev otomatis + Firefox + MongoDB (v0.10.0) |
 | **4. Ekstra** | Mailpit, tunnel, Python/Go, profil stack, auto-update, installer | Siap dirilis | ✅ v0.11.0; opsional (Java, mirror, GUI EN) v0.12.0 |
+| **5. Polesan** | Redesain GUI Fluent Compact (M2), code signing | Siap dipakai luas | ⏳ arah desain dipilih (opsi C) |
 
 ---
 
