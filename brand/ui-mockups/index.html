@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Referensi tampilan DevLock</title>
+<style>
+  :root { --font: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9ecf1; font: 14px/1.5 var(--font); color: #1c2330; }
+  .page-nav { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #dde1e7; }
+  .page-nav a { padding: 6px 12px; border-radius: 8px; color: #1c2330; text-decoration: none; font-weight: 600; }
+  .page-nav a:hover { background: #eef1f5; }
+  .page-nav a:first-child { background: #2563eb; color: #fff; }
+  .chosen { margin: 16px 20px 0; padding: 12px 16px; border-radius: 10px; background: #e7f6ec; color: #14532d; border: 1px solid #bbe5c8; }
+  section.mock { padding: 28px 20px 40px; }
+  section.mock > h1 { font-size: 20px; margin: 0 0 4px; }
+  section.mock > p { margin: 0 0 18px; color: #5d6573; max-width: 860px; }
+  .window { width: 1200px; height: 740px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px rgba(15, 20, 27, 0.25); display: flex; flex-direction: column; }
+  .titlebar { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 12px; }
+  .titlebar img { width: 16px; height: 16px; }
+  .titlebar .ctrl { margin-left: auto; display: flex; gap: 18px; opacity: 0.6; }
+  .body { flex: 1; display: flex; min-height: 0; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+  .ok { background: #22c55e; } .warn { background: #f59e0b; } .err { background: #ef4444; } .off { background: #94a3b8; }
+  kbd { font: 11px var(--font); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; opacity: 0.6; }
+
+  /* ===== A · Mission Control (gelap, ringkas, metrik) ===== */
+  .a { background: #0b1017; color: #e5e9f0; }
+  .a .titlebar { background: #0b1017; color: #8b95a5; }
+  .a .side { width: 220px; padding: 10px 12px; border-right: 1px solid #1c2430; display: flex; flex-direction: column; gap: 2px; }
+  .a .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; padding: 6px 8px 16px; }
+  .a .brand img { width: 26px; }
+  .a .nav { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: #9aa4b4; }
+  .a .nav.on { background: #172133; color: #fff; box-shadow: inset 2px 0 0 #3b82f6; }
+  .a .nav .n { margin-left: auto; font-size: 11px; background: #1e293b; padding: 0 7px; border-radius: 10px; color: #cbd5e1; }
+  .a .side .foot { margin-top: auto; padding: 10px; border-radius: 10px; background: #111925; font-size: 12px; color: #9aa4b4; }
+  .a .side .foot b { color: #e5e9f0; }
+  .a .main { flex: 1; padding: 22px 26px; overflow: hidden; display: flex; flex-direction: column; gap: 18px; }
+  .a .head { display: flex; align-items: center; gap: 12px; }
+  .a .head h2 { margin: 0; font-size: 22px; }
+  .a .search { margin-left: auto; width: 300px; background: #111925; border: 1px solid #1f2a3a; border-radius: 9px; padding: 8px 12px; color: #6b7686; display: flex; justify-content: space-between; }
+  .a .btn { border-radius: 9px; padding: 8px 14px; font-weight: 600; border: 1px solid #263244; background: #111925; color: #e5e9f0; }
+  .a .btn.pri { background: linear-gradient(135deg, #3b82f6, #4f46e5); border: 0; }
+  .a .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .a .stat { background: #111925; border: 1px solid #1c2633; border-radius: 12px; padding: 14px 16px; }
+  .a .stat .l { color: #8b95a5; font-size: 12px; }
+  .a .stat .v { font-size: 26px; font-weight: 700; margin-top: 2px; }
+  .a .stat .s { font-size: 12px; color: #4ade80; }
+  .a .stat svg { float: right; margin-top: -30px; }
+  .a .grid2 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; min-height: 0; flex: 1; }
+  .a .panel { background: #111925; border: 1px solid #1c2633; border-radius: 12px; padding: 14px 16px; overflow: hidden; }
+  .a .panel h3 { margin: 0 0 10px; font-size: 13px; color: #9aa4b4; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
+  .a .grp { font-size: 11px; color: #6b7686; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .a .svc { display: grid; grid-template-columns: 16px 1fr 90px 70px 120px; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 8px; }
+  .a .svc:hover { background: #162030; }
+  .a .svc .nm { font-weight: 600; }
+  .a .svc .sub { color: #6b7686; font-size: 12px; }
+  .a .svc .p { font-family: Consolas, monospace; color: #9aa4b4; font-size: 12px; }
+  .a .spark { height: 18px; }
+  .a .tog { width: 34px; height: 19px; border-radius: 10px; background: #3b82f6; position: relative; justify-self: end; }
+  .a .tog::after { content: ""; position: absolute; right: 2px; top: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; }
+  .a .tog.off { background: #334155; }
+  .a .tog.off::after { right: auto; left: 2px; }
+  .a .site { display: flex; align-items: center; gap: 10px; padding: 9px 6px; border-bottom: 1px solid #18212d; }
+  .a .site:last-child { border-bottom: 0; }
+  .a .chip { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: #1b2638; color: #a5b4fc; }
+  .a .chip.php { color: #a78bfa; } .a .chip.db { color: #67e8f9; } .a .chip.node { color: #86efac; }
+  .a .log { font-family: Consolas, monospace; font-size: 11.5px; color: #8b95a5; line-height: 1.7; }
+  .a .log b { color: #4ade80; font-weight: 400; } .a .log i { color: #f59e0b; font-style: normal; }
+
+  /* ===== B · Project-first (terang, berpusat pada project) ===== */
+  .b { background: #f7f8fb; color: #1c2330; }
+  .b .titlebar { background: #f7f8fb; color: #5d6573; }
+  .b .top { display: flex; align-items: center; gap: 16px; padding: 4px 24px 14px; border-bottom: 1px solid #e3e6eb; }
+  .b .top .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 17px; }
+  .b .top .brand img { width: 26px; }
+  .b .tabs { display: flex; gap: 4px; margin-left: 18px; }
+  .b .tabs span { padding: 7px 12px; border-radius: 8px; color: #5d6573; font-weight: 600; }
+  .b .tabs .on { background: #fff; color: #1c2330; box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 0 0 1px #e3e6eb; }
+  .b .health { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #15803d; background: #e7f6ec; padding: 6px 12px; border-radius: 999px; font-weight: 600; }
+  .b .btn { border-radius: 9px; padding: 8px 14px; font-weight: 600; border: 1px solid #dfe3e9; background: #fff; }
+  .b .btn.pri { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .b .main { flex: 1; padding: 20px 24px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; overflow: hidden; }
+  .b .bar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .b .bar h2 { margin: 0 auto 0 0; font-size: 20px; }
+  .b .filter { background: #fff; border: 1px solid #dfe3e9; border-radius: 9px; padding: 7px 12px; color: #8a929e; width: 240px; }
+  .b .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .b .card { background: #fff; border: 1px solid #e3e6eb; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .b .card.hl { border-color: #93c5fd; box-shadow: 0 0 0 3px #dbeafe; }
+  .b .card .h { display: flex; align-items: center; gap: 10px; }
+  .b .fav { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-weight: 700; color: #fff; }
+  .b .card .t { font-weight: 700; font-size: 15px; }
+  .b .card .u { color: #2563eb; font-size: 12.5px; }
+  .b .card .st { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5d6573; }
+  .b .stack { display: flex; flex-wrap: wrap; gap: 6px; }
+  .b .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 9px; border-radius: 999px; background: #f1f4f8; color: #344054; }
+  .b .acts { display: flex; gap: 6px; margin-top: 2px; }
+  .b .acts span { padding: 5px 10px; border-radius: 7px; border: 1px solid #e3e6eb; font-size: 12.5px; font-weight: 600; color: #344054; }
+  .b .acts .go { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .b .side { display: flex; flex-direction: column; gap: 14px; }
+  .b .box { background: #fff; border: 1px solid #e3e6eb; border-radius: 14px; padding: 14px 16px; }
+  .b .box h3 { margin: 0 0 10px; font-size: 13px; }
+  .b .row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }
+  .b .row .p { margin-left: auto; color: #8a929e; font-family: Consolas, monospace; font-size: 12px; }
+  .b .tip { background: linear-gradient(135deg, #eff6ff, #eef2ff); border-color: #c7d2fe; }
+
+  /* ===== C · Compact (Fluent / Mica, ringan seperti aplikasi Windows 11) ===== */
+  .c { background: #f3f3f3; color: #1b1b1b; }
+  .c .titlebar { background: transparent; color: #444; }
+  .c .body { background: linear-gradient(160deg, #eef2f8 0%, #f3f1f7 100%); }
+  .c .rail { width: 64px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 8px; }
+  .c .rail span { width: 44px; height: 40px; border-radius: 8px; display: grid; place-items: center; font-size: 18px; color: #555; }
+  .c .rail .on { background: rgba(255,255,255,0.8); color: #2563eb; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .c .main { flex: 1; margin: 0 10px 10px 0; background: rgba(255,255,255,0.75); border-radius: 10px; border: 1px solid rgba(0,0,0,0.06); padding: 22px 26px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+  .c .hero { display: flex; align-items: center; gap: 18px; }
+  .c .hero img { width: 54px; }
+  .c .hero h2 { margin: 0; font-size: 24px; font-weight: 600; }
+  .c .hero p { margin: 0; color: #616161; }
+  .c .bigbtn { margin-left: auto; display: flex; gap: 8px; }
+  .c .fbtn { border-radius: 6px; padding: 8px 16px; background: #fff; border: 1px solid #d6d6d6; font-weight: 600; }
+  .c .fbtn.acc { background: #2563eb; color: #fff; border-color: #1d4ed8; }
+  .c .palette { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d6d6d6; border-radius: 8px; padding: 10px 14px; color: #6b6b6b; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .c .palette b { color: #1b1b1b; font-weight: 600; }
+  .c .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .c .tile { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .c .tile .k { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .c .tile .v { color: #616161; font-size: 12.5px; }
+  .c .tile .sw { margin-left: auto; width: 40px; height: 20px; border-radius: 10px; background: #2563eb; position: relative; }
+  .c .tile .sw::after { content: ""; position: absolute; right: 4px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .c .tile .sw.off { background: #fff; border: 1px solid #8a8a8a; }
+  .c .tile .sw.off::after { right: auto; left: 4px; top: 3px; background: #5f5f5f; }
+  .c .list { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; }
+  .c .li { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid #f0f0f0; }
+  .c .li:last-child { border-bottom: 0; }
+  .c .li .d { font-weight: 600; width: 150px; }
+  .c .li .m { color: #616161; font-size: 12.5px; flex: 1; }
+  .c .li .lk { color: #2563eb; font-weight: 600; font-size: 12.5px; }
+  .c .sect { font-weight: 600; font-size: 13px; color: #444; }
+</style>
+</head>
+<body>
+  <nav class="page-nav"><a href="#c">C · Fluent Compact ✓ terpilih</a><a href="#a">A · Mission Control</a><a href="#b">B · Project-first</a></nav>
+  <div class="chosen">Arah yang dipilih untuk redesain GUI: <b>C · Fluent Compact</b> (gaya Windows 11). A dan B disimpan sebagai pembanding; fitur dari keduanya (grafik, log langsung, chip stack per project) bisa dipinjam di halaman detail.</div>
+
+  <!-- ================================================================ A -->
+  <section class="mock" id="a">
+    <h1>A · Mission Control</h1>
+    <p>Gelap dan padat informasi untuk developer yang membiarkan DevLock terbuka seharian: kartu ringkasan
+      (service, site, request, memori), service dikelompokkan per kategori dengan toggle dan grafik CPU kecil,
+      daftar site di samping, dan log langsung. Pencarian/perintah cepat dengan <kbd>Ctrl</kbd>+<kbd>K</kbd>.</p>
+    <div class="window a">
+      <div class="titlebar"><img src="../logo-app.svg" alt="">DevLock<span class="ctrl"><span>—</span><span>▢</span><span>✕</span></span></div>
+      <div class="body">
+        <aside class="side">
+          <div class="brand"><img src="../logo-mark.svg" alt="">DevLock</div>
+          <div class="nav on">◉ Ringkasan</div>
+          <div class="nav">▤ Service <span class="n">9</span></div>
+          <div class="nav">◫ Project <span class="n">5</span></div>
+          <div class="nav">⬡ Runtime</div>
+          <div class="nav">✉ Email <span class="n">3</span></div>
+          <div class="nav">⛁ Database</div>
+          <div class="nav">⚙ Settings</div>
+          <div class="foot"><b>v0.13.0</b> · terbaru<br>Root D:\DevLock-Apps<br><span class="dot ok"></span> DNS *.test aktif</div>
+        </aside>
+        <main class="main">
+          <div class="head"><h2>Ringkasan</h2>
+            <div class="search">Cari site, service, perintah… <kbd>Ctrl K</kbd></div>
+            <span class="btn">Stop semua</span><span class="btn pri">▶ Start semua</span></div>
+          <div class="stats">
+            <div class="stat"><div class="l">Service berjalan</div><div class="v">8 / 9</div><div class="s">● semua sehat kecuali 1</div></div>
+            <div class="stat"><div class="l">Site</div><div class="v">5</div><div class="s" style="color:#93c5fd">2 HTTPS · 1 dev server</div></div>
+            <div class="stat"><div class="l">Request / menit</div><div class="v">142</div>
+              <svg width="90" height="30"><polyline fill="none" stroke="#3b82f6" stroke-width="2" points="0,24 12,20 24,22 36,12 48,16 60,8 72,10 90,4"/></svg><div class="s">↑ 12%</div></div>
+            <div class="stat"><div class="l">Memori</div><div class="v">612 MB</div>
+              <svg width="90" height="30"><polyline fill="none" stroke="#a78bfa" stroke-width="2" points="0,14 15,15 30,13 45,16 60,12 75,14 90,13"/></svg><div class="s" style="color:#9aa4b4">stabil</div></div>
+          </div>
+          <div class="grid2">
+            <div class="panel"><h3>Service <span style="text-transform:none;letter-spacing:0">Kelompok ▾</span></h3>
+              <div class="grp">Web</div>
+              <div class="svc"><span class="dot ok"></span><div><div class="nm">nginx</div><div class="sub">1.30.6 · 5 site</div></div><span class="p">:80 :443</span><svg class="spark" width="70" height="18"><polyline fill="none" stroke="#3b82f6" stroke-width="1.5" points="0,12 10,10 20,14 30,6 40,9 50,5 60,8 70,4"/></svg><span class="tog"></span></div>
+              <div class="svc"><span class="dot ok"></span><div><div class="nm">PHP 8.4 <span class="sub">· 4 worker</span></div><div class="sub">toko, blog, api</div></div><span class="p">:9840–43</span><svg class="spark" width="70" height="18"><polyline fill="none" stroke="#a78bfa" stroke-width="1.5" points="0,14 10,12 20,13 30,8 40,10 50,6 60,9 70,7"/></svg><span class="tog"></span></div>
+              <div class="svc"><span class="dot ok"></span><div><div class="nm">PHP 7.4 <span class="sub">· 4 worker</span></div><div class="sub">legacy</div></div><span class="p">:9740–43</span><svg class="spark" width="70" height="18"><polyline fill="none" stroke="#a78bfa" stroke-width="1.5" points="0,15 10,15 20,14 30,15 40,13 50,15 60,14 70,15"/></svg><span class="tog"></span></div>
+              <div class="grp">Database &amp; cache</div>
+              <div class="svc"><span class="dot ok"></span><div><div class="nm">MySQL 8.4</div><div class="sub">toko, blog</div></div><span class="p">:3384</span><svg class="spark" width="70" height="18"><polyline fill="none" stroke="#67e8f9" stroke-width="1.5" points="0,13 10,11 20,12 30,9 40,12 50,10 60,11 70,9"/></svg><span class="tog"></span></div>
+              <div class="svc"><span class="dot err"></span><div><div class="nm">MariaDB 11.4</div><div class="sub" style="color:#f87171">port 3424 dipakai proses lain · Lihat</div></div><span class="p">:3424</span><span></span><span class="tog off"></span></div>
+              <div class="svc"><span class="dot ok"></span><div><div class="nm">Redis 8</div><div class="sub">toko</div></div><span class="p">:6389</span><svg class="spark" width="70" height="18"><polyline fill="none" stroke="#f472b6" stroke-width="1.5" points="0,15 10,14 20,15 30,13 40,15 50,14 60,15 70,14"/></svg><span class="tog"></span></div>
+              <div class="grp">Dev server</div>
+              <div class="svc"><span class="dot ok"></span><div><div class="nm">dashboard · npm run dev</div><div class="sub">Vite terdeteksi di :5173</div></div><span class="p">:5173</span><svg class="spark" width="70" height="18"><polyline fill="none" stroke="#86efac" stroke-width="1.5" points="0,10 10,12 20,9 30,11 40,8 50,10 60,7 70,9"/></svg><span class="tog"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;min-height:0">
+              <div class="panel"><h3>Site <span style="text-transform:none;letter-spacing:0;color:#93c5fd">+ Project baru</span></h3>
+                <div class="site"><span class="dot ok"></span><b>toko.test</b><span class="chip php">PHP 8.4</span><span class="chip db">MySQL</span><span style="margin-left:auto;color:#6b7686">↗</span></div>
+                <div class="site"><span class="dot ok"></span><b>blog.test</b><span class="chip php">PHP 8.4</span><span class="chip">WP</span><span style="margin-left:auto;color:#6b7686">↗</span></div>
+                <div class="site"><span class="dot ok"></span><b>legacy.test</b><span class="chip php">PHP 7.4</span><span class="chip">Apache</span><span style="margin-left:auto;color:#6b7686">↗</span></div>
+                <div class="site"><span class="dot ok"></span><b>dashboard.test</b><span class="chip node">Node 22</span><span style="margin-left:auto;color:#6b7686">↗</span></div>
+                <div class="site"><span class="dot warn"></span><b>shop.test</b><span class="chip php">PHP 8.2</span><span style="margin-left:auto;color:#f59e0b;font-size:12px">belum terinstall</span></div>
+              </div>
+              <div class="panel" style="flex:1"><h3>Log langsung</h3>
+                <div class="log">10:42:01 <b>nginx</b> GET toko.test/ 200 38ms<br>10:42:02 <b>php@8.4</b> artisan queue:work …<br>10:42:05 <i>mariadb</i> bind 3424: address in use<br>10:42:07 <b>vite</b> hmr update /src/App.vue<br>10:42:09 <b>nginx</b> GET dashboard.test/ 200 4ms</div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ B -->
+  <section class="mock" id="b">
+    <h1>B · Project-first</h1>
+    <p>Terang dan ramah pemula: halaman utama adalah daftar <b>project</b>, bukan service. Tiap kartu menampilkan
+      stack-nya (PHP, database, cache, Node) sebagai chip dan tombol start/stop per project; DevLock mengurus service
+      di belakang layar. Panel kanan berisi kesehatan sistem dan saran langkah berikutnya.</p>
+    <div class="window b">
+      <div class="titlebar"><img src="../logo-app.svg" alt="">DevLock<span class="ctrl"><span>—</span><span>▢</span><span>✕</span></span></div>
+      <div class="top">
+        <div class="brand"><img src="../logo-mark.svg" alt="">DevLock</div>
+        <div class="tabs"><span class="on">Project</span><span>Service</span><span>Runtime</span><span>Email</span><span>Settings</span></div>
+        <div class="health"><span class="dot ok"></span>Semua berjalan normal</div>
+      </div>
+      <div class="main">
+        <div>
+          <div class="bar"><h2>Project <span style="color:#8a929e;font-weight:500;font-size:15px">· 5 di www</span></h2>
+            <span class="filter">🔍 Cari project…</span><span class="btn">Impor dari Laragon</span><span class="btn pri">+ Project baru</span></div>
+          <div class="cards">
+            <div class="card hl"><div class="h"><span class="fav" style="background:#ef4444">L</span><div><div class="t">toko</div><div class="u">https://toko.test</div></div><span class="st"><span class="dot ok"></span>Berjalan</span></div>
+              <div class="stack"><span class="pill">🐘 PHP 8.4</span><span class="pill">🐬 MySQL 8.4</span><span class="pill">⚡ Redis 8</span><span class="pill">🟢 Vite :5173</span><span class="pill">🔒 HTTPS</span></div>
+              <div class="acts"><span class="go">Buka ↗</span><span>Editor</span><span>Terminal</span><span>Database</span><span style="margin-left:auto">⏸ Stop</span></div></div>
+            <div class="card"><div class="h"><span class="fav" style="background:#21759b">W</span><div><div class="t">blog</div><div class="u">http://blog.test</div></div><span class="st"><span class="dot ok"></span>Berjalan</span></div>
+              <div class="stack"><span class="pill">🐘 PHP 8.4</span><span class="pill">🦭 MariaDB 11.4</span><span class="pill">✉ Mailpit</span></div>
+              <div class="acts"><span class="go">Buka ↗</span><span>Editor</span><span>Terminal</span><span>Database</span><span style="margin-left:auto">⏸ Stop</span></div></div>
+            <div class="card"><div class="h"><span class="fav" style="background:#111827">N</span><div><div class="t">dashboard</div><div class="u">http://dashboard.test</div></div><span class="st"><span class="dot ok"></span>Berjalan</span></div>
+              <div class="stack"><span class="pill">🟢 Node 22</span><span class="pill">▲ Next.js · port 3000 terdeteksi</span></div>
+              <div class="acts"><span class="go">Buka ↗</span><span>Editor</span><span>Terminal</span><span>Log</span><span style="margin-left:auto">⏸ Stop</span></div></div>
+            <div class="card"><div class="h"><span class="fav" style="background:#7c3aed">P</span><div><div class="t">legacy</div><div class="u">http://legacy.test</div></div><span class="st"><span class="dot off"></span>Berhenti</span></div>
+              <div class="stack"><span class="pill">🐘 PHP 7.4</span><span class="pill">🪶 Apache</span><span class="pill">🐬 MySQL 5.7</span></div>
+              <div class="acts"><span class="go">▶ Start</span><span>Editor</span><span>Terminal</span><span>Database</span></div></div>
+          </div>
+        </div>
+        <aside class="side">
+          <div class="box"><h3>Sistem</h3>
+            <div class="row"><span class="dot ok"></span>nginx<span class="p">:80 :443</span></div>
+            <div class="row"><span class="dot ok"></span>PHP 8.4 · 7.4<span class="p">8 worker</span></div>
+            <div class="row"><span class="dot ok"></span>MySQL 8.4<span class="p">:3384</span></div>
+            <div class="row"><span class="dot ok"></span>MariaDB 11.4<span class="p">:3424</span></div>
+            <div class="row"><span class="dot ok"></span>Redis 8<span class="p">:6389</span></div>
+            <div class="row"><span class="dot ok"></span>Mailpit<span class="p">3 email</span></div>
+          </div>
+          <div class="box tip"><h3>💡 Langkah berikutnya</h3>
+            <div style="font-size:13px;color:#3b4a6b">Aktifkan DNS wildcard agar project baru tidak perlu menulis file hosts.</div>
+            <div style="margin-top:10px"><span class="btn pri" style="font-size:12.5px;padding:6px 12px">Aktifkan *.test</span></div></div>
+          <div class="box"><h3>Email terbaru</h3>
+            <div class="row" style="font-size:12.5px">Reset password · blog<span class="p">2m</span></div>
+            <div class="row" style="font-size:12.5px">Invoice #1042 · toko<span class="p">9m</span></div></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ C -->
+  <section class="mock" id="c">
+    <h1>C · Fluent Compact <span style="font-size:13px;background:#2563eb;color:#fff;padding:2px 8px;border-radius:999px;vertical-align:middle">terpilih</span></h1>
+    <p>Mengikuti gaya Windows 11 (Fluent, latar Mica, rail navigasi ikon, toggle Windows): terasa seperti aplikasi
+      bawaan Windows dan ringan. Satu tombol besar Start/Stop, palet perintah di atas, service sebagai tile dengan
+      toggle, dan daftar site yang ringkas.</p>
+    <div class="window c">
+      <div class="titlebar"><img src="../logo-app.svg" alt="">DevLock<span class="ctrl"><span>—</span><span>▢</span><span>✕</span></span></div>
+      <div class="body">
+        <nav class="rail"><span class="on">⌂</span><span>▤</span><span>◫</span><span>⬡</span><span>✉</span><span style="margin-top:auto;margin-bottom:12px">⚙</span></nav>
+        <main class="main">
+          <div class="hero"><img src="../logo-mark.svg" alt=""><div><h2>Semua berjalan</h2><p>8 service · 5 site · D:\DevLock-Apps</p></div>
+            <div class="bigbtn"><span class="fbtn">Restart</span><span class="fbtn acc">⏹ Stop semua</span></div></div>
+          <div class="palette">⌕ <span>Ketik perintah: <b>start mysql@8.4</b>, <b>buka toko</b>, <b>install php 8.5</b>…</span><kbd style="margin-left:auto">Ctrl K</kbd></div>
+          <div class="sect">Service</div>
+          <div class="tiles">
+            <div class="tile"><div class="k"><span class="dot ok"></span>nginx<span class="sw"></span></div><div class="v">:80 · :443 · 5 site</div></div>
+            <div class="tile"><div class="k"><span class="dot ok"></span>PHP 8.4<span class="sw"></span></div><div class="v">4 worker · :9840</div></div>
+            <div class="tile"><div class="k"><span class="dot ok"></span>PHP 7.4<span class="sw"></span></div><div class="v">4 worker · :9740</div></div>
+            <div class="tile"><div class="k"><span class="dot ok"></span>MySQL 8.4<span class="sw"></span></div><div class="v">:3384 · 2 database</div></div>
+            <div class="tile"><div class="k"><span class="dot off"></span>PostgreSQL 18<span class="sw off"></span></div><div class="v">:5418 · tidak dipakai</div></div>
+            <div class="tile"><div class="k"><span class="dot ok"></span>Redis 8<span class="sw"></span></div><div class="v">:6389</div></div>
+          </div>
+          <div class="sect">Site</div>
+          <div class="list">
+            <div class="li"><span class="dot ok"></span><span class="d">toko.test</span><span class="m">PHP 8.4 · MySQL 8.4 · Redis · HTTPS</span><span class="lk">Buka</span><span class="lk">Folder</span><span class="lk">Terminal</span></div>
+            <div class="li"><span class="dot ok"></span><span class="d">blog.test</span><span class="m">PHP 8.4 · MariaDB 11.4 · WordPress</span><span class="lk">Buka</span><span class="lk">Folder</span><span class="lk">Terminal</span></div>
+            <div class="li"><span class="dot ok"></span><span class="d">dashboard.test</span><span class="m">Node 22 · dev server :5173</span><span class="lk">Buka</span><span class="lk">Folder</span><span class="lk">Terminal</span></div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
