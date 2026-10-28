@@ -48,6 +48,14 @@ pub fn run(check_only: bool) -> Result<()> {
     });
     bar.finish_and_clear();
     result?;
+    // Shim adalah salinan devlock-shim.exe: salin ulang agar ikut versi baru (dan shim
+    // yang baru ditambahkan rilis ini muncul).
+    match crate::versions::install_shims(&paths) {
+        Ok(count) => println!("{count} shim diperbarui di {}", paths.shims().display()),
+        Err(err) => {
+            println!("peringatan: shim belum diperbarui ({err:#}); jalankan `devlock shims`")
+        }
+    }
     println!(
         "DevLock {} terpasang di {}. Jalankan lagi `devlock start` atau buka GUI.",
         latest.version,
