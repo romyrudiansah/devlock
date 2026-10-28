@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Changed
+- Notifikasi di halaman Service GUI bisa ditutup (×); peringatan yang ditutup tidak muncul lagi selama teksnya sama. Peringatan "CA DevLock belum dipercaya" tidak bisa ditutup, tetapi punya tombol **Percayai CA DevLock** yang memasang CA lewat dialog Windows dan memperbarui bundle CA PHP.
+
 ## [0.12.2] - 2026-10-28
 
 ### Fixed
