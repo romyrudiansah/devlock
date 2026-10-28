@@ -98,6 +98,8 @@ pub fn install(
     let result = (|| -> Result<()> {
         if release.file_name().ends_with(".zip") {
             extract_zip(&archive, &staging, skipped_dirs(release.kind))?;
+        } else if release.file_name().ends_with(".tar.gz") {
+            extract_tar_gz(&archive, &staging)?;
         } else {
             std::fs::copy(&archive, staging.join(release.file_name()))?;
         }
@@ -342,6 +344,15 @@ pub fn sha1_file(path: &Path) -> Result<String> {
         hasher.update(&buf[..n]);
     }
     Ok(hex(&hasher.finalize()))
+}
+
+/// Ekstrak `.tar.gz` ke `dest`; `tar` menolak entri yang keluar dari `dest` (`..`, absolut).
+fn extract_tar_gz(archive: &Path, dest: &Path) -> Result<()> {
+    let file =
+        File::open(archive).with_context(|| format!("gagal membuka {}", archive.display()))?;
+    tar::Archive::new(flate2::read::GzDecoder::new(file))
+        .unpack(dest)
+        .with_context(|| format!("gagal mengekstrak {}", archive.display()))
 }
 
 /// Ekstrak seluruh isi zip ke `dest`.

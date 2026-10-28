@@ -17,6 +17,8 @@ pub enum Kind {
     Php,
     Node,
     Composer,
+    Go,
+    Python,
     Nginx,
     Apache,
     Mysql,
@@ -32,10 +34,12 @@ pub enum Kind {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 15] = [
+    pub const ALL: [Kind; 17] = [
         Kind::Php,
         Kind::Node,
         Kind::Composer,
+        Kind::Go,
+        Kind::Python,
         Kind::Nginx,
         Kind::Apache,
         Kind::Mysql,
@@ -55,6 +59,8 @@ impl Kind {
             Kind::Php => "php",
             Kind::Node => "node",
             Kind::Composer => "composer",
+            Kind::Go => "go",
+            Kind::Python => "python",
             Kind::Nginx => "nginx",
             Kind::Apache => "apache",
             Kind::Mysql => "mysql",
@@ -80,7 +86,10 @@ impl Kind {
     /// Runtime yang punya versi default global / per project (`devlock use`). Database & cache
     /// dipilih lewat instance, web server & Adminer lewat konfigurasi.
     pub fn has_default_version(self) -> bool {
-        matches!(self, Kind::Php | Kind::Node | Kind::Composer)
+        matches!(
+            self,
+            Kind::Php | Kind::Node | Kind::Composer | Kind::Go | Kind::Python
+        )
     }
 
     /// Server cache (protokol Redis): instance per major, dipilih lewat `cache`.
@@ -108,6 +117,8 @@ impl FromStr for Kind {
             "php" => Kind::Php,
             "node" | "nodejs" => Kind::Node,
             "composer" => Kind::Composer,
+            "go" | "golang" => Kind::Go,
+            "python" | "py" => Kind::Python,
             "nginx" => Kind::Nginx,
             "apache" | "httpd" => Kind::Apache,
             "mysql" => Kind::Mysql,

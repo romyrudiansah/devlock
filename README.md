@@ -113,6 +113,18 @@ Perubahan langsung diterapkan ke pool php-cgi yang sedang berjalan. Xdebug aktif
 `debug,develop`, mulai saat ada trigger `XDEBUG_SESSION`, dan terhubung ke `127.0.0.1:9003`.
 Semua ini juga tersedia di tab **PHP** pada GUI.
 
+## Go & Python
+
+```
+devlock install go 1.27        # zip resmi go.dev (SHA256 dari go.dev/dl)
+devlock install python 3.13    # build portable python-build-standalone (SHA256 dari GitHub)
+devlock use python 3.13        # atau `python = "3.13"` / `go = "1.27"` di .devlock.toml
+```
+
+Shim `go`, `gofmt`, `python`, dan `pip` (`python -m pip`) memakai versi project, sama seperti
+PHP/Node. Selain `.devlock.toml`, versi dibaca dari `go.mod` (`toolchain`, lalu `go`) dan
+`.python-version`.
+
 ## Database
 
 ```
