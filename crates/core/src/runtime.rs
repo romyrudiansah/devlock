@@ -213,6 +213,8 @@ mod tests {
     fn parses_kind() {
         assert_eq!("NodeJS".parse::<Kind>().unwrap(), Kind::Node);
         assert_eq!("postgres".parse::<Kind>().unwrap(), Kind::Postgresql);
-        assert!("python".parse::<Kind>().is_err());
+        assert_eq!("py".parse::<Kind>().unwrap(), Kind::Python);
+        assert_eq!("golang".parse::<Kind>().unwrap(), Kind::Go);
+        assert!("ruby".parse::<Kind>().is_err());
     }
 }
