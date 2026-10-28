@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- `devlock update` kini juga memperbarui salinan shim di `shims\` (sebelumnya shim tetap versi lama dan shim baru, mis. `java`, baru muncul setelah `devlock shims`).
+
 ## [0.12.0] - 2026-10-28
 
 ### Added
