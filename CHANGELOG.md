@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-28
+
 ### Changed
 - Logo baru: dua kurung kode yang membentuk heksagon dengan garis miring di tengah (`</>`). Dipakai di ikon aplikasi, tray, installer (`icon.ico` 16–256 px), header GUI, README, dan website. Sumber di `brand/` (`logo-mark.svg` tanpa kotak, `logo-app.svg` ikon aplikasi, PNG 16–512 px).
 - Website dwibahasa: versi Inggris di `/en/` (halaman utama dan panduan lengkap) dengan pemilih ID/EN, `hreflang`, dan screenshot GUI berbahasa Inggris.
@@ -184,7 +186,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.12.3...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/romyrudiansah/devlock/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/romyrudiansah/devlock/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/romyrudiansah/devlock/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/romyrudiansah/devlock/compare/v0.12.0...v0.12.1
