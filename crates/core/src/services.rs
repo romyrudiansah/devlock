@@ -323,6 +323,13 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
             ),
         )
         .context("PATH tidak valid")?;
+        // Port otomatis: `PORT` tetap per site agar spec tidak berubah saat port sebenarnya
+        // terdeteksi (nginx cukup di-reload); kesiapan tidak dicek lewat port.
+        let (env_port, ready_port) = if site.dev_port_auto {
+            (crate::devport::assigned_port(&site.name), None)
+        } else {
+            (*port, Some(*port))
+        };
         services.push(ServiceSpec {
             name: format!("dev:{}", site.name),
             group: format!("dev:{}", site.name),
@@ -333,7 +340,7 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
                 args: vec!["/d".into(), "/s".into(), "/c".into(), dev.clone()],
                 cwd: site.dir.clone(),
                 env: vec![
-                    ("PORT".into(), port.to_string()),
+                    ("PORT".into(), env_port.to_string()),
                     ("PATH".into(), path.to_string_lossy().into()),
                     ("BROWSER".into(), "none".into()),
                 ]
@@ -344,7 +351,7 @@ pub fn plan(paths: &Paths, config: &Config) -> Result<Plan> {
             stop: None,
             init: None,
             init_marker: None,
-            port: Some(*port),
+            port: ready_port,
             extra_ports: vec![],
             log: paths.logs().join(format!("dev-{}.log", site.name)),
         });
@@ -1089,6 +1096,48 @@ mod tests {
         );
         // PostgreSQL tidak memakai my.ini.
         assert!(!plan.files.iter().any(|(p, _)| p.ends_with("my.ini")));
+    }
+
+    #[test]
+    fn dev_server_without_proxy_port_uses_detected_port() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        std::fs::create_dir_all(paths.runtime_dir("nginx", "1.30.6")).unwrap();
+        let www = paths.default_www();
+        std::fs::create_dir_all(www.join("spa")).unwrap();
+        std::fs::write(www.join("spa/.devlock.toml"), "dev = \"pnpm dev\"\n").unwrap();
+        let assigned = crate::devport::assigned_port("spa");
+        let conf_of = |plan: &Plan| {
+            plan.files
+                .iter()
+                .find(|(p, _)| p.ends_with("nginx.conf"))
+                .unwrap()
+                .1
+                .clone()
+        };
+
+        let before = plan(&paths, &Config::default()).unwrap();
+        let dev = before
+            .services
+            .iter()
+            .find(|s| s.name == "dev:spa")
+            .unwrap();
+        assert_eq!(dev.port, None);
+        assert!(dev
+            .command
+            .env
+            .contains(&("PORT".into(), assigned.to_string())));
+        assert!(conf_of(&before).contains(&format!("proxy_pass http://127.0.0.1:{assigned};")));
+        let site = before.sites.iter().find(|s| s.name == "spa").unwrap();
+        assert!(site.dev_port_auto);
+        assert_eq!(site.kind, SiteKind::Proxy { port: assigned });
+
+        // Vite memakai 5173 walau diberi PORT: nginx mengikuti, spec dev server tetap.
+        crate::devport::store_detected(&paths, "spa", 5173).unwrap();
+        let after = plan(&paths, &Config::default()).unwrap();
+        assert!(conf_of(&after).contains("proxy_pass http://127.0.0.1:5173;"));
+        let dev_after = after.services.iter().find(|s| s.name == "dev:spa").unwrap();
+        assert_eq!(dev, dev_after);
     }
 
     #[test]

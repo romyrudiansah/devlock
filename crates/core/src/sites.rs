@@ -37,6 +37,8 @@ pub struct Site {
     pub cache: Option<CacheInstance>,
     /// Perintah dev server (project Node).
     pub dev: Option<String>,
+    /// Port dev server dideteksi dari output-nya (`dev` tanpa `proxy_port`).
+    pub dev_port_auto: bool,
     /// Dilayani juga lewat HTTPS dengan sertifikat dari CA DevLock.
     pub https: bool,
     /// Dilayani Apache (di belakang nginx) karena `webserver = "apache"`.
@@ -130,6 +132,7 @@ fn adminer_site(paths: &Paths, config: &Config) -> Result<Option<Site>> {
         database: None,
         cache: None,
         dev: None,
+        dev_port_auto: false,
         https: config.https.enabled,
         apache: false,
         warning,
@@ -153,8 +156,15 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
     domains.extend(project.aliases.iter().cloned());
 
     let mut warning = None;
+    let dev_port_auto = project.dev.is_some() && project.proxy_port.is_none();
     let kind = if let Some(port) = project.proxy_port {
         SiteKind::Proxy { port }
+    } else if dev_port_auto {
+        // Port terakhir yang terbaca dari output dev server, atau `PORT` yang diberikan DevLock.
+        SiteKind::Proxy {
+            port: crate::devport::read_detected(paths, name)
+                .unwrap_or_else(|| crate::devport::assigned_port(name)),
+        }
     } else if is_php_project(dir, &docroot) {
         match resolve::resolve(paths, config, Kind::Php, dir) {
             Ok(r) => SiteKind::Php {
@@ -218,7 +228,8 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
         kind,
         database,
         cache,
-        dev: project.dev.filter(|_| project.proxy_port.is_some()),
+        dev: project.dev,
+        dev_port_auto,
         https: project.https.unwrap_or(config.https.enabled),
         apache,
         warning,
