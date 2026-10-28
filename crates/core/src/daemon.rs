@@ -331,7 +331,7 @@ fn matches_target(target: &str, spec: &ServiceSpec) -> bool {
         || spec.group.starts_with(&format!("{target}@"))
         || (target == "dev" && spec.group.starts_with("dev:"))
         || (matches!(target, "db" | "database")
-            && ["mysql@", "mariadb@", "postgresql@"]
+            && ["mysql@", "mariadb@", "postgresql@", "mongodb@"]
                 .iter()
                 .any(|engine| spec.group.starts_with(engine)))
         || (target == "cache"

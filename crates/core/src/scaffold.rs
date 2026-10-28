@@ -188,9 +188,15 @@ pub fn create(
     if template == Template::Wordpress
         && instance
             .as_ref()
-            .is_some_and(|i| i.kind == Kind::Postgresql)
+            .is_some_and(|i| i.kind == Kind::Postgresql || !i.is_sql())
     {
         bail!("WordPress membutuhkan MySQL atau MariaDB");
+    }
+    if template.needs_database() && instance.as_ref().is_some_and(|i| !i.is_sql()) {
+        bail!(
+            "{} butuh database SQL (MySQL/MariaDB/PostgreSQL), bukan MongoDB",
+            template.label()
+        );
     }
     if let Some(instance) = &instance {
         runtime::require_installed(paths, instance.kind, &instance.line)?;
@@ -237,6 +243,8 @@ pub fn create(
 
     let mut notes = Vec::new();
     let database = match &instance {
+        // MongoDB membuat database saat pertama ditulis; cukup dicatat di .devlock.toml.
+        Some(instance) if !instance.is_sql() => None,
         Some(instance) => {
             let db_name = db::name_for_site(&name);
             log(&format!(

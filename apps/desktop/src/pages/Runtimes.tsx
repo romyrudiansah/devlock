@@ -11,6 +11,8 @@ const LABELS: Record<string, string> = {
   mysql: "MySQL",
   mariadb: "MariaDB",
   postgresql: "PostgreSQL",
+  mongodb: "MongoDB",
+  mongosh: "mongosh",
   redis: "Redis",
   garnet: "Garnet",
   adminer: "Adminer",

@@ -180,7 +180,9 @@ impl DbInstance {
         let (engine, spec) = text.split_once('@').unwrap_or((text, ""));
         let kind: Kind = engine.trim().parse()?;
         if !kind.is_database() {
-            bail!("`{engine}` bukan engine database (pilihan: mysql, mariadb, postgresql)");
+            bail!(
+                "`{engine}` bukan engine database (pilihan: mysql, mariadb, postgresql, mongodb)"
+            );
         }
         // Sejak PostgreSQL 10, data kompatibel dalam satu major (16.x).
         if kind == Kind::Postgresql {
@@ -207,7 +209,7 @@ impl DbInstance {
 
     /// Port default: MySQL `3300 + major*10 + minor` (8.4 → 3384),
     /// MariaDB `3400 + (major-10)*20 + minor` (11.4 → 3424), PostgreSQL `5400 + major`
-    /// (16 → 5416). Bisa ditimpa `[ports]`.
+    /// (16 → 5416), MongoDB `27000 + major*10 + minor` (8.0 → 27080). Bisa ditimpa `[ports]`.
     pub fn port(&self, config: &Config) -> u16 {
         if let Some(port) = config.ports.get(&self.name()) {
             return *port;
@@ -217,12 +219,19 @@ impl DbInstance {
         match self.kind {
             Kind::Mariadb => 3400 + major.saturating_sub(10) * 20 + minor,
             Kind::Postgresql => 5400 + major,
+            Kind::Mongodb => 27000 + major * 10 + minor,
             _ => 3300 + major * 10 + minor,
         }
     }
 
     pub fn data_dir(&self, paths: &Paths) -> PathBuf {
         paths.data().join(self.kind.as_str()).join(&self.line)
+    }
+
+    /// Database SQL (MySQL/MariaDB/PostgreSQL): punya aksi `devlock db`, Adminer, dan isian
+    /// `.env` otomatis. MongoDB tidak.
+    pub fn is_sql(&self) -> bool {
+        self.kind != Kind::Mongodb
     }
 }
 
@@ -409,6 +418,12 @@ mod tests {
             "postgresql@18"
         );
         assert!(DbInstance::parse("postgresql").is_err());
+        let mongo = DbInstance::parse("mongo@8.0").unwrap();
+        assert_eq!(
+            (mongo.name(), mongo.port(&config), mongo.is_sql()),
+            ("mongodb@8.0".to_string(), 27080, false)
+        );
+        assert!(DbInstance::parse("mongodb@8").is_err());
         assert!(DbInstance::parse("php@8.3").is_err());
     }
 }
