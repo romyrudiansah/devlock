@@ -253,7 +253,8 @@ webserver = "apache"</pre>
           <thead><tr><th>Key</th><th>Example</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>php</code></td><td><code>"8.3"</code></td><td>PHP version (also from <code>config.platform.php</code> in composer.json)</td></tr>
-            <tr><td><code>node</code></td><td><code>"22"</code></td><td>Node version (also from <code>.nvmrc</code>)</td></tr>
+            <tr><td><code>node</code></td><td><code>"22"</code></td><td>Node version (also from <code>.nvmrc</code>), or <code>"system"</code> for a global Node</td></tr>
+            <tr><td><code>composer</code></td><td><code>"system"</code></td><td>Composer version, or <code>"system"</code> for a global Composer</td></tr>
             <tr><td><code>go</code>, <code>python</code>, <code>java</code></td><td><code>"1.27"</code>, <code>"3.13"</code>, <code>"21"</code></td><td>Go, Python, Java versions</td></tr>
             <tr><td><code>database</code></td><td><code>"mysql@8.4"</code></td><td>Database instance: <code>mysql</code>, <code>mariadb</code>, <code>postgresql</code>, <code>mongodb</code></td></tr>
             <tr><td><code>cache</code></td><td><code>"redis@8"</code></td><td>Cache instance: <code>redis</code> or <code>garnet</code></td></tr>
@@ -269,6 +270,10 @@ webserver = "apache"</pre>
       </div>
       <p>Changing this file needs no manual restart: the daemon notices within a few seconds. To pick a version from the
         terminal: <code>devlock use php 8.2</code> (project) or <code>devlock use php 8.2 --global</code>.</p>
+      <p><strong>Global Node/Composer.</strong> Already installed Node.js or Composer with their official installers? Write
+        <code>node = "system"</code> or <code>composer = "system"</code> (or <code>devlock use node system --global</code>).
+        DevLock then uses the install it finds on the Windows PATH, including for dev servers and the Terminal button.
+        A global Composer still runs with the project's PHP version.</p>
 
       <h2 id="database">Databases</h2>
       <div class="table-scroll">

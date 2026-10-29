@@ -38,11 +38,21 @@ pub fn use_version(target: &str, spec: &str, global: bool) -> Result<()> {
             if !kind.has_default_version() {
                 bail!("`use` untuk php, node, composer, go, python, java, database, atau cache");
             }
-            match runtime::resolve_installed(&paths, kind, spec)? {
-                Some(version) => println!("{kind} {spec} → {version}"),
-                None => println!(
+            if spec.eq_ignore_ascii_case(resolve::SYSTEM) {
+                if !matches!(kind, Kind::Node | Kind::Composer) {
+                    bail!(
+                        "`{}` hanya didukung untuk node dan composer",
+                        resolve::SYSTEM
+                    );
+                }
+                println!("{kind} memakai instalasi global Windows (dicari di PATH)");
+            } else {
+                match runtime::resolve_installed(&paths, kind, spec)? {
+                    Some(version) => println!("{kind} {spec} → {version}"),
+                    None => println!(
                     "peringatan: {kind} {spec} belum terinstall (`devlock install {kind} {spec}`)"
                 ),
+                }
             }
             (kind.as_str(), spec.to_string())
         };

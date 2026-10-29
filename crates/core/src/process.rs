@@ -62,9 +62,14 @@ impl Process {
 
         let mut command = std_command(cmd);
         command.stdin(Stdio::null()).stdout(out).stderr(err);
-        let child = command
-            .spawn()
-            .with_context(|| format!("gagal menjalankan {}", cmd.program.display()))?;
+        let child = command.spawn().map_err(|err| {
+            if err.raw_os_error() == Some(ERROR_APPLICATION_CONTROL_POLICY) {
+                anyhow::anyhow!("{} {BLOCKED_HINT}", cmd.program.display())
+            } else {
+                anyhow::Error::new(err)
+                    .context(format!("gagal menjalankan {}", cmd.program.display()))
+            }
+        })?;
         let job = Job::new()?;
         job.assign(&child)?;
         Ok(Self { child, job })
@@ -265,6 +270,33 @@ fn environment_block(command: &StdCommand) -> Vec<u16> {
     block
 }
 
+/// `ERROR_APPLICATION_CONTROL_POLICY`: exe diblokir Smart App Control / App Control.
+pub const ERROR_APPLICATION_CONTROL_POLICY: i32 = 4551;
+
+/// Penjelasan untuk service yang exe atau DLL-nya diblokir Windows.
+pub const BLOCKED_HINT: &str = "diblokir Smart App Control Windows (file baru belum dipercaya);      tunggu beberapa saat lalu Start lagi, atau pasang versi lain";
+
+/// Proses dihentikan loader karena exe/DLL-nya diblokir kebijakan integritas kode:
+/// `0xC0E90002` (Smart App Control) atau `STATUS_INVALID_IMAGE_HASH` (`0xC0000428`).
+pub fn blocked_exit(code: Option<i32>) -> bool {
+    matches!(code.map(|c| c as u32), Some(0xC0E9_0002 | 0xC000_0428))
+}
+
+/// Matikan dialog error Windows (mis. "Bad Image" saat DLL diblokir) untuk proses ini dan
+/// anak-anaknya, agar service yang gagal tidak memunculkan jendela berulang tiap restart.
+pub fn suppress_error_dialogs() {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::System::Diagnostics::Debug::{
+            SetErrorMode, SEM_FAILCRITICALERRORS, SEM_NOGPFAULTERRORBOX, SEM_NOOPENFILEERRORBOX,
+        };
+        // SAFETY: hanya mengubah mode error proses ini; diwariskan ke proses anak.
+        unsafe {
+            SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX)
+        };
+    }
+}
+
 /// Jadikan handle stdio proses ini tidak ikut diwariskan ke proses anak. Child yang memang
 /// diberi stdio (mis. lewat `Stdio::inherit`) tetap mendapat duplikat dari `std`.
 pub fn make_stdio_private() {
@@ -380,7 +412,7 @@ impl Job {
 
 #[cfg(test)]
 mod rotate_tests {
-    use super::{open_log, rotate_log};
+    use super::{blocked_exit, open_log, rotate_log};
 
     #[test]
     fn open_log_keeps_content_and_allows_full_write_access() {
@@ -394,6 +426,14 @@ mod rotate_tests {
         file.set_len(10).unwrap();
         drop(file);
         assert_eq!(std::fs::read_to_string(&log).unwrap(), "lama\nbaru\n");
+    }
+
+    #[test]
+    fn recognizes_exit_codes_of_blocked_images() {
+        assert!(blocked_exit(Some(0xC0E9_0002_u32 as i32)));
+        assert!(blocked_exit(Some(0xC000_0428_u32 as i32)));
+        assert!(!blocked_exit(Some(1)));
+        assert!(!blocked_exit(None));
     }
 
     #[test]

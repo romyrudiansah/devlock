@@ -3,6 +3,8 @@
 //! Urutan: variabel `DEVLOCK_<KIND>_VERSION` → file project terdekat (naik ke atas,
 //! per folder: `.devlock.toml` lalu file khas ekosistem) → `[defaults]` global →
 //! versi terinstall tertinggi.
+//!
+//! Spec `system` (Node dan Composer) memakai instalasi global Windows dari `PATH`.
 
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -74,6 +76,7 @@ fn spec_in_dir(kind: Kind, dir: &Path) -> Option<(String, Source)> {
             let spec = match kind {
                 Kind::Php => project.php,
                 Kind::Node => project.node,
+                Kind::Composer => project.composer,
                 Kind::Go => project.go,
                 Kind::Python => project.python,
                 Kind::Java => project.java,
@@ -199,6 +202,9 @@ fn pick_installed(paths: &Paths, kind: Kind, spec: &str) -> Result<Option<String
 pub fn resolve(paths: &Paths, config: &Config, kind: Kind, cwd: &Path) -> Result<Resolved> {
     let (spec, source) =
         find_spec(config, kind, cwd).unwrap_or(("latest".into(), Source::Fallback));
+    if spec.eq_ignore_ascii_case(SYSTEM) {
+        return resolve_system(paths, kind, source);
+    }
     let Some(version) = pick_installed(paths, kind, &spec)? else {
         if source == Source::Fallback {
             bail!("belum ada {kind} terinstall; jalankan `devlock install {kind} <versi>`");
@@ -212,6 +218,56 @@ pub fn resolve(paths: &Paths, config: &Config, kind: Kind, cwd: &Path) -> Result
         version,
         source,
     })
+}
+
+/// Spec untuk memakai instalasi global (di luar DevLock), mis. `node = "system"`.
+pub const SYSTEM: &str = "system";
+
+/// File penanda instalasi global per jenis runtime; folder tempat file ini ditemukan dipakai
+/// seperti folder runtime DevLock.
+fn system_marker(kind: Kind) -> Option<&'static str> {
+    match kind {
+        Kind::Node => Some("node.exe"),
+        Kind::Composer => Some("composer.phar"),
+        _ => None,
+    }
+}
+
+fn resolve_system(paths: &Paths, kind: Kind, source: Source) -> Result<Resolved> {
+    let Some(marker) = system_marker(kind) else {
+        bail!("`{SYSTEM}` hanya didukung untuk node dan composer (dari {source})");
+    };
+    let path = std::env::var_os("PATH").unwrap_or_default();
+    let Some(dir) = find_system_dir(paths, &path, marker) else {
+        bail!("{kind} = \"{SYSTEM}\" (dari {source}), tetapi {marker} tidak ditemukan di PATH Windows");
+    };
+    Ok(Resolved {
+        kind,
+        dir,
+        spec: SYSTEM.into(),
+        version: SYSTEM.into(),
+        source,
+    })
+}
+
+/// Folder pertama di `path` yang berisi `marker`, selain folder milik DevLock (shim, bin,
+/// runtime) agar shim tidak memanggil dirinya sendiri.
+fn find_system_dir(paths: &Paths, path: &std::ffi::OsStr, marker: &str) -> Option<PathBuf> {
+    let own = [paths.shims(), paths.bin(), paths.runtimes()];
+    std::env::split_paths(path)
+        .filter(|dir| !dir.as_os_str().is_empty())
+        .filter(|dir| !own.iter().any(|o| same_or_inside(dir, o)))
+        .find(|dir| dir.join(marker).is_file())
+}
+
+/// `dir` sama dengan `root` atau berada di dalamnya (tanpa membedakan huruf besar/kecil dan
+/// pemisah `\` atau `/`, seperti path Windows).
+fn same_or_inside(dir: &Path, root: &Path) -> bool {
+    let norm = |p: &Path| {
+        let text = p.to_string_lossy().replace('/', "\\").to_ascii_lowercase();
+        format!("{}\\", text.trim_end_matches('\\'))
+    };
+    norm(dir).starts_with(&norm(root))
 }
 
 /// Instance database seperti `mysql@8.4` atau `postgresql@16`.
@@ -378,6 +434,38 @@ mod tests {
             std::fs::create_dir_all(paths.runtime_dir(kind, v)).unwrap();
         }
         (tmp, paths)
+    }
+
+    #[test]
+    fn system_spec_finds_global_install_outside_devlock() {
+        let (tmp, paths) = setup();
+        let global = tmp.path().join("Program Files/nodejs");
+        std::fs::create_dir_all(&global).unwrap();
+        std::fs::write(global.join("node.exe"), "").unwrap();
+        // Shim DevLock juga bernama node.exe dan berada lebih awal di PATH; harus dilewati.
+        std::fs::create_dir_all(paths.shims()).unwrap();
+        std::fs::write(paths.shims().join("node.exe"), "").unwrap();
+
+        let path = std::env::join_paths([paths.shims(), global.clone()]).unwrap();
+        assert_eq!(find_system_dir(&paths, &path, "node.exe"), Some(global));
+        assert_eq!(find_system_dir(&paths, &path, "composer.phar"), None);
+    }
+
+    #[test]
+    fn same_or_inside_ignores_case_and_separators() {
+        let root = Path::new(r"D:\DevLock-Apps\runtimes");
+        assert!(same_or_inside(
+            Path::new(r"d:\devlock-apps\RUNTIMES\"),
+            root
+        ));
+        assert!(same_or_inside(
+            Path::new("D:/DevLock-Apps/runtimes/node/22"),
+            root
+        ));
+        assert!(!same_or_inside(
+            Path::new(r"D:\DevLock-Apps\runtimes2"),
+            root
+        ));
     }
 
     #[test]

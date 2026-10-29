@@ -6,7 +6,17 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- `node = "system"` dan `composer = "system"` (di `.devlock.toml`, `[defaults]`, atau
+  `devlock use node system --global`): pakai Node.js/Composer yang terpasang global di Windows
+  (dicari di PATH, di luar folder DevLock). Berlaku juga untuk dev server dan tombol Terminal;
+  Composer global dijalankan dengan PHP versi project. `npm install -g` tetap ke prefix bawaan npm.
+- `.devlock.toml` kini bisa memilih versi Composer per project (`composer = "2.8"`).
+
 ### Fixed
+- Service yang exe atau DLL-nya diblokir Smart App Control tidak lagi memunculkan dialog
+  "Bad Image" berulang tiap restart; service langsung berhenti dengan pesan "diblokir Smart App
+  Control Windows" di daftar service.
 - GUI (mode gelap): daftar pilihan dropdown (mis. versi saat install runtime) tampil putih
   dengan teks tak terbaca; kini berlatar gelap.
 
