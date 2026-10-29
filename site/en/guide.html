@@ -353,11 +353,15 @@ devlock install java 21                <span class="c"># Eclipse Temurin</span><
       <p>Open <strong>DevLock</strong> from the Start Menu (or <code>bin\devlock-gui.exe</code>). Switch the language to
         English in <strong>Settings → Tampilan</strong>.</p>
       <figure>
-        <img src="../assets/gui-service-en.png" width="800" height="507" alt="DevLock Services tab with the service list, status, ports, uptime, and action buttons" loading="lazy">
-        <figcaption>Services tab: start, stop, restart, and logs per service. Notifications can be dismissed.</figcaption>
+        <img src="../assets/gui-home-en.jpg" width="800" height="507" alt="DevLock Home: status summary, Stop all button, command palette, service tiles with toggles, and the site list" loading="lazy">
+        <figcaption>Home: a status summary, one Start/Stop all button, a toggle per service, and quick actions per site.</figcaption>
       </figure>
       <ul>
-        <li><strong>Services</strong>: the status of every service, start/stop/restart per group (<code>php@8.3</code>,
+        <li><strong>Home</strong>: status summary, Start/Stop/Restart all, service tiles with toggles, and the site
+          list with Open, Folder, Terminal, and Editor buttons.</li>
+        <li><strong>Command palette</strong> (<kbd>Ctrl</kbd>+<kbd>K</kbd>): type a service or site name to start/stop
+          it, open the site, editor, terminal, or folder, create a new project, or switch pages.</li>
+        <li><strong>Services</strong>: details for every service (ports, uptime, restarts), a start/stop toggle per group (<code>php@8.3</code>,
           <code>mysql@8.4</code>, <code>dev:&lt;site&gt;</code>), and logs.</li>
         <li><strong>Projects</strong>: the site list; open in a browser, folder, editor, or terminal; create a database;
           <strong>New project</strong> from a template.</li>
@@ -366,8 +370,13 @@ devlock install java 21                <span class="c"># Eclipse Temurin</span><
         <li><strong>Settings</strong>: www folder, TLD, ports, HTTPS, autostart, editor, and language
           (Indonesian/English).</li>
       </ul>
+      <p>On Windows 11 the window uses the Mica backdrop and follows the Windows light/dark theme.</p>
       <figure>
-        <img src="../assets/gui-projects-en.png" width="800" height="507" alt="DevLock Projects tab with site cards and Open, Folder, Editor, Terminal, and Create DB buttons" loading="lazy">
+        <img src="../assets/gui-service-en.jpg" width="800" height="507" alt="DevLock Services tab with a toggle per service, status, ports, uptime, and Restart and Log buttons" loading="lazy">
+        <figcaption>Services tab: start/stop toggle, restart, and logs per service. Notifications can be dismissed.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/gui-projects-en.jpg" width="800" height="507" alt="DevLock Projects tab with site cards and Open, Folder, Editor, Terminal, and Create DB buttons" loading="lazy">
         <figcaption>Projects tab: each folder in www becomes a card.</figcaption>
       </figure>
       <p>Closing the window only hides it to the tray; services keep running. Right-click the tray icon to start/stop

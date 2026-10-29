@@ -353,11 +353,15 @@ devlock install java 21                <span class="c"># Eclipse Temurin</span><
       <h2 id="gui">GUI &amp; tray</h2>
       <p>Buka <strong>DevLock</strong> dari Start Menu (atau <code>bin\devlock-gui.exe</code>).</p>
       <figure>
-        <img src="assets/gui-service.png" width="800" height="507" alt="Tab Service DevLock dengan daftar service, status, port, uptime, dan tombol aksi" loading="lazy">
-        <figcaption>Tab Service: start, stop, restart, dan log per service. Notifikasi bisa ditutup.</figcaption>
+        <img src="assets/gui-home.jpg" width="800" height="507" alt="Beranda DevLock: status ringkas, tombol Stop semua, palet perintah, tile service dengan toggle, dan daftar site" loading="lazy">
+        <figcaption>Beranda: status ringkas, satu tombol Start/Stop semua, toggle per service, dan aksi cepat per site.</figcaption>
       </figure>
       <ul>
-        <li><strong>Service</strong>: status semua service, start/stop/restart per grup (<code>php@8.3</code>,
+        <li><strong>Beranda</strong>: ringkasan status, Start/Stop/Restart semua, tile service dengan toggle, dan
+          daftar site dengan tombol Buka, Folder, Terminal, dan Editor.</li>
+        <li><strong>Palet perintah</strong> (<kbd>Ctrl</kbd>+<kbd>K</kbd>): ketik nama service atau site untuk
+          start/stop, membuka site, editor, terminal, atau folder, membuat project baru, dan berpindah halaman.</li>
+        <li><strong>Service</strong>: detail semua service (port, uptime, restart), toggle start/stop per grup (<code>php@8.3</code>,
           <code>mysql@8.4</code>, <code>dev:&lt;site&gt;</code>), dan log.</li>
         <li><strong>Project</strong>: daftar site; buka di browser, folder, editor, atau terminal; buat database;
           <strong>Project baru</strong> dari template.</li>
@@ -366,8 +370,13 @@ devlock install java 21                <span class="c"># Eclipse Temurin</span><
         <li><strong>Settings</strong>: folder www, TLD, port, HTTPS, autostart, editor, dan bahasa
           (Indonesia/English).</li>
       </ul>
+      <p>Di Windows 11 jendela memakai latar Mica dan mengikuti tema terang/gelap Windows.</p>
       <figure>
-        <img src="assets/gui-projects.png" width="800" height="507" alt="Tab Project DevLock berisi kartu site dengan tombol Buka, Folder, Editor, Terminal, dan Buat DB" loading="lazy">
+        <img src="assets/gui-service.jpg" width="800" height="507" alt="Tab Service DevLock dengan toggle per service, status, port, uptime, dan tombol Restart serta Log" loading="lazy">
+        <figcaption>Tab Service: toggle start/stop, restart, dan log per service. Notifikasi bisa ditutup.</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/gui-projects.jpg" width="800" height="507" alt="Tab Project DevLock berisi kartu site dengan tombol Buka, Folder, Editor, Terminal, dan Buat DB" loading="lazy">
         <figcaption>Tab Project: tiap folder di www menjadi satu kartu.</figcaption>
       </figure>
       <p>Menutup jendela hanya menyembunyikannya ke tray; service tetap berjalan. Klik kanan ikon tray untuk start/stop

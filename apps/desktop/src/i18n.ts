@@ -33,7 +33,7 @@ const EN: Record<string, string> = {
 
   // Home
   "DevLock berhenti": "DevLock is stopped",
-  "{n} service bermasalah": "{n} services have problems",
+  "{n} service bermasalah": "Services with problems: {n}",
   "Semua berjalan": "Everything is running",
   "{on} service · {sites} site · http://*.{tld}": "{on} services · {sites} sites · http://*.{tld}",
   "Nyalakan untuk menjalankan web server, PHP, database, dan dev server project Anda.":
