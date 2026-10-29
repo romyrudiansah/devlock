@@ -3,7 +3,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { api } from "./api";
 import { setLang } from "./i18n";
+import { applyTheme, loadTheme } from "./theme";
 import "./styles.css";
+
+applyTheme(loadTheme());
 
 // `npm run dev` di browser biasa: pakai data contoh karena backend Tauri tidak ada.
 if (import.meta.env.DEV && !("__TAURI_INTERNALS__" in window)) {

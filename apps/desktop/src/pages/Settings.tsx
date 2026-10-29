@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { api, errorText, type Settings as SettingsData } from "../api";
 import { getLang, t } from "../i18n";
+import { applyTheme, getTheme, type ThemePref } from "../theme";
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsData | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [theme, setThemeState] = useState<ThemePref>(getTheme);
 
   useEffect(() => {
     api
@@ -164,6 +166,22 @@ export default function Settings() {
             <p className="muted small">
               {t("Bahasa berubah setelah disimpan (jendela dimuat ulang). Pesan dari CLI tetap berbahasa Indonesia.")}
             </p>
+            <label className="field">
+              <span className="small muted">{t("Tema")}</span>
+              <select
+                value={theme}
+                onChange={(e) => {
+                  const pref = e.target.value as ThemePref;
+                  setThemeState(pref);
+                  applyTheme(pref);
+                }}
+              >
+                <option value="system">{t("Ikuti Windows")}</option>
+                <option value="light">{t("Terang")}</option>
+                <option value="dark">{t("Gelap")}</option>
+              </select>
+            </label>
+            <p className="muted small">{t("Tema langsung berubah, tanpa perlu Simpan.")}</p>
           </div>
         </article>
       </div>

@@ -167,6 +167,11 @@ const EN: Record<string, string> = {
     "Editor (empty = detect VS Code, Cursor, Windsurf, Zed, Sublime, PhpStorm)",
   Tampilan: "Appearance",
   Bahasa: "Language",
+  Tema: "Theme",
+  "Ikuti Windows": "Follow Windows",
+  Terang: "Light",
+  Gelap: "Dark",
+  "Tema langsung berubah, tanpa perlu Simpan.": "The theme changes right away, no need to Save.",
   "Bahasa berubah setelah disimpan (jendela dimuat ulang). Pesan dari CLI tetap berbahasa Indonesia.":
     "The language changes after saving (the window reloads). Messages from the CLI stay in Indonesian.",
 

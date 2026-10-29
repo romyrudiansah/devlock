@@ -1,4 +1,5 @@
-/* GUI DevLock bergaya Fluent (Windows 11). Tema mengikuti Windows; `.mica` = jendela ber-Mica. */
+/* GUI DevLock bergaya Fluent (Windows 11). `data-theme` diisi theme.ts (ikut Windows atau
+   pilihan di Settings); `.mica` = jendela ber-Mica. */
 :root {
   --bg: #f3f3f3;
   --layer: #fbfbfb;
@@ -26,33 +27,31 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #202020;
-    --layer: #272727;
-    --card: #2d2d2d;
-    --card-hover: #323232;
-    --subtle: rgba(255, 255, 255, 0.06);
-    --subtle-2: rgba(255, 255, 255, 0.09);
-    --border: rgba(255, 255, 255, 0.07);
-    --border-strong: rgba(255, 255, 255, 0.14);
-    --text: #ffffff;
-    --muted: #c5c5c5;
-    --accent: #60a5fa;
-    --accent-edge: #3b82f6;
-    --accent-text: #0b1220;
-    --accent-soft: rgba(96, 165, 250, 0.14);
-    --ok: #6ccb5f;
-    --ok-bg: #393d1b;
-    --warn: #fce100;
-    --warn-bg: #433519;
-    --err: #ff99a4;
-    --err-bg: #442726;
-    --input: rgba(255, 255, 255, 0.06);
-    --shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.26);
-    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3), 0 32px 64px rgba(0, 0, 0, 0.5);
-    color-scheme: dark;
-  }
+:root[data-theme="dark"] {
+  --bg: #202020;
+  --layer: #272727;
+  --card: #2d2d2d;
+  --card-hover: #323232;
+  --subtle: rgba(255, 255, 255, 0.06);
+  --subtle-2: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #ffffff;
+  --muted: #c5c5c5;
+  --accent: #60a5fa;
+  --accent-edge: #3b82f6;
+  --accent-text: #0b1220;
+  --accent-soft: rgba(96, 165, 250, 0.14);
+  --ok: #6ccb5f;
+  --ok-bg: #393d1b;
+  --warn: #fce100;
+  --warn-bg: #433519;
+  --err: #ff99a4;
+  --err-bg: #442726;
+  --input: rgba(255, 255, 255, 0.06);
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.26);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3), 0 32px 64px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 }
 
 /* Windows 11: latar dari Mica; lapisan konten dibuat semi-transparan seperti aplikasi bawaan. */
@@ -61,10 +60,8 @@
   --layer: rgba(255, 255, 255, 0.5);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root.mica {
-    --layer: rgba(58, 58, 58, 0.3);
-  }
+:root[data-theme="dark"].mica {
+  --layer: rgba(58, 58, 58, 0.3);
 }
 
 * {
@@ -583,16 +580,14 @@ input[type="checkbox"] {
   color: #075985;
 }
 
-@media (prefers-color-scheme: dark) {
-  .badge.kind-php {
-    background: #2e1f5e;
-    color: #c4b5fd;
-  }
+:root[data-theme="dark"] .badge.kind-php {
+  background: #2e1f5e;
+  color: #c4b5fd;
+}
 
-  .badge.kind-proxy {
-    background: #0c2d44;
-    color: #7dd3fc;
-  }
+:root[data-theme="dark"] .badge.kind-proxy {
+  background: #0c2d44;
+  color: #7dd3fc;
 }
 
 .dot {
@@ -904,6 +899,12 @@ input[type="checkbox"] {
   margin-top: 10px;
 }
 
+/* Baris tombol ikon: rapat, dan ikon pertama sejajar dengan teks kartu. */
+.card-actions:has(> .icon-btn) {
+  gap: 2px;
+  margin-left: -8px;
+}
+
 .runtime-list {
   display: flex;
   flex-direction: column;
@@ -1001,7 +1002,7 @@ input[type="checkbox"] {
 
 .php-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
