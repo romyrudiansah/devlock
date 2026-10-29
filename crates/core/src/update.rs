@@ -92,12 +92,24 @@ pub fn apply(
         .next()
         .unwrap_or("devlock-update.zip");
     let archive = paths.downloads().join(name);
-    http::download(&available.zip_url, &archive, progress)?;
+    // Zip rilis tidak dipakai lagi setelah dipasang atau gagal; jangan menumpuk tiap update.
+    let result = download_and_install(paths, available, name, &archive, progress);
+    let _ = std::fs::remove_file(&archive);
+    result
+}
+
+fn download_and_install(
+    paths: &Paths,
+    available: &Available,
+    name: &str,
+    archive: &Path,
+    progress: &mut dyn FnMut(u64, Option<u64>),
+) -> Result<()> {
+    http::download(&available.zip_url, archive, progress)?;
     let sums = http::get_string(&available.sha256_url)?;
     let expected = crate::install::lookup_shasum(&sums, name)
         .context("checksum rilis DevLock tidak terbaca")?;
-    if crate::install::sha256_file(&archive)? != expected {
-        let _ = std::fs::remove_file(&archive);
+    if crate::install::sha256_file(archive)? != expected {
         bail!("checksum {name} tidak cocok");
     }
 
@@ -105,7 +117,7 @@ pub fn apply(
     if staging.exists() {
         std::fs::remove_dir_all(&staging)?;
     }
-    crate::install::extract_zip_to(&archive, &staging)?;
+    crate::install::extract_zip_to(archive, &staging)?;
     let result = replace_binaries(&paths.bin(), &staging.join("bin"));
     let _ = std::fs::remove_dir_all(&staging);
     result
