@@ -7,6 +7,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 ## [Unreleased]
 
 ### Fixed
+- `devlock update` menghapus zip rilis di `tmp\downloads` setelah dipasang atau gagal, agar tidak
+  menumpuk tiap update.
 - GUI (English): judul Beranda saat ada service gagal kini "Services with problems: n".
 
 ## [0.14.0] - 2026-10-29
