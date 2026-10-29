@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-29
+
 ### Changed
 - GUI didesain ulang bergaya Windows 11 ("Fluent Compact"): rail navigasi ikon, latar Mica di
   Windows 11 (warna solid di Windows 10), tombol, toggle, dan InfoBar Fluent; tema mengikuti Windows.
@@ -197,7 +199,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/romyrudiansah/devlock/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/romyrudiansah/devlock/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/romyrudiansah/devlock/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/romyrudiansah/devlock/compare/v0.12.1...v0.12.2
