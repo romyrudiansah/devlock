@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-10-29
+
 ### Fixed
 - `devlock update` menghapus zip rilis di `tmp\downloads` setelah dipasang atau gagal, agar tidak
   menumpuk tiap update.
@@ -204,7 +206,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/romyrudiansah/devlock/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/romyrudiansah/devlock/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/romyrudiansah/devlock/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/romyrudiansah/devlock/compare/v0.12.2...v0.12.3
