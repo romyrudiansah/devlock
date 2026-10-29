@@ -135,6 +135,7 @@ export const api = {
     invoke<CreatedProject>("create_project", p),
   getSettings: () => invoke<Settings>("get_settings"),
   saveSettings: (settings: Settings) => invoke<string>("save_settings", { settings }),
+  windowMica: () => invoke<boolean>("window_mica"),
 };
 
 /** Pesan error dari command Tauri (string) atau Error biasa. */

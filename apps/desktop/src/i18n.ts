@@ -26,6 +26,38 @@ const EN: Record<string, string> = {
   Service: "Services",
   Project: "Projects",
   Runtime: "Runtimes",
+  Beranda: "Home",
+  Navigasi: "Navigation",
+  Cari: "Search",
+  "Palet perintah (Ctrl+K)": "Command palette (Ctrl+K)",
+
+  // Home
+  "DevLock berhenti": "DevLock is stopped",
+  "{n} service bermasalah": "{n} services have problems",
+  "Semua berjalan": "Everything is running",
+  "{on} service · {sites} site · http://*.{tld}": "{on} services · {sites} sites · http://*.{tld}",
+  "Nyalakan untuk menjalankan web server, PHP, database, dan dev server project Anda.":
+    "Turn it on to run the web server, PHP, databases, and dev servers for your projects.",
+  "Cari perintah, service, atau site…": "Search commands, services, or sites…",
+  Detail: "Details",
+  Kelola: "Manage",
+  "Belum ada service untuk project saat ini.": "No services are needed by the current projects.",
+  "Service muncul di sini setelah DevLock dinyalakan.": "Services appear here once DevLock is running.",
+  "Belum ada project. Buat folder di": "No projects yet. Create a folder in",
+  "atau klik Project baru.": "or click New project.",
+
+  // Palette
+  "Palet perintah": "Command palette",
+  "Restart semua": "Restart all",
+  "Reload konfigurasi": "Reload configuration",
+  "Buka {site}": "Open {site}",
+  "Editor: {site}": "Editor: {site}",
+  "Terminal: {site}": "Terminal: {site}",
+  "Folder: {site}": "Folder: {site}",
+  "Install runtime…": "Install runtime…",
+  "Ke {page}": "Go to {page}",
+  Halaman: "Page",
+  "Tidak ada yang cocok.": "No matches.",
 
   // Dashboard
   Berjalan: "Running",
