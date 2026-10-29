@@ -212,6 +212,16 @@ impl Managed {
             if !self.wanted {
                 return;
             }
+            // Diblokir Windows: restart tidak akan membantu sampai file itu dipercaya.
+            if crate::process::blocked_exit(status.code()) {
+                self.wanted = false;
+                self.error = Some(format!(
+                    "{} {}",
+                    self.spec.command.program.display(),
+                    crate::process::BLOCKED_HINT
+                ));
+                return;
+            }
             self.failures = if uptime < MIN_HEALTHY {
                 self.failures + 1
             } else {
@@ -658,6 +668,7 @@ pub fn serve(paths: Paths) -> Result<()> {
     // Service tidak perlu memegang stdout/stderr daemon (log daemon, atau pipe/console
     // bila daemon dijalankan langsung dari terminal).
     crate::process::make_stdio_private();
+    crate::process::suppress_error_dialogs();
     let config = Config::load(&paths)?;
     let listener = TcpListener::bind(("127.0.0.1", config.daemon.port)).with_context(|| {
         format!(

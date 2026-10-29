@@ -16,9 +16,6 @@ const RELEASES: &str = "https://api.github.com/repos/romyrudiansah/devlock/relea
 /// Binary yang dikirim di zip rilis (`bin\`).
 pub const BINARIES: &[&str] = &["devlock.exe", "devlock-shim.exe", "devlock-gui.exe"];
 
-/// `ERROR_APPLICATION_CONTROL_POLICY`: file diblokir kebijakan kontrol aplikasi.
-const BLOCKED_BY_POLICY: i32 = 4551;
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct Available {
     pub version: String,
@@ -192,7 +189,7 @@ pub fn is_blocked(exe: &Path) -> bool {
             let _ = child.wait();
             false
         }
-        Err(err) => err.raw_os_error() == Some(BLOCKED_BY_POLICY),
+        Err(err) => err.raw_os_error() == Some(crate::process::ERROR_APPLICATION_CONTROL_POLICY),
     }
 }
 

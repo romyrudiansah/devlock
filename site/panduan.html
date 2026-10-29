@@ -255,7 +255,8 @@ webserver = "apache"</pre>
           <thead><tr><th>Kunci</th><th>Contoh</th><th>Arti</th></tr></thead>
           <tbody>
             <tr><td><code>php</code></td><td><code>"8.3"</code></td><td>Versi PHP (juga dari <code>config.platform.php</code> di composer.json)</td></tr>
-            <tr><td><code>node</code></td><td><code>"22"</code></td><td>Versi Node (juga dari <code>.nvmrc</code>)</td></tr>
+            <tr><td><code>node</code></td><td><code>"22"</code></td><td>Versi Node (juga dari <code>.nvmrc</code>), atau <code>"system"</code> untuk Node global</td></tr>
+            <tr><td><code>composer</code></td><td><code>"system"</code></td><td>Versi Composer, atau <code>"system"</code> untuk Composer global</td></tr>
             <tr><td><code>go</code>, <code>python</code>, <code>java</code></td><td><code>"1.27"</code>, <code>"3.13"</code>, <code>"21"</code></td><td>Versi Go, Python, Java</td></tr>
             <tr><td><code>database</code></td><td><code>"mysql@8.4"</code></td><td>Instance database: <code>mysql</code>, <code>mariadb</code>, <code>postgresql</code>, <code>mongodb</code></td></tr>
             <tr><td><code>cache</code></td><td><code>"redis@8"</code></td><td>Instance cache: <code>redis</code> atau <code>garnet</code></td></tr>
@@ -271,6 +272,10 @@ webserver = "apache"</pre>
       </div>
       <p>Mengubah file ini tidak perlu restart manual: daemon mendeteksinya dalam beberapa detik. Untuk memilih versi
         dari terminal: <code>devlock use php 8.2</code> (project) atau <code>devlock use php 8.2 --global</code>.</p>
+      <p><strong>Node/Composer global.</strong> Sudah memasang Node.js atau Composer lewat installer resminya? Tulis
+        <code>node = "system"</code> atau <code>composer = "system"</code> (atau <code>devlock use node system --global</code>).
+        DevLock lalu memakai instalasi yang ditemukan di PATH Windows, termasuk untuk dev server dan tombol Terminal.
+        Composer global tetap dijalankan dengan PHP versi project.</p>
 
       <h2 id="database">Database</h2>
       <div class="table-scroll">

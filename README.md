@@ -86,6 +86,7 @@ devlock list php --available       lihat versi yang bisa diinstall (cache 6 jam;
 devlock install php 8.3            install runtime (php, node, composer, go, python, java, nginx, apache,
                                    mysql, mariadb, postgresql, mongodb, redis, garnet, adminer, mailpit, …)
 devlock use php 8.2 [--global]     pilih versi (per project / global)
+devlock use node system --global   pakai Node/Composer global yang sudah terpasang di Windows
 devlock which php                  versi & path yang dipakai di folder ini
 devlock current                    versi php/node/composer/database di folder ini
 devlock path add                   taruh folder shims di depan PATH user

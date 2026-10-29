@@ -12,6 +12,8 @@ pub const PROJECT_FILE: &str = ".devlock.toml";
 pub struct ProjectConfig {
     pub php: Option<String>,
     pub node: Option<String>,
+    /// Versi Composer, atau `system` untuk Composer yang terpasang global di Windows.
+    pub composer: Option<String>,
     /// Versi Go, mis. `1.23`.
     pub go: Option<String>,
     /// Versi Python, mis. `3.13`.

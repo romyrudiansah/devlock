@@ -191,8 +191,7 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
                 _ => {}
             }
             if *kind == Kind::Node {
-                plan.env
-                    .push(("NPM_CONFIG_PREFIX".into(), r.dir.clone().into()));
+                plan.env.extend(npm_prefix(&r));
                 plan.env.extend(node_ca_env(paths));
             }
             plan.record(&r);
@@ -209,8 +208,7 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
             let mut plan = Plan::new(r.dir.join("node.exe"));
             plan.prefix_args.push(script.into());
             plan.path_prepend.push(r.dir.clone());
-            plan.env
-                .push(("NPM_CONFIG_PREFIX".into(), r.dir.clone().into()));
+            plan.env.extend(npm_prefix(&r));
             plan.env.extend(node_ca_env(paths));
             plan.record(&r);
             Ok(plan)
@@ -319,6 +317,12 @@ pub fn plan(paths: &Paths, config: &Config, cwd: &Path, tool: &str) -> Result<Pl
 /// `NODE_EXTRA_CA_CERTS` dalam bentuk env shim, bila CA DevLock sudah dibuat.
 fn node_ca_env(paths: &Paths) -> Option<(String, OsString)> {
     crate::services::node_ca_env(paths).map(|(k, v)| (k, v.into()))
+}
+
+/// `npm install -g` masuk ke folder Node DevLock itu sendiri. Node global (`system`) tetap
+/// memakai prefix bawaannya (`%APPDATA%\npm`), karena folder instalasinya butuh hak admin.
+fn npm_prefix(r: &Resolved) -> Option<(String, OsString)> {
+    (r.version != resolve::SYSTEM).then(|| ("NPM_CONFIG_PREFIX".into(), r.dir.clone().into()))
 }
 
 fn first_existing(dir: &Path, candidates: &[&str], tool: &str) -> Result<PathBuf> {
