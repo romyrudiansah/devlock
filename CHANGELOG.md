@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-29
+
 ### Added
 - `node = "system"` dan `composer = "system"` (di `.devlock.toml`, `[defaults]`, atau
   `devlock use node system --global`): pakai Node.js/Composer yang terpasang global di Windows
@@ -220,7 +222,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/romyrudiansah/devlock/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/romyrudiansah/devlock/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/romyrudiansah/devlock/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/romyrudiansah/devlock/compare/v0.12.3...v0.13.0
