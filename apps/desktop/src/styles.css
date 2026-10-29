@@ -346,6 +346,17 @@ input:not([type="checkbox"]) {
   color: var(--text);
 }
 
+/* Daftar pilihan bawaan WebView2 jatuh ke latar putih bila latar select transparan,
+   sementara teksnya tetap putih di mode gelap; pakai warna solid. */
+select {
+  background: var(--card);
+}
+
+option {
+  background: var(--card);
+  color: var(--text);
+}
+
 input:not([type="checkbox"]):focus,
 select:focus {
   outline: none;

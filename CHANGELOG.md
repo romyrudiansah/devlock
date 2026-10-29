@@ -6,6 +6,10 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- GUI (mode gelap): daftar pilihan dropdown (mis. versi saat install runtime) tampil putih
+  dengan teks tak terbaca; kini berlatar gelap.
+
 ## [0.14.1] - 2026-10-29
 
 ### Fixed
