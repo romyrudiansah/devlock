@@ -6,6 +6,15 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- GUI: pilihan **Tema** di Settings › Tampilan (Ikuti Windows / Terang / Gelap), langsung
+  berlaku dan ikut mengubah Mica serta title bar jendela.
+
+### Changed
+- GUI: tombol di kartu Project kini berupa ikon (Buka, Folder, Terminal, Editor, Buat DB) dengan
+  tooltip, seperti di Beranda.
+- GUI: halaman PHP memakai dua kolom sama lebar (Xdebug | php.ini).
+
 ## [0.15.0] - 2026-10-29
 
 ### Added

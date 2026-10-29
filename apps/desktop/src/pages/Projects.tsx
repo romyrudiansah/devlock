@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, errorText, type Overview, type SiteInfo } from "../api";
 import NewProject from "./NewProject";
+import { Icon } from "../icons";
 import { t } from "../i18n";
 
 export default function Projects({ startCreating = false }: { startCreating?: boolean }) {
@@ -86,15 +87,23 @@ export default function Projects({ startCreating = false }: { startCreating?: bo
             </dl>
             {site.warning && <div className="error-text small">{site.warning}</div>}
             <div className="card-actions">
-              <button className="primary" onClick={() => act(api.openUrl(site.url))}>
-                {t("Buka")}
+              <button className="icon-btn" title={t("Buka")} aria-label={t("Buka")} onClick={() => act(api.openUrl(site.url))}>
+                <Icon name="globe" size={16} />
               </button>
-              <button onClick={() => act(api.openFolder(site.dir))}>{t("Folder")}</button>
-              <button onClick={() => act(api.openEditor(site.dir))}>Editor</button>
-              <button onClick={() => act(api.openTerminal(site.dir))}>Terminal</button>
+              <button className="icon-btn" title={t("Folder")} aria-label={t("Folder")} onClick={() => act(api.openFolder(site.dir))}>
+                <Icon name="folder" size={16} />
+              </button>
+              <button className="icon-btn" title="Terminal" aria-label="Terminal" onClick={() => act(api.openTerminal(site.dir))}>
+                <Icon name="terminal" size={16} />
+              </button>
+              <button className="icon-btn" title="Editor" aria-label="Editor" onClick={() => act(api.openEditor(site.dir))}>
+                <Icon name="code" size={16} />
+              </button>
               {site.database && (
                 <button
+                  className="icon-btn"
                   title={t("Buat database untuk {site} di {db}", { site: site.name, db: site.database })}
+                  aria-label={t("Buat DB")}
                   onClick={() =>
                     api
                       .createSiteDatabase(site.name)
@@ -102,7 +111,7 @@ export default function Projects({ startCreating = false }: { startCreating?: bo
                       .catch((e) => setError(errorText(e)))
                   }
                 >
-                  {t("Buat DB")}
+                  <Icon name="database" size={16} />
                 </button>
               )}
             </div>
