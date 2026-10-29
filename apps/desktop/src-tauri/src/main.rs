@@ -1,6 +1,7 @@
 // Tanpa jendela console di build release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod appearance;
 mod commands;
 mod php_page;
 mod project_new;
@@ -25,6 +26,7 @@ fn main() {
         }))
         .setup(|app| {
             tray::create(app.handle())?;
+            appearance::apply(app.handle());
             // Dijalankan saat login Windows (`--minimized`): langsung ke tray.
             if std::env::args().any(|a| a == "--minimized") {
                 if let Some(window) = app.get_webview_window("main") {
@@ -53,6 +55,7 @@ fn main() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            appearance::window_mica,
             commands::overview,
             commands::service_action,
             commands::list_sites,

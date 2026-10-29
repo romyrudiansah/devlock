@@ -1,162 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
-import { api, errorText, type Overview, type ServiceAction, type ServiceStatus } from "../api";
+import { useMemo, useState } from "react";
 import LogModal from "./LogModal";
+import { formatUptime, groupServices, isOn, Notices, stateLabel, Toggle, useOverview } from "./serviceKit";
+import { Icon } from "../icons";
 import { t } from "../i18n";
 
-/** Gabungkan worker `php@8.3#0..3` menjadi satu baris `php@8.3`. */
-function groupServices(services: ServiceStatus[]) {
-  const groups = new Map<string, ServiceStatus[]>();
-  for (const s of services) {
-    groups.set(s.group, [...(groups.get(s.group) ?? []), s]);
-  }
-  return [...groups.entries()].map(([group, items]) => {
-    const running = items.filter((s) => s.state === "running").length;
-    const failed = items.find((s) => s.state === "failed");
-    const starting = items.some((s) => s.state === "starting");
-    const state =
-      running === items.length
-        ? "running"
-        : failed
-          ? "failed"
-          : starting
-            ? "starting"
-            : running > 0
-              ? "partial"
-              : items[0].state;
-    const ports = items.map((s) => s.port).filter((p): p is number => p !== null);
-    return {
-      group,
-      items,
-      state,
-      running,
-      ports: ports.length > 1 ? `${Math.min(...ports)}–${Math.max(...ports)}` : (ports[0]?.toString() ?? "-"),
-      restarts: items.reduce((sum, s) => sum + s.restarts, 0),
-      uptime: Math.max(...items.map((s) => s.uptime_secs ?? -1)),
-      error: failed?.error ?? items.find((s) => s.error)?.error ?? null,
-    };
-  });
-}
-
-function formatUptime(secs: number) {
-  if (secs < 0) return "-";
-  if (secs < 60) return `${secs}s`;
-  if (secs < 3600) return `${Math.floor(secs / 60)}m`;
-  return t("{h}j {m}m", { h: Math.floor(secs / 3600), m: Math.floor((secs % 3600) / 60) });
-}
-
-/** Peringatan "CA belum dipercaya" tidak bisa ditutup: ada tombol untuk menyelesaikannya. */
-const isCaWarning = (w: string) => w.includes("devlock ssl trust");
-
-/** Peringatan yang ditutup diingat per teks (per perangkat), agar tidak muncul lagi tiap refresh. */
-const DISMISSED_KEY = "dismissed-warnings";
-
-function loadDismissed(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveDismissed(list: string[]) {
-  try {
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify(list));
-  } catch {
-    // localStorage tidak tersedia: hanya berlaku sampai jendela ditutup.
-  }
-}
-
-function CloseButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button className="close" title={t("Tutup notifikasi")} aria-label={t("Tutup notifikasi")} onClick={onClick}>
-      ×
-    </button>
-  );
-}
-
-const STATE_LABEL: Record<string, string> = {
-  running: "Berjalan",
-  partial: "Sebagian",
-  stopped: "Berhenti",
-  restarting: "Restart…",
-  starting: "Menyiapkan…",
-  failed: "Gagal",
-};
-
 export default function Dashboard() {
-  const [overview, setOverview] = useState<Overview | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const { overview, busy, notice, setNotice, refresh, run } = useOverview();
   const [logFor, setLogFor] = useState<string | null>(null);
-  const [dismissed, setDismissed] = useState<string[]>(loadDismissed);
-  const [trusting, setTrusting] = useState(false);
-
-  const dismiss = (warning: string) => {
-    const next = [...dismissed, warning];
-    setDismissed(next);
-    saveDismissed(next);
-  };
-
-  const trustCa = async () => {
-    setTrusting(true);
-    try {
-      setNotice({ ok: true, text: await api.sslTrust() });
-      await refresh();
-    } catch (e) {
-      setNotice({ ok: false, text: errorText(e) });
-    } finally {
-      setTrusting(false);
-    }
-  };
-
-  const refresh = useCallback(async () => {
-    try {
-      setOverview(await api.overview());
-    } catch (e) {
-      setNotice({ ok: false, text: errorText(e) });
-    }
-  }, []);
-
-  useEffect(() => {
-    refresh();
-    const timer = setInterval(refresh, 3000);
-    const unlisten = listen<string | null>("services-changed", (event) => {
-      if (event.payload) setNotice({ ok: false, text: event.payload });
-      refresh();
-    });
-    return () => {
-      clearInterval(timer);
-      unlisten.then((off) => off());
-    };
-  }, [refresh]);
-
-  const run = async (action: ServiceAction, target = "all") => {
-    setBusy(`${action}:${target}`);
-    setNotice(null);
-    try {
-      const result = await api.serviceAction(action, target);
-      setOverview(result);
-      if (result.message) setNotice({ ok: result.ok, text: result.message });
-    } catch (e) {
-      setNotice({ ok: false, text: errorText(e) });
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const groups = useMemo(() => groupServices(overview?.services ?? []), [overview]);
-  // Peringatan yang sudah tidak dikirim daemon dilupakan, agar bisa muncul lagi bila terulang.
-  const warnings = overview?.warnings ?? [];
-  const visibleWarnings = warnings.filter((w) => isCaWarning(w) || !dismissed.includes(w));
-  useEffect(() => {
-    if (!overview) return;
-    const still = dismissed.filter((w) => overview.warnings.includes(w));
-    if (still.length !== dismissed.length) {
-      setDismissed(still);
-      saveDismissed(still);
-    }
-  }, [overview, dismissed]);
   const runningCount = groups.filter((g) => g.state === "running").length;
 
   return (
@@ -172,38 +24,25 @@ export default function Dashboard() {
         </div>
         <div className="actions">
           <button className="primary" disabled={!!busy} onClick={() => run("start")}>
+            <Icon name="play" size={16} />
             {busy === "start:all" ? t("Menjalankan…") : t("Start semua")}
           </button>
           <button disabled={!!busy || !overview?.daemon_running} onClick={() => run("reload")}>
+            <Icon name="restart" size={16} />
             Reload
           </button>
           <button disabled={!!busy || !overview?.daemon_running} onClick={() => run("stop")}>
+            <Icon name="stop" size={16} />
             {t("Stop semua")}
           </button>
           <button className="ghost" onClick={() => setLogFor("daemon")}>
+            <Icon name="log" size={16} />
             {t("Log daemon")}
           </button>
         </div>
       </header>
 
-      {notice && (
-        <div className={`notice with-actions ${notice.ok ? "ok" : "error"}`}>
-          <span>{notice.text}</span>
-          <CloseButton onClick={() => setNotice(null)} />
-        </div>
-      )}
-      {visibleWarnings.map((w) => (
-        <div key={w} className="notice warn with-actions">
-          <span>{w}</span>
-          {isCaWarning(w) ? (
-            <button disabled={trusting} onClick={trustCa}>
-              {trusting ? t("Menunggu konfirmasi Windows…") : t("Percayai CA DevLock")}
-            </button>
-          ) : (
-            <CloseButton onClick={() => dismiss(w)} />
-          )}
-        </div>
-      ))}
+      <Notices overview={overview} notice={notice} setNotice={setNotice} refresh={refresh} />
 
       {overview && !overview.daemon_running ? (
         <div className="empty">
@@ -215,58 +54,52 @@ export default function Dashboard() {
           </p>
         </div>
       ) : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Service</th>
-              <th>{t("Status")}</th>
-              <th>Port</th>
-              <th>Uptime</th>
-              <th>Restart</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {groups.map((g) => (
-              <tr key={g.group}>
-                <td>
-                  <div className="service-name">{g.group}</div>
-                  {g.items.length > 1 && (
-                    <div className="muted small">
-                      {t("{running}/{total} worker", { running: g.running, total: g.items.length })}
-                    </div>
-                  )}
-                  {g.error && <div className="error-text small">{g.error}</div>}
-                </td>
-                <td>
-                  <span className={`badge ${g.state}`}>{STATE_LABEL[g.state] ? t(STATE_LABEL[g.state]) : g.state}</span>
-                </td>
-                <td className="mono">{g.ports}</td>
-                <td>{formatUptime(g.uptime)}</td>
-                <td>{g.restarts}</td>
-                <td className="row-actions">
-                  {g.state === "running" || g.state === "partial" || g.state === "starting" ? (
-                    <>
-                      <button disabled={!!busy} onClick={() => run("restart", g.group)}>
-                        Restart
-                      </button>
-                      <button disabled={!!busy} onClick={() => run("stop", g.group)}>
-                        Stop
-                      </button>
-                    </>
-                  ) : (
-                    <button disabled={!!busy} onClick={() => run("start", g.group)}>
-                      Start
-                    </button>
-                  )}
-                  <button className="ghost" onClick={() => setLogFor(g.group)}>
-                    Log
+        <div className="list">
+          <div className="list-row list-head">
+            <span />
+            <span>Service</span>
+            <span>{t("Status")}</span>
+            <span>Port</span>
+            <span>Uptime</span>
+            <span>Restart</span>
+            <span />
+          </div>
+          {groups.map((g) => (
+            <div key={g.group} className="list-row">
+              <Toggle
+                on={isOn(g)}
+                disabled={!!busy}
+                label={isOn(g) ? `Stop ${g.group}` : `Start ${g.group}`}
+                onChange={(on) => run(on ? "start" : "stop", g.group)}
+              />
+              <div>
+                <div className="service-name">{g.group}</div>
+                {g.items.length > 1 && (
+                  <div className="muted small">
+                    {t("{running}/{total} worker", { running: g.running, total: g.items.length })}
+                  </div>
+                )}
+                {g.error && <div className="error-text small">{g.error}</div>}
+              </div>
+              <span>
+                <span className={`badge ${g.state}`}>{stateLabel(g.state)}</span>
+              </span>
+              <span className="mono">{g.ports}</span>
+              <span>{formatUptime(g.uptime)}</span>
+              <span>{g.restarts}</span>
+              <span className="row-actions">
+                {isOn(g) && (
+                  <button className="icon-btn" title="Restart" aria-label={`Restart ${g.group}`} disabled={!!busy} onClick={() => run("restart", g.group)}>
+                    <Icon name="restart" size={16} />
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                )}
+                <button className="icon-btn" title="Log" aria-label={`Log ${g.group}`} onClick={() => setLogFor(g.group)}>
+                  <Icon name="log" size={16} />
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
       )}
 
       {overview && (

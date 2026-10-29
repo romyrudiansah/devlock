@@ -3,12 +3,12 @@ import { api, errorText, type Overview, type SiteInfo } from "../api";
 import NewProject from "./NewProject";
 import { t } from "../i18n";
 
-export default function Projects() {
+export default function Projects({ startCreating = false }: { startCreating?: boolean }) {
   const [sites, setSites] = useState<SiteInfo[] | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(startCreating);
 
   const refresh = async () => {
     setError(null);

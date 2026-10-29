@@ -222,6 +222,8 @@ const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
         900,
       ),
     ),
+  // `?mica` di URL: pratinjau latar transparan seperti di Windows 11.
+  window_mica: () => new URLSearchParams(location.search).has("mica"),
   read_log: ({ service }) => `[contoh] log ${service}\n2026-10-26 12:56:15 0 [Note] Server ready for connections.`,
 };
 

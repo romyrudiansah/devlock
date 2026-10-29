@@ -6,6 +6,17 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Changed
+- GUI didesain ulang bergaya Windows 11 ("Fluent Compact"): rail navigasi ikon, latar Mica di
+  Windows 11 (warna solid di Windows 10), tombol, toggle, dan InfoBar Fluent; tema mengikuti Windows.
+
+### Added
+- GUI: halaman Beranda berisi status ringkas, satu tombol Start/Stop semua, tile service dengan
+  toggle on/off, dan daftar site dengan aksi Buka / Folder / Terminal / Editor.
+- GUI: palet perintah <kbd>Ctrl</kbd>+<kbd>K</kbd> untuk start/stop/restart service, membuka site,
+  editor, terminal, folder, project baru, dan berpindah halaman.
+- GUI: toggle per service dan tombol ikon Restart/Log di halaman Service.
+
 ## [0.13.0] - 2026-10-28
 
 ### Changed
