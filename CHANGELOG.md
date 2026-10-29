@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-10-29
+
 ### Added
 - GUI: pilihan **Tema** di Settings › Tampilan (Ikuti Windows / Terang / Gelap), langsung
   berlaku dan ikut mengubah Mica serta title bar jendela.
@@ -231,7 +233,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/romyrudiansah/devlock/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/romyrudiansah/devlock/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/romyrudiansah/devlock/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/romyrudiansah/devlock/compare/v0.13.0...v0.14.0
