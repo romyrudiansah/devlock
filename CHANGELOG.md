@@ -6,6 +6,9 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- GUI (English): judul Beranda saat ada service gagal kini "Services with problems: n".
+
 ## [0.14.0] - 2026-10-29
 
 ### Changed
