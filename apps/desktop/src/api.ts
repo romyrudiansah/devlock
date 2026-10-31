@@ -32,6 +32,8 @@ export interface SiteInfo {
   detail: string;
   database: string | null;
   dir: string;
+  /** Folder grup di www (`www\<grup>\<nama>`), `null` bila langsung di www. */
+  group: string | null;
   docroot: string;
   warning: string | null;
 }
@@ -131,7 +133,7 @@ export const api = {
     invoke<PhpInfo>("php_set_ini", { version, values }),
   openPhpIni: (version: string) => invoke<void>("open_php_ini", { version }),
   listTemplates: () => invoke<TemplateInfo[]>("list_templates"),
-  createProject: (p: { template: string; name: string; php?: string; node?: string; database?: string }) =>
+  createProject: (p: { template: string; name: string; group?: string; php?: string; node?: string; database?: string }) =>
     invoke<CreatedProject>("create_project", p),
   getSettings: () => invoke<Settings>("get_settings"),
   saveSettings: (settings: Settings) => invoke<string>("save_settings", { settings }),

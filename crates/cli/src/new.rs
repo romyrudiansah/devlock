@@ -24,6 +24,7 @@ pub fn list() -> Result<()> {
 pub fn create(
     template: Option<&str>,
     name: Option<&str>,
+    group: Option<String>,
     php: Option<String>,
     node: Option<String>,
     database: Option<String>,
@@ -36,6 +37,7 @@ pub fn create(
     let config = Config::load(&paths)?;
     let opts = Options {
         name: name.to_string(),
+        group,
         php,
         node,
         database,

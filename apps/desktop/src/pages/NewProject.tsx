@@ -17,11 +17,20 @@ function instances(runtimes: RuntimeInfo[]): string[] {
   return [...out];
 }
 
-export default function NewProject({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+export default function NewProject({
+  groups,
+  onClose,
+  onCreated,
+}: {
+  groups: string[];
+  onClose: () => void;
+  onCreated: () => void;
+}) {
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
   const [runtimes, setRuntimes] = useState<RuntimeInfo[]>([]);
   const [template, setTemplate] = useState("laravel");
   const [name, setName] = useState("");
+  const [group, setGroup] = useState("");
   const [php, setPhp] = useState("");
   const [node, setNode] = useState("");
   const [database, setDatabase] = useState("");
@@ -56,6 +65,7 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
   const nodeVersions = runtimes.find((r) => r.kind === "node")?.installed ?? [];
   const dbInstances = useMemo(() => instances(runtimes), [runtimes]);
   const validName = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(name);
+  const validGroup = !/[<>:"/\\|?*]/.test(group) && !/^\./.test(group.trim()) && !/\.$/.test(group.trim());
   const missingRuntime =
     (info?.uses_php && phpVersions.length === 0 && "PHP") ||
     (info?.uses_node && nodeVersions.length === 0 && "Node.js") ||
@@ -69,6 +79,7 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
       const result = await api.createProject({
         template,
         name,
+        group: group.trim() || undefined,
         php: info?.uses_php ? php : undefined,
         node: info?.uses_node ? node : undefined,
         database: info?.needs_database || database ? database : undefined,
@@ -130,6 +141,21 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
                   disabled={busy}
                 />
               </label>
+              <label className="field">
+                <span className="small muted">{t("Grup (opsional): subfolder di www, boleh spasi")}</span>
+                <input
+                  value={group}
+                  list="project-groups"
+                  placeholder={t("mis. Personal Project")}
+                  onChange={(e) => setGroup(e.target.value)}
+                  disabled={busy}
+                />
+                <datalist id="project-groups">
+                  {groups.map((g) => (
+                    <option key={g} value={g} />
+                  ))}
+                </datalist>
+              </label>
               {info?.uses_php && (
                 <label className="field">
                   <span className="small muted">{t("Versi PHP")}</span>
@@ -177,9 +203,10 @@ export default function NewProject({ onClose, onCreated }: { onClose: () => void
               {name && !validName && (
                 <div className="notice warn">{t("Nama hanya huruf kecil, angka, dan tanda minus.")}</div>
               )}
+              {!validGroup && <div className="notice warn">{t('Nama grup tidak boleh memuat < > : " / \\ | ? *, atau diawali/diakhiri titik.')}</div>}
               {error && <div className="notice error">{error}</div>}
               <div className="card-actions">
-                <button className="primary" disabled={busy || !validName || !!missingRuntime} onClick={submit}>
+                <button className="primary" disabled={busy || !validName || !validGroup || !!missingRuntime} onClick={submit}>
                   {busy ? t("Membuat…") : t("Buat project")}
                 </button>
               </div>

@@ -158,6 +158,9 @@ enum Command {
         template: Option<String>,
         /// Nama project = nama folder & domain (`<nama>.test`)
         name: Option<String>,
+        /// Folder grup di www, mis. `"Personal Project"` (dibuat bila belum ada)
+        #[arg(long)]
+        group: Option<String>,
         /// Versi PHP, mis. `8.3` (default dari devlock.toml)
         #[arg(long)]
         php: Option<String>,
@@ -456,6 +459,7 @@ fn main() {
         Command::New {
             template,
             name,
+            group,
             php,
             node,
             db,
@@ -464,7 +468,7 @@ fn main() {
             if list {
                 new::list()
             } else {
-                new::create(template.as_deref(), name.as_deref(), php, node, db)
+                new::create(template.as_deref(), name.as_deref(), group, php, node, db)
             }
         }
         Command::Php { command, version } => {

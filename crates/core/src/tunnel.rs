@@ -73,6 +73,7 @@ mod tests {
         Site {
             name: "blog".into(),
             dir: "D:/www/blog".into(),
+            group: None,
             docroot: "D:/www/blog".into(),
             domains: vec!["blog.test".into()],
             kind: SiteKind::Static,

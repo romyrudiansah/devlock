@@ -36,6 +36,7 @@ pub async fn create_project(
     app: AppHandle,
     template: String,
     name: String,
+    group: Option<String>,
     php: Option<String>,
     node: Option<String>,
     database: Option<String>,
@@ -45,6 +46,7 @@ pub async fn create_project(
         let template: Template = template.parse().map_err(err)?;
         let opts = Options {
             name,
+            group: group.filter(|v| !v.trim().is_empty()),
             php: php.filter(|v| !v.is_empty()),
             node: node.filter(|v| !v.is_empty()),
             database: database.filter(|v| !v.is_empty()),

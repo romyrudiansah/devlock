@@ -125,7 +125,7 @@
           <tbody>
             <tr><td><code>bin\</code></td><td><code>devlock.exe</code> (CLI), <code>devlock-gui.exe</code>, <code>devlock-shim.exe</code></td></tr>
             <tr><td><code>runtimes\</code></td><td>Runtime terpasang, satu folder per versi (mis. <code>php\8.3.12</code>)</td></tr>
-            <tr><td><code>www\</code></td><td>Project Anda; tiap subfolder menjadi <code>&lt;nama&gt;.test</code></td></tr>
+            <tr><td><code>www\</code></td><td>Project Anda; tiap subfolder (atau subfolder di dalam folder grup) menjadi <code>&lt;nama&gt;.test</code></td></tr>
             <tr><td><code>data\</code></td><td>Data database, cache, dan email per instance</td></tr>
             <tr><td><code>shims\</code></td><td><code>php.exe</code>, <code>node.exe</code>, <code>mysql.exe</code>, … yang memilih versi sesuai project</td></tr>
             <tr><td><code>etc\</code>, <code>logs\</code>, <code>ssl\</code></td><td>Konfigurasi hasil generate, log service, CA dan sertifikat</td></tr>
@@ -181,6 +181,16 @@ devlock status</pre>
       <p>DevLock menjalankan <code>composer create-project</code>, menulis <code>.devlock.toml</code>, membuat
         database <code>toko</code>, mengisi koneksi database dan <code>APP_URL</code> di <code>.env</code>, lalu
         mendaftarkan <code>toko.test</code>. Di GUI: tab <strong>Project</strong> → <strong>Project baru</strong>.</p>
+      <h3>Grup folder</h3>
+      <p>Project boleh dikelompokkan di subfolder www, mis. <code>www\Personal Project\blog</code> dan
+        <code>www\Learn Stack\kata</code>. Folder tanpa tanda project (<code>.devlock.toml</code>,
+        <code>composer.json</code>, <code>package.json</code>, <code>index.php</code>/<code>index.html</code>, atau
+        folder <code>public</code>/<code>web</code>/<code>dist</code>) yang berisi project dianggap grup; namanya boleh
+        memakai spasi. Domain tetap <code>&lt;nama&gt;.test</code> (<code>blog.test</code>), jadi nama project harus unik
+        di semua grup; bila bentrok, yang langsung di www (lalu grup urut abjad) yang dipakai dan GUI menampilkan
+        peringatan. Grup hanya satu tingkat. Buat langsung di grup dengan
+        <code>devlock new laravel toko --group "Personal Project"</code> atau kolom <strong>Grup</strong> di GUI; tab
+        <strong>Project</strong> menampilkan project per grup yang bisa dilipat.</p>
       <h3>Project yang sudah ada</h3>
       <p>Salin atau clone project ke <code>www\toko</code>, lalu buat <code>www\toko\.devlock.toml</code>:</p>
 <pre>php = "8.3"

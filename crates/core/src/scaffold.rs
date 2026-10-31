@@ -131,6 +131,8 @@ impl FromStr for Template {
 #[derive(Debug, Clone, Default)]
 pub struct Options {
     pub name: String,
+    /// Folder grup di www (mis. `Personal Project`); `None` langsung di www.
+    pub group: Option<String>,
     /// Versi PHP (spec), default dari `[defaults]` atau versi tertinggi.
     pub php: Option<String>,
     pub node: Option<String>,
@@ -160,10 +162,34 @@ pub fn create(
         bail!("nama `{name}` tidak valid untuk domain; pakai huruf kecil, angka, dan `-`");
     }
     let www = config.www_dir(paths);
-    std::fs::create_dir_all(&www)?;
-    let dir = www.join(&name);
+    let parent = match opts
+        .group
+        .as_deref()
+        .map(str::trim)
+        .filter(|g| !g.is_empty())
+    {
+        Some(group) => {
+            if !is_valid_group(group) {
+                bail!("nama grup `{group}` tidak valid untuk nama folder");
+            }
+            www.join(group)
+        }
+        None => www.clone(),
+    };
+    std::fs::create_dir_all(&parent)?;
+    let dir = parent.join(&name);
     if dir.exists() {
         bail!("folder {} sudah ada", dir.display());
+    }
+    // Domain `<nama>.<tld>` harus unik di semua grup.
+    if let Some(other) = sites::discover(paths, config)?
+        .into_iter()
+        .find(|s| s.name.eq_ignore_ascii_case(&name))
+    {
+        bail!(
+            "nama `{name}` sudah dipakai project di {}",
+            other.dir.display()
+        );
     }
 
     let php = template
@@ -735,6 +761,18 @@ pub fn set_env(text: &str, key: &str, value: &str) -> String {
     let mut out = lines.join("\n");
     out.push('\n');
     out
+}
+
+/// Nama folder grup: boleh spasi, tanpa karakter terlarang Windows, bukan folder tersembunyi.
+pub fn is_valid_group(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 100
+        && !name.starts_with('.')
+        && !name.ends_with('.')
+        && !name.ends_with(' ')
+        && !name
+            .chars()
+            .any(|c| c.is_control() || r#"<>:"/\|?*"#.contains(c))
 }
 
 #[cfg(test)]

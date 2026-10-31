@@ -139,6 +139,7 @@ pub struct SiteInfo {
     detail: String,
     database: Option<String>,
     dir: String,
+    group: Option<String>,
     docroot: String,
     warning: Option<String>,
 }
@@ -213,6 +214,7 @@ pub async fn list_sites() -> CmdResult<Vec<SiteInfo>> {
                     detail,
                     database: services::site_database(&config, site).map(|db| db.name()),
                     dir: site.dir.display().to_string(),
+                    group: site.group.clone(),
                     docroot: site.docroot.display().to_string(),
                     warning: site.warning.clone(),
                 }

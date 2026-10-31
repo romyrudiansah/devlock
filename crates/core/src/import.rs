@@ -56,6 +56,11 @@ pub fn site_name(folder: &str) -> Option<String> {
 pub fn candidates(source: &Path, www: &Path) -> Result<Vec<Candidate>> {
     let entries =
         std::fs::read_dir(source).with_context(|| format!("gagal membaca {}", source.display()))?;
+    // Project di dalam grup juga memakai `<nama>.test`.
+    let grouped: Vec<crate::sites::ProjectDir> = crate::sites::scan(www)?
+        .into_iter()
+        .filter(|p| p.group.is_some())
+        .collect();
     let mut out: Vec<Candidate> = Vec::new();
     for entry in entries.filter_map(|e| e.ok()) {
         let path = entry.path();
@@ -76,6 +81,10 @@ pub fn candidates(source: &Path, www: &Path) -> Result<Vec<Candidate>> {
             ),
             Some(name) if www.join(&name).exists() => {
                 let reason = format!("sudah ada di www\\{name}");
+                (name, Some(reason))
+            }
+            Some(name) if grouped.iter().any(|p| p.name.eq_ignore_ascii_case(&name)) => {
+                let reason = "nama sudah dipakai project di grup www".to_string();
                 (name, Some(reason))
             }
             Some(name) if out.iter().any(|c| c.name == name && c.skip.is_none()) => {
@@ -166,12 +175,22 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let htdocs = tmp.path().join("htdocs");
         let www = tmp.path().join("www");
-        for dir in ["Blog", "dashboard", "shop_app", "shop-app", "café", "lama"] {
+        for dir in [
+            "Blog",
+            "dashboard",
+            "shop_app",
+            "shop-app",
+            "café",
+            "lama",
+            "kasir",
+        ] {
             std::fs::create_dir_all(htdocs.join(dir)).unwrap();
         }
         std::fs::write(htdocs.join("Blog/index.php"), "<?php echo 1;").unwrap();
         std::fs::write(htdocs.join("index.php"), "").unwrap();
         std::fs::create_dir_all(www.join("lama")).unwrap();
+        std::fs::create_dir_all(www.join("Klien A/kasir")).unwrap();
+        std::fs::write(www.join("Klien A/kasir/index.html"), "").unwrap();
 
         let list = candidates(&htdocs, &www).unwrap();
         let view: Vec<_> = list
@@ -181,6 +200,7 @@ mod tests {
         assert!(view.contains(&("blog", true)));
         assert!(view.contains(&("dashboard", false)));
         assert!(view.contains(&("lama", false)));
+        assert!(view.contains(&("kasir", false)));
         assert!(view.contains(&("café", false)));
         // `shop_app` dan `shop-app` sama-sama menjadi `shop-app`: hanya satu yang diimpor.
         assert_eq!(
