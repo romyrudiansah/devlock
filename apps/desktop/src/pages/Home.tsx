@@ -129,6 +129,7 @@ export default function Home({ onNavigate, onPalette }: { onNavigate: (tab: stri
                 {site.domains[0]}
               </button>
               <span className="muted small site-detail">
+                {site.group && <>{site.group} · </>}
                 {site.detail}
                 {site.database && <> · {site.database}</>}
               </span>

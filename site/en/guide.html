@@ -124,7 +124,7 @@
           <tbody>
             <tr><td><code>bin\</code></td><td><code>devlock.exe</code> (CLI), <code>devlock-gui.exe</code>, <code>devlock-shim.exe</code></td></tr>
             <tr><td><code>runtimes\</code></td><td>Installed runtimes, one folder per version (e.g. <code>php\8.3.12</code>)</td></tr>
-            <tr><td><code>www\</code></td><td>Your projects; each subfolder becomes <code>&lt;name&gt;.test</code></td></tr>
+            <tr><td><code>www\</code></td><td>Your projects; each subfolder (or subfolder inside a group folder) becomes <code>&lt;name&gt;.test</code></td></tr>
             <tr><td><code>data\</code></td><td>Database, cache, and email data per instance</td></tr>
             <tr><td><code>shims\</code></td><td><code>php.exe</code>, <code>node.exe</code>, <code>mysql.exe</code>, … that pick the project's version</td></tr>
             <tr><td><code>etc\</code>, <code>logs\</code>, <code>ssl\</code></td><td>Generated configuration, service logs, CA and certificates</td></tr>
@@ -178,6 +178,16 @@ devlock status</pre>
       <p>DevLock runs <code>composer create-project</code>, writes <code>.devlock.toml</code>, creates the
         <code>shop</code> database, fills in the database connection and <code>APP_URL</code> in <code>.env</code>, and
         registers <code>shop.test</code>. In the GUI: <strong>Projects</strong> tab → <strong>New project</strong>.</p>
+      <h3>Folder groups</h3>
+      <p>Projects can be grouped in subfolders of www, e.g. <code>www\Personal Project\blog</code> and
+        <code>www\Learn Stack\kata</code>. A folder with no project marker (<code>.devlock.toml</code>,
+        <code>composer.json</code>, <code>package.json</code>, <code>index.php</code>/<code>index.html</code>, or a
+        <code>public</code>/<code>web</code>/<code>dist</code> folder) that contains projects is treated as a group; its
+        name may contain spaces. The domain stays <code>&lt;name&gt;.test</code> (<code>blog.test</code>), so project
+        names must be unique across groups; on a clash the one directly in www (then groups in alphabetical order) wins
+        and the GUI shows a warning. Groups are one level deep. Create a project in a group with
+        <code>devlock new laravel shop --group "Personal Project"</code> or the <strong>Group</strong> field in the GUI;
+        the <strong>Projects</strong> tab lists projects per collapsible group.</p>
       <h3>Existing project</h3>
       <p>Copy or clone the project into <code>www\shop</code>, then create <code>www\shop\.devlock.toml</code>:</p>
 <pre>php = "8.3"

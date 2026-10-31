@@ -20,6 +20,7 @@ const PATHS = {
   plus: "M10 4v12M4 10h12",
   database: "M10 7c3.6 0 6.5-1 6.5-2.25S13.6 2.5 10 2.5 3.5 3.5 3.5 4.75 6.4 7 10 7zM3.5 4.75v10.5C3.5 16.5 6.4 17.5 10 17.5s6.5-1 6.5-2.25V4.75M3.5 10c0 1.25 2.9 2.25 6.5 2.25s6.5-1 6.5-2.25",
   arrow: "M4 10h12M11 5l5 5-5 5",
+  chevron: "M8 5l5 5-5 5",
 } as const;
 
 export type IconName = keyof typeof PATHS;

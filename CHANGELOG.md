@@ -6,6 +6,14 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Added
+- **Grup folder project**: project boleh dikelompokkan di subfolder www, mis.
+  `www\Personal Project\blog`. Folder tanpa tanda project yang berisi project dianggap grup (nama
+  boleh berspasi, satu tingkat); domain tetap `<nama>.test`, dan nama yang bentrok antar-grup
+  diberi peringatan. `devlock new … --group "<grup>"` dan kolom **Grup** di GUI membuat project
+  langsung di grup; tab Project menampilkan project per grup yang bisa dilipat, Beranda dan
+  Ctrl+K menampilkan nama grupnya.
+
 ## [0.15.1] - 2026-10-29
 
 ### Added

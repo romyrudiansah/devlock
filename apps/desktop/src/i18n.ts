@@ -92,6 +92,12 @@ const EN: Record<string, string> = {
   // Projects
   "Setiap folder di": "Every folder in",
   "otomatis menjadi": "automatically becomes",
+  "(atau di folder grup di dalamnya) otomatis menjadi": "(or in a group folder inside it) automatically becomes",
+  "Langsung di www": "Directly in www",
+  "Grup (opsional): subfolder di www, boleh spasi": "Group (optional): a subfolder in www, spaces allowed",
+  "mis. Personal Project": "e.g. Personal Project",
+  'Nama grup tidak boleh memuat < > : " / \\ | ? *, atau diawali/diakhiri titik.':
+    'Group names cannot contain < > : " / \\ | ? *, or start/end with a dot.',
   nama: "name",
   "Project baru": "New project",
   "Buka folder www": "Open www folder",

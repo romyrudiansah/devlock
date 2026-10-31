@@ -134,6 +134,7 @@ devlock new --list                              # daftar template
 devlock new laravel toko --php 8.4 --db mysql@8.4
 devlock new wordpress blog --db mariadb@11.4
 devlock new next dashboard --node 22
+devlock new laravel toko --group "Personal Project"   # di www\Personal Project\toko
 ```
 
 Template: Laravel, Symfony, CodeIgniter 4 (`composer create-project`), WordPress (zip resmi,

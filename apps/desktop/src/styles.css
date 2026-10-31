@@ -856,6 +856,50 @@ input[type="checkbox"] {
 }
 
 /* --- Kartu (Project, Runtime, PHP) ------------------------------------------------ */
+.project-group + .project-group {
+  margin-top: 16px;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+
+button.group-head:hover {
+  background: var(--subtle);
+}
+
+.group-head.plain {
+  color: var(--muted);
+}
+
+.group-head .chevron {
+  display: inline-flex;
+  transition: transform 0.15s;
+}
+
+.group-head .chevron.open {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group-head .chevron {
+    transition: none;
+  }
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

@@ -28,6 +28,8 @@ pub enum SiteKind {
 pub struct Site {
     pub name: String,
     pub dir: PathBuf,
+    /// Folder grup di www yang memuat project ini (`www\<grup>\<nama>`).
+    pub group: Option<String>,
     pub docroot: PathBuf,
     /// Domain utama diikuti alias.
     pub domains: Vec<String>,
@@ -76,22 +78,23 @@ pub fn url_for(domain: &str, https: bool, config: &Config) -> String {
 
 /// Semua site di folder www (ditambah site bawaan Adminer bila terinstall), urut nama.
 pub fn discover(paths: &Paths, config: &Config) -> Result<Vec<Site>> {
-    let www = config.www_dir(paths);
-    let entries: Vec<std::fs::DirEntry> = match std::fs::read_dir(&www) {
-        Ok(entries) => entries.filter_map(|e| e.ok()).collect(),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
-        Err(e) => return Err(e).with_context(|| format!("gagal membaca {}", www.display())),
-    };
-    let mut sites = Vec::new();
-    for entry in entries {
-        let dir = entry.path();
-        let Some(name) = entry.file_name().to_str().map(str::to_string) else {
-            continue;
-        };
-        if !dir.is_dir() || name.starts_with('.') || !is_valid_label(&name) {
+    let mut sites: Vec<Site> = Vec::new();
+    for ProjectDir { name, dir, group } in scan(&config.www_dir(paths))? {
+        // Nama sama di grup lain: domainnya bentrok, jadi yang pertama (www langsung, lalu grup
+        // urut abjad) yang dipakai.
+        if let Some(first) = sites
+            .iter_mut()
+            .find(|s| s.name.eq_ignore_ascii_case(&name))
+        {
+            first.warning.get_or_insert(format!(
+                "folder {} bernama sama diabaikan; ganti nama salah satunya",
+                dir.display()
+            ));
             continue;
         }
-        sites.push(load_site(paths, config, &name, &dir)?);
+        let mut site = load_site(paths, config, &name, &dir)?;
+        site.group = group;
+        sites.push(site);
     }
     if !sites
         .iter()
@@ -104,6 +107,58 @@ pub fn discover(paths: &Paths, config: &Config) -> Result<Vec<Site>> {
     }
     sites.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(sites)
+}
+
+/// Folder project di www.
+pub struct ProjectDir {
+    pub name: String,
+    pub dir: PathBuf,
+    pub group: Option<String>,
+}
+
+/// Folder project di `www`: yang langsung di www lebih dulu, lalu isi tiap grup urut abjad.
+/// Folder tanpa tanda project yang berisi project adalah grup; subfoldernya dibaca sebagai
+/// project (satu tingkat), domainnya tetap `<nama>.<tld>`. Nama bisa berulang antar-grup.
+pub fn scan(www: &Path) -> Result<Vec<ProjectDir>> {
+    let entries: Vec<std::fs::DirEntry> = match std::fs::read_dir(www) {
+        Ok(entries) => entries.filter_map(|e| e.ok()).collect(),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+        Err(e) => return Err(e).with_context(|| format!("gagal membaca {}", www.display())),
+    };
+    let mut found = Vec::new();
+    let mut groups = Vec::new();
+    for entry in entries {
+        let dir = entry.path();
+        let Some(name) = entry.file_name().to_str().map(str::to_string) else {
+            continue;
+        };
+        if !dir.is_dir() || name.starts_with('.') {
+            continue;
+        }
+        let children = if looks_like_project(&dir) {
+            Vec::new()
+        } else {
+            group_children(&dir)
+        };
+        if !children.is_empty() {
+            groups.push((name, children));
+        } else if is_valid_label(&name) {
+            found.push(ProjectDir {
+                name,
+                dir,
+                group: None,
+            });
+        }
+    }
+    groups.sort_by_key(|g| g.0.to_lowercase());
+    for (group, children) in groups {
+        found.extend(children.into_iter().map(|(name, dir)| ProjectDir {
+            name,
+            dir,
+            group: Some(group.clone()),
+        }));
+    }
+    Ok(found)
 }
 
 /// Nama site bawaan Adminer (`adminer.<tld>`); folder `www\adminer` milik pengguna menang.
@@ -132,6 +187,7 @@ fn adminer_site(paths: &Paths, config: &Config) -> Result<Option<Site>> {
         name: ADMINER_SITE.into(),
         docroot: dir.clone(),
         dir,
+        group: None,
         domains: vec![format!("{ADMINER_SITE}.{}", config.tld)],
         kind,
         database: None,
@@ -158,6 +214,7 @@ fn mail_site(paths: &Paths, config: &Config) -> Result<Option<Site>> {
         name: MAIL_SITE.into(),
         docroot: dir.clone(),
         dir,
+        group: None,
         domains: vec![format!("{MAIL_SITE}.{}", config.tld)],
         kind: SiteKind::Proxy {
             port: config.mail.ui_port,
@@ -261,6 +318,7 @@ fn load_site(paths: &Paths, config: &Config, name: &str, dir: &Path) -> Result<S
     Ok(Site {
         name: name.to_string(),
         dir: dir.to_path_buf(),
+        group: None,
         docroot,
         domains,
         kind,
@@ -295,6 +353,40 @@ fn is_php_project(dir: &Path, docroot: &Path) -> bool {
                     .any(|e| e.path().extension().is_some_and(|ext| ext == "php"))
             })
             .unwrap_or(false)
+}
+
+/// Ada tanda project di `dir`: konfigurasi/manifest, folder docroot, atau file halaman.
+fn looks_like_project(dir: &Path) -> bool {
+    [".devlock.toml", "composer.json", "package.json"]
+        .iter()
+        .any(|f| dir.join(f).is_file())
+        || detect_docroot(dir) != dir
+        || std::fs::read_dir(dir)
+            .map(|entries| {
+                entries.filter_map(|e| e.ok()).any(|e| {
+                    e.path().is_file()
+                        && e.path().extension().is_some_and(|ext| {
+                            ["php", "html", "htm"]
+                                .iter()
+                                .any(|x| ext.eq_ignore_ascii_case(x))
+                        })
+                })
+            })
+            .unwrap_or(false)
+}
+
+/// Subfolder project di dalam calon grup (nama valid sebagai domain, punya tanda project).
+fn group_children(dir: &Path) -> Vec<(String, PathBuf)> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut children: Vec<(String, PathBuf)> = entries
+        .filter_map(|e| e.ok())
+        .filter_map(|e| Some((e.file_name().to_str()?.to_string(), e.path())))
+        .filter(|(name, path)| path.is_dir() && is_valid_label(name) && looks_like_project(path))
+        .collect();
+    children.sort_by(|a, b| a.0.cmp(&b.0));
+    children
 }
 
 /// Nama folder harus valid sebagai label DNS.
@@ -357,5 +449,52 @@ mod tests {
         assert!(sites[3].warning.as_deref().unwrap().contains("php 7.4"));
         assert_eq!(sites[3].database.as_ref().unwrap().name(), "mysql@5.7");
         assert_eq!(sites[3].cache.as_ref().unwrap().name(), "redis@8");
+    }
+
+    #[test]
+    fn discovers_projects_inside_group_folders() {
+        let tmp = tempfile::tempdir().unwrap();
+        let paths = Paths::new(tmp.path());
+        let www = paths.default_www();
+        for dir in [
+            "solo",
+            "Personal Project/blog",
+            "Personal Project/notes",
+            "Learn Stack/solo",
+            "learn-go/kata",
+        ] {
+            std::fs::create_dir_all(www.join(dir)).unwrap();
+            std::fs::write(www.join(dir).join("index.html"), "").unwrap();
+        }
+        // Folder grup boleh berisi file lain; project-nya tetap terbaca.
+        std::fs::write(www.join("Personal Project/README.md"), "").unwrap();
+        // Project yang punya subfolder tetap satu project, bukan grup.
+        std::fs::create_dir_all(www.join("shop/public/assets")).unwrap();
+        std::fs::write(www.join("shop/composer.json"), "{}").unwrap();
+        std::fs::create_dir_all(www.join("shop/modules/cart")).unwrap();
+        std::fs::write(www.join("shop/modules/cart/index.html"), "").unwrap();
+
+        let sites = discover(&paths, &Config::default()).unwrap();
+        let found: Vec<_> = sites
+            .iter()
+            .map(|s| (s.name.as_str(), s.group.as_deref()))
+            .collect();
+        assert_eq!(
+            found,
+            [
+                ("blog", Some("Personal Project")),
+                ("kata", Some("learn-go")),
+                ("notes", Some("Personal Project")),
+                ("shop", None),
+                ("solo", None),
+            ]
+        );
+        let blog = sites.iter().find(|s| s.name == "blog").unwrap();
+        assert_eq!(blog.domains, ["blog.test"]);
+        assert_eq!(blog.dir, www.join("Personal Project/blog"));
+        // `Learn Stack/solo` bentrok dengan `www/solo`: yang langsung di www dipakai.
+        let solo = sites.iter().find(|s| s.name == "solo").unwrap();
+        assert_eq!(solo.dir, www.join("solo"));
+        assert!(solo.warning.as_deref().unwrap().contains("Learn Stack"));
     }
 }

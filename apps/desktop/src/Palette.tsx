@@ -64,10 +64,11 @@ export default function Palette({
     }
     for (const site of sites) {
       const domain = site.domains[0];
+      const where = site.group ?? "Project";
       list.push({ id: `open:${site.name}`, icon: "globe", label: t("Buka {site}", { site: domain }), hint: site.detail, run: () => api.openUrl(site.url) });
-      list.push({ id: `editor:${site.name}`, icon: "code", label: t("Editor: {site}", { site: site.name }), hint: "Project", run: () => api.openEditor(site.dir) });
-      list.push({ id: `term:${site.name}`, icon: "terminal", label: t("Terminal: {site}", { site: site.name }), hint: "Project", run: () => api.openTerminal(site.dir) });
-      list.push({ id: `folder:${site.name}`, icon: "folder", label: t("Folder: {site}", { site: site.name }), hint: "Project", run: () => api.openFolder(site.dir) });
+      list.push({ id: `editor:${site.name}`, icon: "code", label: t("Editor: {site}", { site: site.name }), hint: where, run: () => api.openEditor(site.dir) });
+      list.push({ id: `term:${site.name}`, icon: "terminal", label: t("Terminal: {site}", { site: site.name }), hint: where, run: () => api.openTerminal(site.dir) });
+      list.push({ id: `folder:${site.name}`, icon: "folder", label: t("Folder: {site}", { site: site.name }), hint: where, run: () => api.openFolder(site.dir) });
     }
     list.push({ id: "new-project", icon: "plus", label: t("Project baru"), run: onNewProject });
     list.push({ id: "install", icon: "runtimes", label: t("Install runtime…"), run: () => onNavigate("runtimes") });
