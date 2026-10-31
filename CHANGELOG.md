@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-31
+
 ### Added
 - **Grup folder project**: project boleh dikelompokkan di subfolder www, mis.
   `www\Personal Project\blog`. Folder tanpa tanda project yang berisi project dianggap grup (nama
@@ -241,7 +243,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/romyrudiansah/devlock/compare/v0.15.1...v0.16.0
 [0.15.1]: https://github.com/romyrudiansah/devlock/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/romyrudiansah/devlock/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/romyrudiansah/devlock/compare/v0.14.0...v0.14.1
