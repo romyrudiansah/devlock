@@ -6,6 +6,16 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- Domain dev server tidak lagi 502 saat dev server hanya mendengarkan di IPv6: nginx kini
+  mencoba `[::1]` lalu `127.0.0.1` (Nuxt 3/4 dan Vite pada `localhost` di Node 17+ sering hanya
+  `::1`). Batas waktu proxy dinaikkan ke 300 detik agar build pertama tidak berakhir 504.
+- Vite 6+ tidak lagi menolak domain DevLock ("Blocked request. This host is not allowed"):
+  dev server diberi `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=.test`.
+- `NODE_EXTRA_CA_CERTS` yang sudah ada (mis. root CA Avast Web Shield) kini digabung dengan CA
+  DevLock, bukan ditimpa. Sebelumnya permintaan HTTPS dari Node (axios/fetch di SSR) gagal
+  dengan "unable to verify the first certificate" di balik antivirus yang memeriksa HTTPS.
+
 ### Changed
 - Rilis, website, Issues, dan Discussions kini ada di repo publik
   [`romyrudiansah/devlock`](https://github.com/romyrudiansah/devlock); kode sumber dikembangkan di
