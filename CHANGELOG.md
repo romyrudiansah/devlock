@@ -6,6 +6,11 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Changed
+- Rilis, website, Issues, dan Discussions kini ada di repo publik
+  [`romyrudiansah/devlock`](https://github.com/romyrudiansah/devlock); kode sumber dikembangkan di
+  repo private. Alamat unduhan, website, dan `devlock update` tidak berubah.
+
 ## [0.18.1] - 2026-11-06
 
 ### Fixed
