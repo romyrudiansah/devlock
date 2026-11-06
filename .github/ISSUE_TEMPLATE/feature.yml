@@ -1,0 +1,14 @@
+name: Permintaan fitur / Feature request
+description: Usulan fitur atau perbaikan. / Suggest a feature or improvement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Masalah yang ingin diselesaikan / Problem to solve
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Usulan / Proposal

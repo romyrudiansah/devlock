@@ -1,0 +1,88 @@
+LISENSI FREEWARE DEVLOCK
+Hak cipta (c) 2026 Romy Rudiansah. Seluruh hak dilindungi.
+
+English version below.
+
+Lisensi ini berlaku untuk DevLock versi 0.18.0 dan setelahnya: program devlock.exe,
+devlock-shim.exe, devlock-gui.exe, installer, dan berkas yang menyertainya ("Perangkat Lunak").
+Versi hingga 0.17.2 tetap berada di bawah lisensi MIT atau Apache-2.0 yang menyertainya.
+
+1. Izin pemakaian. Anda boleh memasang dan memakai Perangkat Lunak secara gratis, di komputer
+   sebanyak apa pun, untuk keperluan pribadi maupun komersial, termasuk mengerjakan project
+   untuk klien atau di perusahaan.
+
+2. Sumber resmi. Perangkat Lunak hanya boleh diunduh dari halaman rilis resmi
+   https://github.com/romyrudiansah/devlock/releases. Anda boleh membagikan tautan ke halaman
+   itu, tetapi tidak boleh menyebarkan ulang berkas Perangkat Lunak (installer, zip, atau
+   program di dalamnya) melalui situs, mirror, grup, media, atau cara lain tanpa izin tertulis
+   dari pemegang hak cipta.
+
+3. Larangan. Anda tidak boleh:
+   a. menjual, menyewakan, atau memungut biaya atas Perangkat Lunak;
+   b. mengubah, menerjemahkan, atau membuat karya turunan dari Perangkat Lunak;
+   c. melakukan rekayasa balik, dekompilasi, atau disassembly, kecuali sejauh diizinkan oleh
+      hukum yang berlaku meskipun ada larangan ini;
+   d. menghapus atau mengubah pemberitahuan hak cipta, nama, atau logo DevLock;
+   e. menyajikan Perangkat Lunak sebagai produk Anda sendiri.
+
+4. Komponen pihak ketiga. Runtime dan alat yang diunduh oleh Perangkat Lunak (misalnya PHP,
+   Node.js, nginx, MySQL, MariaDB, PostgreSQL, MongoDB, Redis) adalah milik penerbitnya
+   masing-masing dan tunduk pada lisensinya sendiri, bukan pada lisensi ini.
+
+5. Nama dan merek. Nama "DevLock" dan logonya tidak termasuk dalam izin lisensi ini.
+
+6. Tanpa jaminan. Perangkat Lunak diberikan "SEBAGAIMANA ADANYA", tanpa jaminan apa pun,
+   tersurat maupun tersirat, termasuk jaminan kelayakan untuk diperdagangkan, kesesuaian untuk
+   tujuan tertentu, dan ketiadaan pelanggaran. Pemegang hak cipta tidak bertanggung jawab atas
+   klaim, kerusakan, kehilangan data, atau kerugian lain yang timbul dari pemakaian atau
+   ketidakmampuan memakai Perangkat Lunak.
+
+7. Berakhirnya lisensi. Izin ini berakhir otomatis bila Anda melanggar ketentuan di atas.
+   Setelah berakhir, Anda wajib berhenti memakai dan menghapus Perangkat Lunak.
+
+8. Perubahan. Versi baru Perangkat Lunak dapat disertai lisensi yang berbeda. Lisensi yang
+   menyertai suatu versi berlaku untuk versi tersebut.
+
+------------------------------------------------------------------------------------------
+
+DEVLOCK FREEWARE LICENSE
+Copyright (c) 2026 Romy Rudiansah. All rights reserved.
+
+This license applies to DevLock version 0.18.0 and later: the programs devlock.exe,
+devlock-shim.exe, devlock-gui.exe, the installer, and accompanying files (the "Software").
+Versions up to 0.17.2 remain under the MIT or Apache-2.0 license they were distributed with.
+
+1. Permission to use. You may install and use the Software free of charge, on any number of
+   computers, for personal or commercial purposes, including work for clients or within a
+   company.
+
+2. Official source. The Software may only be downloaded from the official release page
+   https://github.com/romyrudiansah/devlock/releases. You may share links to that page, but you
+   may not redistribute the Software's files (installer, zip, or the programs inside them)
+   through websites, mirrors, groups, media, or any other means without written permission
+   from the copyright holder.
+
+3. Restrictions. You may not:
+   a. sell, rent, or charge any fee for the Software;
+   b. modify, translate, or create derivative works of the Software;
+   c. reverse engineer, decompile, or disassemble the Software, except to the extent that
+      applicable law expressly permits it despite this restriction;
+   d. remove or alter copyright notices, the DevLock name, or its logo;
+   e. present the Software as your own product.
+
+4. Third-party components. Runtimes and tools downloaded by the Software (for example PHP,
+   Node.js, nginx, MySQL, MariaDB, PostgreSQL, MongoDB, Redis) belong to their respective
+   publishers and are governed by their own licenses, not by this license.
+
+5. Name and trademark. The name "DevLock" and its logo are not licensed under this license.
+
+6. No warranty. The Software is provided "AS IS", without warranty of any kind, express or
+   implied, including warranties of merchantability, fitness for a particular purpose, and
+   non-infringement. The copyright holder is not liable for any claim, damages, data loss, or
+   other liability arising from the use of or inability to use the Software.
+
+7. Termination. This permission ends automatically if you breach any of the terms above.
+   Upon termination you must stop using and delete the Software.
+
+8. Changes. New versions of the Software may come with a different license. The license
+   that accompanies a version applies to that version.

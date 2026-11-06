@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Pertanyaan / Questions
+    url: https://github.com/romyrudiansah/devlock/discussions/categories/q-a
+    about: Tanya cara pakai di Discussions. / Ask how-to questions in Discussions.
+  - name: Panduan / Guide
+    url: https://romyrudiansah.github.io/devlock/panduan.html
+    about: Panduan lengkap DevLock. / The full DevLock guide.

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 34 184 188" role="img" aria-label="DevLock">
+  <!-- Logo DevLock: dua kurung kode membentuk heksagon, garis miring di tengah = </>. -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="22">
+    <path d="M112 52 L58 84 V172 L112 204" stroke="#3b82f6"/>
+    <path d="M144 52 L198 84 V172 L144 204" stroke="#4f46e5"/>
+    <path d="M140 96 L116 160" stroke="#06b6d4" stroke-width="20"/>
+  </g>
+</svg>

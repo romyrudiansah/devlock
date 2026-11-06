@@ -1,0 +1,32 @@
+name: Laporan bug / Bug report
+description: Sesuatu tidak berjalan seperti seharusnya. / Something does not work as expected.
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versi DevLock / DevLock version
+      description: Hasil `devlock --version`
+      placeholder: devlock 0.17.2
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Versi Windows / Windows version
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: Apa yang terjadi? / What happened?
+      description: Langkah untuk mengulang, yang diharapkan, dan yang terjadi.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log
+      description: Isi log terkait dari folder `logs\` atau `devlock logs <service>`.
+      render: text
