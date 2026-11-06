@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.18.2] - 2026-11-06
+
 ### Fixed
 - Domain dev server tidak lagi 502 saat dev server hanya mendengarkan di IPv6: nginx kini
   mencoba `[::1]` lalu `127.0.0.1` (Nuxt 3/4 dan Vite pada `localhost` di Node 17+ sering hanya
@@ -304,7 +306,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.18.1...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.18.2...HEAD
+[0.18.2]: https://github.com/romyrudiansah/devlock/compare/v0.18.1...v0.18.2
 [0.18.1]: https://github.com/romyrudiansah/devlock/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/romyrudiansah/devlock/compare/v0.17.2...v0.18.0
 [0.17.2]: https://github.com/romyrudiansah/devlock/compare/v0.17.1...v0.17.2
