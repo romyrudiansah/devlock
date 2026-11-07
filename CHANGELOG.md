@@ -6,6 +6,11 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+### Fixed
+- `devlock shims` dan `devlock update` tidak lagi berhenti di shim pertama yang terkunci
+  (mis. `pnpm.exe` yang dipakai dev server): shim itu dilewati dan dilaporkan, sisanya tetap
+  diperbarui. Sisa `.exe.old` yang masih berjalan tidak lagi menghalangi penggantian.
+
 ## [0.18.2] - 2026-11-06
 
 ### Fixed
