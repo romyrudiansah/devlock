@@ -6,6 +6,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 
 ## [Unreleased]
 
+## [0.18.3] - 2026-11-07
+
 ### Fixed
 - `devlock shims` dan `devlock update` tidak lagi berhenti di shim pertama yang terkunci
   (mis. `pnpm.exe` yang dipakai dev server): shim itu dilewati dan dilaporkan, sisanya tetap
@@ -311,7 +313,8 @@ Semua perubahan penting dicatat di sini. Format mengikuti
 - Perintah `devlock init`, `devlock config`, `devlock doctor`.
 - CI (fmt, clippy, test di Windows) dan workflow rilis otomatis dari tag `v*`.
 
-[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.18.2...HEAD
+[Unreleased]: https://github.com/romyrudiansah/devlock/compare/v0.18.3...HEAD
+[0.18.3]: https://github.com/romyrudiansah/devlock/compare/v0.18.2...v0.18.3
 [0.18.2]: https://github.com/romyrudiansah/devlock/compare/v0.18.1...v0.18.2
 [0.18.1]: https://github.com/romyrudiansah/devlock/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/romyrudiansah/devlock/compare/v0.17.2...v0.18.0
